@@ -25,11 +25,8 @@ Comvolution Filter는 다음과 같이 정의할 수 있습니다.
 $$Y_i=\mathcal{F}_i(X_i)$$  
 $$Y_i$$는 output tensor, $$X_i$$는 input tensor, $$\mathcal{F}$$는 operator입니다.  
 
-또한 여러층의 ConvNet $$\mathcal{N}$$는 다음과 같이 나타낼 수 있습니다.  
+이것을 $$L_i$$개의 Layer를 쌓는다고 하면 다음과 같이 표시할 수 있습니다.  
 
-$$ \mathcal{N} = \mathcal{F}_k \bigodot ... \bigodot  \mathcal{F}_2 \bigodot \mathcal{F}_1 = \bigodot_{i=1...s} \mathcal{F}^{j}(\mathrm{X}_{X_1) $$  
-
-이것을 $$L_i$$개의 Layer를 쌓는다고 하면 다음과 같이 표시할 수 있습니다.
 $$\mathcal{N} = \bigodot_{i=1...s} \mathcal{F}^{L_i}(\mathrm{X}_{<H_i, W_i, C_i})$$   
 $$\mathcal{F}^{L_i}$$는 $$\mathcal{F}^{i}$$가 $$L_i$$번 반복되는 notation입니다. 
 
