@@ -26,20 +26,25 @@ $$Y_i=\mathcal{F}_i(X_i)$$
 $$Y_i$$는 output tensor, $$X_i$$는 input tensor, $$\mathcal{F}$$는 operator입니다.  
 
 또한 여러층의 ConvNet $$\mathcal{N}$$는 다음과 같이 나타낼 수 있습니다.  
-$$\mathcal{N} = \mathcal{F}_k \bigodot ... \bigodot  \mathcal{F}_2 \bigodot \mathcal{F}_1 = \bigodot_{i=1...s} \mathcal{F}^{j}(\mathrm{X}_{X_1)$$
+
+$$\mathcal{N} = \mathcal{F}_k \bigodot ... \bigodot  \mathcal{F}_2 \bigodot \mathcal{F}_1 = \bigodot_{i=1...s} \mathcal{F}^{j}(\mathrm{X}_{X_1)$$  
 
 이것을 $$L_i$$개의 Layer를 쌓는다고 하면 다음과 같이 표시할 수 있습니다.
-$$\mathcal{N} = \bigodot_{i=1...s} \mathcal{F}^{L_i}(\mathrm{X}_{<H_i, W_i, C_i})$$  
+$$\mathcal{N} = \bigodot_{i=1...s} \mathcal{F}^{L_i}(\mathrm{X}_{<H_i, W_i, C_i})$$   
 $$\mathcal{F}^{L_i}$$는 $$\mathcal{F}^{i}$$가 $$L_i$$번 반복되는 notation입니다. 
 
 이렇게 간단한 식으로 표시했지만 $$H_i, W_i, C_i$$를 각각 조절해야하기 때문에 Design Space가 너무 넓어서, design space를 좁히기 위해 다음과 같이 constant ratio를 사용하여 표현했고 다음의 수식을 optimization을 하는 것이 목표로 잡을 것 입니다.
 
-$$max_{d, w, r} \mathcal{Accuracy}(\mathcal{N}(d, w, r))  
-$$s.t \mathcal{N}(d, w, r) = \bigodot_{i=1..s} \hat{\mathcal{F}}_i^{d \cdot \hat{L}_i}(X_{r /cdot \hat{H}_i, r /cdot \hat{W}_i, w /cdot \hat{C}_i})$$  
-Memory($$\mathcal{N}$$) \leq target_memory
-FLOPS($$\mathcal{N}$$) \leq target_flops
+<center>
+$$max_{d, w, r} \mathcal{Accuracy}(\mathcal{N}(d, w, r))$$  
 
-여기서 \hat{F} \hat{H}, \hat{W}, \hat{C}는 각각 Base model의 parameter를 나타낸 것입니다.
+$$s.t \mathcal{N}(d, w, r) = \bigodot_{i=1..s} \hat{\mathcal{F}}_i^{d \cdot \hat{L}_i}(X_{r /cdot \hat{H}_i, r /cdot \hat{W}_i, w /cdot \hat{C}_i})$$  
+
+Memory($$\mathcal{N}$$) \leq target_memory  
+FLOPS($$\mathcal{N}$$) \leq target_flops  
+</center>
+
+여기서 $$\hat{F} \hat{H}, \hat{W}, \hat{C}$$는 각각 Base model의 parameter를 나타낸 것입니다.
 
 ## Scaling Dimensions
 자 이제 문제는 depth, width, resolution의 조합이 아닌, linear equation의 variacnce인 d, w, r를 조절하는 문제입니다. 먼저 각각의 요소의 영향을 살펴보면 다음과 같이 볼 수 있습니다.
