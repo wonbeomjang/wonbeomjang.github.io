@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>http://localhost:4000/%ED%95%99%EB%B6%80%EC%83%9D%EC%9D%B4-%EB%B3%B4%EB%8A%94-gan/</loc>
+<lastmod>2019-09-13T18:50:11+09:00</lastmod>
+</url>
+<url>
+<loc>http://localhost:4000/404/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/about/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/archive/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/tags/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/</loc>
+</url>
+</urlset>
