@@ -80,7 +80,7 @@ $$depth: r = \gamma^\phi$$
 
 ## EffientNet
 앞에서와 같은 아이디어 제안이 있지만 그래도 좋은 모델을 만드는 것이 좋기 때문에 여기서도 새로운 모델을 제안했습니다.
-ACC(m)\times$$[FLOPS(M)/T]^w$$을 optimization goal로 놓고 Neural Architecture Search를 해 EffientNet-B0모델을 만들었습니다.
+$$ACC(m)\times[FLOPS(M)/T]^w$$을 optimization goal로 놓고 Neural Architecture Search를 해 EffientNet-B0모델을 만들었습니다.
 Main block은 은 squeeze-and-excitation을 추가한 mobile inverted bottleneck입니다.  
 
 ![table1](https://user-images.githubusercontent.com/40621030/103459180-8b9d5b00-4d50-11eb-83a4-8a109109fdc8.png)
