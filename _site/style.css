@@ -81,7 +81,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 1em 0 15px;
   padding: 0;
 }
-
 @media screen and (max-width: 640px) {
   h1, h2, h3, h4, h5, h6 {
     line-height: 1.4;
@@ -95,7 +94,6 @@ h1, h2, h3, h5 {
 h1 {
   font-size: 30px;
 }
-
 h1 a {
   color: inherit;
 }
@@ -127,7 +125,6 @@ a {
   text-decoration: none;
   cursor: pointer;
 }
-
 a:hover, a:active {
   color: #1b6ec2;
 }
@@ -176,7 +173,6 @@ ul > li:before {
 ol {
   counter-reset: section;
 }
-
 ol > li:before {
   counter-increment: section;
   content: counter(section) ".";
@@ -190,7 +186,6 @@ ol > li, ul > li {
   margin: 0 auto 0.4em 1.4em;
   line-height: 1.55;
 }
-
 ol > li > ol,
 ol > li > ul, ul > li > ol,
 ul > li > ul {
@@ -213,7 +208,6 @@ dt {
   font-weight: bold;
   margin-bottom: 0.4em;
 }
-
 @media screen and (max-width: 640px) {
   dt {
     width: 120px;
@@ -224,7 +218,6 @@ dd {
   margin-left: 200px;
   margin-bottom: 0.4em;
 }
-
 @media screen and (max-width: 640px) {
   dd {
     margin-left: 140px;
@@ -254,19 +247,14 @@ blockquote {
   margin: 0 2rem 1rem 0;
   border-left: 0.2em solid #dee2e6;
 }
-
 blockquote p {
   color: #868e96;
 }
-
 blockquote p:last-child {
   margin-bottom: 0;
 }
 
-a.footnote,
-.post p a.footnote,
-.post ol a.footnote,
-.post ul a.footnote {
+a.footnote, .post p a.footnote, .post ol a.footnote, .post ul a.footnote {
   margin: 0 3px;
   padding: 0 2px;
   font-size: 14px;
@@ -277,11 +265,7 @@ a.footnote,
   -webkit-transition: 0.2s ease-out all;
   text-decoration: none;
 }
-
-a.footnote:hover,
-.post p a.footnote:hover,
-.post ol a.footnote:hover,
-.post ul a.footnote:hover {
+a.footnote:hover, .post p a.footnote:hover, .post ol a.footnote:hover, .post ul a.footnote:hover {
   background: #f1f3f5;
 }
 
@@ -324,7 +308,6 @@ img {
 .center {
   text-align: center;
 }
-
 .center-image {
   margin: 0 auto;
   display: block;
@@ -345,7 +328,6 @@ img {
   padding: 20px 0;
   border-bottom: 1px solid #eee;
 }
-
 @media screen and (max-width: 640px) {
   .masthead {
     text-align: center;
@@ -358,7 +340,6 @@ img {
   height: 70px;
   margin-right: 15px;
 }
-
 @media screen and (max-width: 640px) {
   .site-avatar {
     float: none;
@@ -366,7 +347,6 @@ img {
     margin: 0 auto;
   }
 }
-
 .site-avatar img {
   border-radius: 5px;
 }
@@ -374,7 +354,6 @@ img {
 .site-info {
   float: left;
 }
-
 @media screen and (max-width: 640px) {
   .site-info {
     float: none;
@@ -398,7 +377,6 @@ img {
   color: #666;
   font-size: 16px;
 }
-
 @media screen and (max-width: 640px) {
   .site-description {
     margin: 3px 0;
@@ -411,7 +389,6 @@ nav {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 18px;
 }
-
 @media screen and (max-width: 640px) {
   nav {
     float: none;
@@ -420,7 +397,6 @@ nav {
     font-size: 16px;
   }
 }
-
 nav a {
   margin-left: 20px;
   color: #333;
@@ -428,7 +404,6 @@ nav a {
   font-weight: 300;
   letter-spacing: 1px;
 }
-
 @media screen and (max-width: 640px) {
   nav a {
     margin: 0 10px;
@@ -449,29 +424,24 @@ nav a {
 .post h1 {
   margin-bottom: .1em;
 }
-
 .post .date {
   font-weight: 300;
   font-size: 14px;
   color: #868e96;
   margin-right: 3px;
 }
-
 .post .tag {
   display: inline;
   font-weight: 300;
   font-size: 14px;
 }
-
 .post .tag li:before {
   content: '';
 }
-
 .post .tag li {
   display: inline;
   margin: 0;
 }
-
 .post .tag li > a {
   margin: 3px 3px 3px 0;
   padding: .5px 4px;
@@ -479,11 +449,9 @@ nav a {
   background-color: #e9ecef;
   border-radius: 3px;
 }
-
 .post .comments {
   margin-top: 10px;
 }
-
 .post .read-more {
   font-size: 15px;
 }
@@ -494,36 +462,29 @@ nav a {
   width: 100%;
   display: inline-block;
 }
-
 @media screen and (max-width: 640px) {
   .pagination {
     font-size: 14px;
   }
 }
-
 .pagination > .prev {
   float: left;
   width: 50%;
 }
-
 .pagination > .prev a {
   color: #868e96;
 }
-
 .pagination > .prev a:hover, .pagination > .prev a:focus {
   color: #495057;
 }
-
 .pagination > .next {
   float: right;
   text-align: right;
   width: 50%;
 }
-
 .pagination > .next a {
   color: #868e96;
 }
-
 .pagination > .next a:hover, .pagination > .next a:focus {
   color: #495057;
 }
@@ -531,7 +492,6 @@ nav a {
 .archive a {
   color: #343a40;
 }
-
 .archive time {
   color: #868e96;
   font-size: 14px;
@@ -542,14 +502,12 @@ nav a {
 .tags > .label > li:before {
   content: "";
 }
-
 .tags > .label > li {
   margin: 0;
   font-size: 14px;
   font-weight: 300;
   display: inline;
 }
-
 .tags > .label > li > a {
   display: inline-block;
   margin: 1px;
@@ -557,12 +515,10 @@ nav a {
   background-color: #e9ecef;
   border-radius: 3px;
 }
-
 .tags > .label > li > a span {
   float: left;
   padding: .5px 5px;
 }
-
 .tags > .label > li > a span.count {
   background-color: #dee2e6;
   border-radius: 0 3px 3px 0;
@@ -571,7 +527,6 @@ nav a {
 .tags > .tag a {
   color: #343a40;
 }
-
 .tags > .tag time {
   color: #868e96;
   font-size: 14px;
@@ -590,11 +545,9 @@ footer {
   padding: 20px 0;
   text-align: center;
 }
-
 footer p {
   font-size: 14px;
 }
-
 footer .svg-icon {
   display: block;
   font-size: 0;
@@ -602,17 +555,14 @@ footer .svg-icon {
   margin: 0;
   text-align: center;
 }
-
 footer .svg-icon li {
   display: inline-block;
   margin: 10px;
 }
-
 footer .svg-icon svg {
   height: 30px;
   width: 30px;
 }
-
 footer .svg-icon em {
   font-size: 18px;
   line-height: 1.5;
@@ -960,5 +910,3 @@ pre.highlight {
 }
 
 /* Literal.Number.Integer.Long */
-
-/*# sourceMappingURL=style.css.map */
