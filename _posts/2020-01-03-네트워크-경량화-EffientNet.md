@@ -9,7 +9,7 @@ comments: true
 이번에 소개해드릴 논문은 [EffientNet](https://arxiv.org/pdf/1905.11946.pdf)입니다. 
 EffientNet은 ICML 2019에 나왔고, 저자는 이전에 [MnasNet](https://arxiv.org/pdf/1807.11626.pdf)을 발표한 적이 있습니다.
 
-![fig1](https://user-images.githubusercontent.com/40621030/103470554-d225a080-4db6-11eb-81c9-d007e577ec0a.png  
+![fig0](https://user-images.githubusercontent.com/40621030/103470554-d225a080-4db6-11eb-81c9-d007e577ec0a.png)
 실험 결과  
 
 ## Introduction
