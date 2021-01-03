@@ -101,4 +101,4 @@ Main block은 은 squeeze-and-excitation을 추가한 mobile inverted bottleneck
 이 표에서 볼 수 있는 것과 같이 같은 Accuracy대비 FLOPS를 많이 줄일 수 있습니다.
 
 ![table3](https://user-images.githubusercontent.com/40621030/103470556-d356cd80-4db6-11eb-8b97-87c22ecfa9fd.png)
-기존에 있는 네트워크에 compund scaling을 사용하면 정확도가 높아진다.
+기존에 있는 네트워크에 compund scaling을 사용하면 정확도가 높아집니다.
