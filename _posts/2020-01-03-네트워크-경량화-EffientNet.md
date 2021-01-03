@@ -9,6 +9,9 @@ comments: true
 이번에 소개해드릴 논문은 [EffientNet](https://arxiv.org/pdf/1905.11946.pdf)입니다. 
 EffientNet은 ICML 2019에 나왔고, 저자는 이전에 [MnasNet](https://arxiv.org/pdf/1807.11626.pdf)을 발표한 적이 있습니다.
 
+![fig1](https://user-images.githubusercontent.com/40621030/103470554-d225a080-4db6-11eb-81c9-d007e577ec0a.png  
+실험 결과  
+
 ## Introduction
 ImageNet Dataset이 나온 이후에 여러 classification모델이 제안되었습니다.
 VGG이후 ResNet부터 네트워크를 깊게 쌓음으로써 정확도를 올리게 되었고, GPipe경우에는 base model보다 4배를 크게 만듬으로써 ImageNet에서 우승했습니다.
@@ -94,3 +97,5 @@ Main block은 은 squeeze-and-excitation을 추가한 mobile inverted bottleneck
 ![table2](https://user-images.githubusercontent.com/40621030/103459204-c7d0bb80-4d50-11eb-85bb-4b4dcd3e93b2.png)
 이 표에서 볼 수 있는 것과 같이 같은 Accuracy대비 FLOPS를 많이 줄일 수 있습니다.
 
+![table3](https://user-images.githubusercontent.com/40621030/103470556-d356cd80-4db6-11eb-8b97-87c22ecfa9fd.png)
+기존에 있는 네트워크에 compund scaling을 사용하면 정확도가 높아진다.
