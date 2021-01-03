@@ -40,7 +40,7 @@ $$\mathcal{F}^{L_i}$$는 $$\mathcal{F}^{i}$$가 $$L_i$$번 반복되는 notation
 
 <center>
 $$max_{d, w, r} \mathcal{Accuracy}(\mathcal{N}(d, w, r))$$  
-$$s.t \mathcal{N}(d, w, r) = \bigodot_{i=1..s} \hat{\mathcal{F}}_i^{d \cdot \hat{L}_i}(X_{r /cdot \hat{H}_i, r /cdot \hat{W}_i, w /cdot \hat{C}_i})$$  
+$$s.t \mathcal{N}(d, w, r) = \bigodot_{i=1..s} \hat{\mathcal{F}}_i^{d ⋅ \hat{L}_i}(X_{r ⋅ \hat{H}_i, r ⋅ \hat{W}_i, w /cdot \hat{C}_i})$$  
 
 $$Memory(\mathcal{N}) \leq target_memory$$  
 $$FLOPS(\mathcal{N}) \leq target_flops$$  
