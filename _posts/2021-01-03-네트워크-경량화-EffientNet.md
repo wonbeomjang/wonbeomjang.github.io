@@ -102,3 +102,7 @@ Main block은 은 squeeze-and-excitation을 추가한 mobile inverted bottleneck
 
 ![table3](https://user-images.githubusercontent.com/40621030/103470556-d356cd80-4db6-11eb-8b97-87c22ecfa9fd.png)
 기존에 있는 네트워크에 compund scaling을 사용하면 정확도가 높아집니다.
+
+## 마치며
+EffientNet은 기존의 새로운 네트워크의 구조를 제안한 것이 아닌 기존의 네트워크에서 부족한 것이 무엇이 있을까라는 의문을 갖고 연구를 했습니다.
+depth, width, resolution는 각각 독립적인 것이 아닌 의존적이다는 것을 의식하며 연구해 좋은 성과를 냈다는 것이 좋은 연구방법과 결과라고 생각합니다.
