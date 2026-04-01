@@ -37,3 +37,14 @@
 @use "font-awesome/brands";
 @use "font-awesome/solid";
 @use "font-awesome/regular";
+
+// Fix MathJax display math scrollbar
+mjx-container[jax="CHTML"] {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100%;
+}
+
+mjx-container[jax="CHTML"][display="true"] {
+  overflow: visible !important;
+}
