@@ -3,7 +3,7 @@ layout: page
 permalink: /repositories/
 title: Repositories
 description: github에 업로드 된 repository입니다.
-nav: true
+nav: false
 nav_order: 4
 ---
 

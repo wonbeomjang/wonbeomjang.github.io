@@ -3,7 +3,7 @@ layout: page
 title: Projects
 permalink: /projects/
 description: 그 동안 수행했던 프로젝트입니다.
-nav: true
+nav: false
 nav_order: 2
 display_categories: [toy-project]
 horizontal: false
