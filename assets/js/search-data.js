@@ -30,51 +30,7 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-triton-05-flash-attention-종합-프로젝트",
-        
-          title: "Triton 05: Flash Attention — 종합 프로젝트",
-        
-        description: "지금까지 배운 모든 기법을 종합하여 Flash Attention을 Triton으로 구현합니다.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2025/triton-05-flash-attention/";
-          
-        },
-      },{id: "post-triton-04-matrix-multiplication-2d-타일링과-autotune",
-        
-          title: "Triton 04: Matrix Multiplication — 2D 타일링과 Autotune",
-        
-        description: "딥러닝의 핵심 연산인 행렬 곱셈을 Triton으로 구현하며 2D 타일링, tl.dot, autotune을 학습합니다.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2025/triton-04-matmul/";
-          
-        },
-      },{id: "post-triton-03-rmsnorm-llm에서-쓰이는-실전-커널",
-        
-          title: "Triton 03: RMSNorm — LLM에서 쓰이는 실전 커널",
-        
-        description: "LLaMA, Mistral, Gemma 등 최신 LLM에서 사용하는 RMSNorm을 Triton으로 구현합니다.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2025/triton-03-rmsnorm/";
-          
-        },
-      },{id: "post-triton-02-fused-softmax-커널-퓨전과-reduction",
-        
-          title: "Triton 02: Fused Softmax — 커널 퓨전과 Reduction",
-        
-        description: "Softmax를 하나의 커널로 퓨전하여 메모리 접근을 최소화하는 방법을 학습합니다.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2025/triton-02-fused-softmax/";
-          
-        },
-      },{id: "post-triton-01-vector-addition-triton-커널-기초",
+        },{id: "post-triton-01-vector-addition-triton-커널-기초",
         
           title: "Triton 01: Vector Addition — Triton 커널 기초",
         
@@ -82,7 +38,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2025/triton-01-vector-add/";
+            window.location.href = "/blog/2026/triton-01-vector-add/";
           
         },
       },{id: "post-triton-00-gpu-기초-triton을-시작하기-전에-알아야-할-것들",
@@ -93,7 +49,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2025/triton-00-gpu-basics/";
+            window.location.href = "/blog/2026/triton-00-gpu-basics/";
           
         },
       },{id: "post-lora-vs-full-fine-tuning-an-illusion-of-equivalence",
