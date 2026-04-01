@@ -96,9 +96,9 @@ ninja.data = [{
             window.location.href = "/blog/2024/llm-as-a-meta-judge/";
           
         },
-      },{id: "post-2023-review",
+      },{id: "post-2023년-회고록",
         
-          title: "2023 Review",
+          title: "2023년 회고록",
         
         description: "",
         section: "Posts",
