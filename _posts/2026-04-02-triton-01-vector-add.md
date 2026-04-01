@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Triton 01: Vector Addition — Triton 커널 기초"
-date: 2025-04-01 01:00:00 +0900
+date: 2026-04-02 01:00:00 +0900
 description: 가장 간단한 GPU 커널인 벡터 덧셈을 Triton으로 구현하며 핵심 개념을 학습합니다.
 categories: [triton, gpu]
 tags: [triton, gpu, cuda, deep-learning]

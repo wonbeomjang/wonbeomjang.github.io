@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Triton 02: Fused Softmax — 커널 퓨전과 Reduction"
-date: 2025-04-01 02:00:00 +0900
+date: 2026-04-02 02:00:00 +0900
 description: Softmax를 하나의 커널로 퓨전하여 메모리 접근을 최소화하는 방법을 학습합니다.
 categories: [triton, gpu]
 tags: [triton, gpu, softmax, kernel-fusion]
