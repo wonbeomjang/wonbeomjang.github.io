@@ -112,13 +112,35 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ### Online Softmax 변수 초기화
 
+- `m_i`: 행별 최대값 추적 (처음엔 -inf → 점점 커짐)
+- `l_i`: 행별 softmax 분모 추적 (처음엔 0 → 점점 커짐)
+- `acc`: 최종 출력 누적기 (처음엔 0 → P@V 결과가 점점 누적)
+- 이 세 변수가 **Online Softmax의 핵심** — 전체 S 행렬 없이 softmax 계산
+
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet04_Online_Softmax_%EB%B3%80%EC%88%98_%EC%B4%88%EA%B8%B0%ED%99%94.py"></script>
 
 ### 내부 루프 — Online Softmax 업데이트 (핵심!)
 
+각 K/V 블록에 대해 다음을 수행합니다:
+
+1. **K 블록 로드** → `S = Q @ K^T * scale` 계산 (attention score 타일)
+2. **Causal mask 적용** → 미래 토큰 차단 (`-inf`로 마스킹)
+3. **Online Softmax 업데이트**:
+   - `m_new = max(m_old, max(S))` — 전체 최대값 갱신
+   - `alpha = exp(m_old - m_new)` — **이전 결과 보정 계수** (max가 바뀌면 이전 exp 값이 틀어지므로)
+   - `l_i = l_i * alpha + sum(exp(S - m_new))` — 분모 업데이트
+   - `acc = acc * alpha` — 이전 출력 보정
+4. **V 블록 로드** → `acc += P @ V` 누적
+5. `p.to(v.dtype)`: FP32 → FP16 변환 (`tl.dot`은 같은 타입 필요)
+
+매 반복마다 `acc`에 결과가 누적되므로 **S 전체를 저장할 필요가 없습니다.**
+
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet05_%EB%82%B4%EB%B6%80_%EB%A3%A8%ED%94%84___Online_Softmax_%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8__%ED%95%B5.py"></script>
 
 ### 최종 정규화
+
+- `l_i`: 각 행의 softmax 분모 (Σ exp) → 마지막에 한 번만 나눔
+- FP32 → FP16 변환 후 저장
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet06_%EC%B5%9C%EC%A2%85_%EC%A0%95%EA%B7%9C%ED%99%94.py"></script>
 
