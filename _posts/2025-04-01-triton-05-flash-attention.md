@@ -29,11 +29,7 @@ $$O = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d}}\right) \cdot V$$
 
 ### Standard Attention의 문제
 
-```python
-S = Q @ K.T / sqrt(d)   # (N, N) — O(N²) 메모리!
-P = softmax(S)           # (N, N)
-O = P @ V               # (N, d)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet01_Standard_Attention%EC%9D%98_%EB%AC%B8%EC%A0%9C.py"></script>
 
 시퀀스 길이 N=4096, float16이면:
 - S 행렬 크기: 4096 × 4096 × 2 bytes = **32MB**
@@ -96,24 +92,7 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 ### 단계별 의사코드
 
-```python
-for q_block in Q_blocks:          # 각 프로그램
-    m = -inf, l = 0, O = 0
-
-    for k_block, v_block in zip(K_blocks, V_blocks):  # 내부 루프
-        S = q_block @ k_block.T * scale
-
-        # Online softmax 업데이트
-        m_new = max(m, rowmax(S))
-        correction = exp(m - m_new)
-        P = exp(S - m_new)
-
-        l = l * correction + rowsum(P)
-        O = O * correction + P @ v_block
-        m = m_new
-
-    O = O / l  # 최종 정규화
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet02_%EB%8B%A8%EA%B3%84%EB%B3%84_%EC%9D%98%EC%82%AC%EC%BD%94%EB%93%9C.py"></script>
 
 
 ---
@@ -124,11 +103,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/causal_mask.png" class="img-fluid rounded z-depth-1" %}
 
-```python
-if IS_CAUSAL:
-    causal_mask = offs_m[:, None] >= offs_n[None, :]
-    s = tl.where(causal_mask, s, float("-inf"))
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet03_Causal_Masking.py"></script>
 
 
 ---
@@ -137,48 +112,15 @@ if IS_CAUSAL:
 
 ### Online Softmax 변수 초기화
 
-```python
-    m_i = tl.full([BLOCK_M], float("-inf"), dtype=tl.float32)  # running max
-    l_i = tl.full([BLOCK_M], 0.0, dtype=tl.float32)           # running sum
-    acc = tl.zeros([BLOCK_M, BLOCK_D], dtype=tl.float32)       # 출력 누적기
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet04_Online_Softmax_%EB%B3%80%EC%88%98_%EC%B4%88%EA%B8%B0%ED%99%94.py"></script>
 
 ### 내부 루프 — Online Softmax 업데이트 (핵심!)
 
-```python
-    for start_n in range(0, k_range, BLOCK_N):
-        # K 블록 로드 후 S = Q @ K^T * scale
-        k = tl.load(k_base + ...)
-        s = tl.dot(q, tl.trans(k)) * scale
-
-        # Causal mask 적용
-        if IS_CAUSAL:
-            causal_mask = offs_m[:, None] >= offs_n[None, :]
-            s = tl.where(causal_mask, s, float("-inf"))
-
-        # Online Softmax 업데이트
-        m_ij = tl.max(s, axis=1)
-        m_new = tl.maximum(m_i, m_ij)
-
-        alpha = tl.exp(m_i - m_new)            # 보정 계수
-        p = tl.exp(s - m_new[:, None])
-
-        l_i = l_i * alpha + tl.sum(p, axis=1)  # 분모 업데이트
-        acc = acc * alpha[:, None]              # 이전 출력 보정
-
-        # P @ V 누적
-        v = tl.load(v_base + ...)
-        acc += tl.dot(p.to(v.dtype), v)
-
-        m_i = m_new
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet05_%EB%82%B4%EB%B6%80_%EB%A3%A8%ED%94%84___Online_Softmax_%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8__%ED%95%B5.py"></script>
 
 ### 최종 정규화
 
-```python
-    acc = acc / l_i[:, None]
-    tl.store(o_base + ..., acc.to(tl.float16), mask=o_mask)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet06_%EC%B5%9C%EC%A2%85_%EC%A0%95%EA%B7%9C%ED%99%94.py"></script>
 
 
 ---
@@ -204,3 +146,10 @@ if IS_CAUSAL:
 - **정확도**: PyTorch standard attention과 거의 동일한 결과
 - **속도**: 시퀀스 길이가 길수록 (1024+) 큰 속도 향상
 - **메모리**: O(N²) → O(N)으로 극적인 메모리 절약
+
+
+---
+
+## 전체 코드
+
+<script src="https://gist.github.com/wonbeomjang/0f4970e5dbed9af5037d796fa395727f.js?file=flash_attention.py"></script>

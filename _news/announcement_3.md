@@ -5,4 +5,4 @@ inline: true
 related_posts: false
 ---
 
-[DPSGAN](https://link.springer.com/article/10.1007/s00138-021-01258-7) 2저자 Machine Vision and Applications 등재
+[DPSGAN](https://link.springer.com/article/10.1007/s00138-021-01260-3) published in Machine Vision and Applications.

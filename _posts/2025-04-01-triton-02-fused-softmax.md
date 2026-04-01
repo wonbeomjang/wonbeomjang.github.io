@@ -57,51 +57,14 @@ Triton에서는 `tl.max(x, axis=0)`, `tl.sum(x, axis=0)` 으로 간단하게 수
 
 ### 커널 함수
 
-```python
-@triton.jit
-def fused_softmax_kernel(
-    input_ptr, output_ptr,
-    input_row_stride, output_row_stride,
-    n_cols, BLOCK_SIZE: tl.constexpr,
-):
-    row_idx = tl.program_id(axis=0)
-    row_start_ptr = input_ptr + row_idx * input_row_stride
-
-    col_offsets = tl.arange(0, BLOCK_SIZE)
-    mask = col_offsets < n_cols
-
-    # 한 행 전체를 SRAM에 로드
-    row = tl.load(row_start_ptr + col_offsets, mask=mask, other=-float("inf"))
-
-    # Fused Softmax 계산 (전부 SRAM에서)
-    row_max = tl.max(row, axis=0)       # 1. 최대값
-    row = row - row_max                 # 2. 수치 안정성
-    numerator = tl.exp(row)             # 3. 지수 함수
-    denominator = tl.sum(numerator, axis=0)  # 4. 합계
-    softmax_output = numerator / denominator  # 5. 나누기
-
-    # 결과를 1번만 Global Memory에 저장
-    output_row_start_ptr = output_ptr + row_idx * output_row_stride
-    tl.store(output_row_start_ptr + col_offsets, softmax_output, mask=mask)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=02_fused_softmax_snippet01_%EC%BB%A4%EB%84%90_%ED%95%A8%EC%88%98.py"></script>
 
 핵심: **max → exp → sum → 나누기**를 전부 SRAM 안에서 처리.
 PyTorch는 이 4단계를 각각 별도 커널로 실행하므로 매번 Global Memory를 왕복합니다.
 
 ### 래퍼 함수
 
-```python
-def fused_softmax(x: torch.Tensor) -> torch.Tensor:
-    n_rows, n_cols = x.shape
-    output = torch.empty_like(x)
-    BLOCK_SIZE = triton.next_power_of_2(n_cols)
-    grid = (n_rows,)
-
-    fused_softmax_kernel[grid](
-        x, output, x.stride(0), output.stride(0), n_cols, BLOCK_SIZE=BLOCK_SIZE,
-    )
-    return output
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=02_fused_softmax_snippet02_%EB%9E%98%ED%8D%BC_%ED%95%A8%EC%88%98.py"></script>
 
 
 ---
@@ -124,3 +87,10 @@ def fused_softmax(x: torch.Tensor) -> torch.Tensor:
 
 커널 퓨전 덕분에 메모리 대역폭을 절약하여,
 특히 열(column) 수가 클수록 PyTorch 대비 성능 향상이 눈에 띕니다.
+
+
+---
+
+## 전체 코드
+
+<script src="https://gist.github.com/wonbeomjang/0f4970e5dbed9af5037d796fa395727f.js?file=fused_softmax.py"></script>

@@ -5,4 +5,4 @@ inline: true
 related_posts: false
 ---
 
-중앙대학교 입학
+Enrolled in Chung-Ang University, Department of Software Engineering.

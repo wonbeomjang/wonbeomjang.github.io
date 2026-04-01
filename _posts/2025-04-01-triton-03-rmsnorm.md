@@ -54,62 +54,15 @@ RMSNorm이 LLM에서 선호되는 이유:
 
 ### PyTorch 참조 구현
 
-```python
-def pytorch_rmsnorm(x, weight, eps=1e-6):
-    rms = torch.sqrt(x.pow(2).mean(dim=-1, keepdim=True) + eps)
-    return (x / rms) * weight
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=03_rmsnorm_snippet01_PyTorch_%EC%B0%B8%EC%A1%B0_%EA%B5%AC%ED%98%84.py"></script>
 
 ### 커널 함수
 
-```python
-@triton.jit
-def rmsnorm_kernel(
-    input_ptr, weight_ptr, output_ptr,
-    stride, n_cols, eps,
-    BLOCK_SIZE: tl.constexpr,
-):
-    row_idx = tl.program_id(axis=0)
-    row_start = input_ptr + row_idx * stride
-    out_start = output_ptr + row_idx * stride
-
-    col_offsets = tl.arange(0, BLOCK_SIZE)
-    mask = col_offsets < n_cols
-
-    row = tl.load(row_start + col_offsets, mask=mask, other=0.0)
-    weight = tl.load(weight_ptr + col_offsets, mask=mask, other=0.0)
-
-    # 1단계: 제곱합 (reduction)
-    sq_sum = tl.sum(row * row, axis=0)
-
-    # 2단계: RMS 계산
-    mean_sq = sq_sum / n_cols
-    rms = tl.sqrt(mean_sq + eps)
-
-    # 3단계: 정규화 + 스케일링
-    normed = row / rms
-    output = normed * weight
-
-    tl.store(out_start + col_offsets, output, mask=mask)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=03_rmsnorm_snippet02_%EC%BB%A4%EB%84%90_%ED%95%A8%EC%88%98.py"></script>
 
 ### 래퍼 함수
 
-```python
-def triton_rmsnorm(x, weight, eps=1e-6):
-    orig_shape = x.shape
-    x_2d = x.view(-1, orig_shape[-1])    # (batch, seq, hidden) → (batch*seq, hidden)
-    n_rows, n_cols = x_2d.shape
-    output = torch.empty_like(x_2d)
-
-    BLOCK_SIZE = triton.next_power_of_2(n_cols)
-    grid = (n_rows,)
-
-    rmsnorm_kernel[grid](
-        x_2d, weight, output, x_2d.stride(0), n_cols, eps, BLOCK_SIZE=BLOCK_SIZE,
-    )
-    return output.view(orig_shape)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=03_rmsnorm_snippet03_%EB%9E%98%ED%8D%BC_%ED%95%A8%EC%88%98.py"></script>
 
 
 ---
@@ -133,3 +86,10 @@ def triton_rmsnorm(x, weight, eps=1e-6):
 
 PyTorch의 수동 RMSNorm 구현 대비 커널 퓨전으로 인한 성능 향상이 나타납니다.
 hidden_size가 클수록(2048, 4096 등) 차이가 명확합니다.
+
+
+---
+
+## 전체 코드
+
+<script src="https://gist.github.com/wonbeomjang/0f4970e5dbed9af5037d796fa395727f.js?file=rmsnorm.py"></script>

@@ -5,4 +5,4 @@ inline: true
 related_posts: false
 ---
 
-SK Telecom ML/DL Engineer
+Joined SK Telecom as an LLM Research Engineer.

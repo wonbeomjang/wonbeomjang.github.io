@@ -50,14 +50,7 @@ related_posts: true
 행렬 곱셈 `C = A × B`에서 A(M×K), B(K×N)일 때, K가 크면 한 번에 SRAM에 못 올립니다.
 그래서 K를 `BLOCK_SIZE_K`씩 잘라서 반복하며, 부분 결과를 누적합니다.
 
-```python
-acc = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
-
-for k in range(0, K, BLOCK_SIZE_K):
-    a = tl.load(A_block)  # (BLOCK_SIZE_M, BLOCK_SIZE_K)
-    b = tl.load(B_block)  # (BLOCK_SIZE_K, BLOCK_SIZE_N)
-    acc += tl.dot(a, b)   # 블록 행렬 곱 → 텐서 코어 사용!
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=04_matmul_snippet01_K_%EC%B0%A8%EC%9B%90_%EB%A3%A8%ED%94%84.py"></script>
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/k_loop_pointer.png" class="img-fluid rounded z-depth-1" %}
 
@@ -75,17 +68,7 @@ for k in range(0, K, BLOCK_SIZE_K):
 
 블록 크기에 따라 성능이 크게 달라집니다. Autotune은 여러 설정을 실행해보고 가장 빠른 것을 선택합니다:
 
-```python
-@triton.autotune(
-    configs=[
-        triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 64,
-                        'GROUP_SIZE_M': 8}, num_stages=3, num_warps=8),
-        triton.Config({'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32,
-                        'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-    ],
-    key=['M', 'N', 'K'],
-)
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=04_matmul_snippet02_triton_autotune__%EC%9D%B4%EB%9E%80.py"></script>
 
 
 ---
@@ -94,20 +77,7 @@ for k in range(0, K, BLOCK_SIZE_K):
 
 ### K 차원 루프 (핵심)
 
-```python
-    accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
-
-    for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-        k_mask = offs_k < K - k * BLOCK_SIZE_K
-
-        a = tl.load(a_ptrs, mask=k_mask[None, :], other=0.0)
-        b = tl.load(b_ptrs, mask=k_mask[:, None], other=0.0)
-
-        accumulator += tl.dot(a, b)          # 텐서 코어!
-
-        a_ptrs += BLOCK_SIZE_K * stride_ak   # 다음 K 블록으로 포인터 이동
-        b_ptrs += BLOCK_SIZE_K * stride_bk
-```
+<script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=04_matmul_snippet03_K_%EC%B0%A8%EC%9B%90_%EB%A3%A8%ED%94%84__%ED%95%B5%EC%8B%AC.py"></script>
 
 ### 이전 튜토리얼과의 차이점
 
@@ -128,3 +98,10 @@ for k in range(0, K, BLOCK_SIZE_K):
 
 cuBLAS(`torch.matmul`)는 수십 년간 최적화된 라이브러리입니다.
 Triton으로 cuBLAS의 **80~90%** 성능에 도달하는 것이 목표입니다.
+
+
+---
+
+## 전체 코드
+
+<script src="https://gist.github.com/wonbeomjang/0f4970e5dbed9af5037d796fa395727f.js?file=matmul.py"></script>

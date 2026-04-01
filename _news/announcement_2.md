@@ -5,4 +5,4 @@ inline: true
 related_posts: false
 ---
 
-중앙대학교 [CVML Lab.](https://sites.google.com/view/cau-cvml/) 학부연구생
+Joined [CVML Lab.](https://sites.google.com/view/cau-cvml/) at Chung-Ang University as an undergraduate research intern.
