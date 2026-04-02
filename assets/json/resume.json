@@ -14,9 +14,9 @@
       "startDate": "2024-01",
       "summary": "A.X Foundation Model Development & LLM Benchmarking",
       "highlights": [
-        "Architected specialized Korean STEM language datasets for large-scale model training",
-        "Developed proprietary in-house STEM benchmarks to evaluate model performance",
-        "Developed Korean language understanding train data. Improved model performance over 15%p",
+        "Designed and constructed post-training datasets for large-scale model training",
+        "Developed proprietary in-house benchmarks to evaluate model performance",
+        "Developed Korean language understanding train data and improved model performance",
         "Development of Telco domain-specific benchmarks",
         "Development of Korean safety benchmarks and LLM-as-a-Judge models",
         "Development and operation of in-house benchmarking systems"
@@ -115,7 +115,7 @@
       "startDate": "2025-08",
       "description": "Data design and construction for the 500B-parameter A.X K1 Foundation Model",
       "highlights": [
-        "Designed and constructed STEM datasets",
+        "Designed and constructed post-training datasets",
         "Designed and constructed Korean language understanding datasets"
       ]
     },
@@ -125,9 +125,9 @@
       "endDate": "2025-10",
       "description": "Built TelcoLLM in collaboration with OpenAI and Anthropic",
       "highlights": [
-        "Achieved agent satisfaction score of 90.1",
+        "Achieved high agent satisfaction score",
         "TelBench: Designed and built Automatic Evaluation & LLM-as-a-Judge for Telco capability assessment",
-        "LLM-as-a-Judge Spearman Correlation: 0.78 / Kappa Coefficient: 0.33",
+        "Designed and built LLM-as-a-Judge evaluation with strong correlation metrics",
         "AICC deployment: LLM commercialized for AICC in-call RAG and post-call analysis"
       ]
     },
@@ -139,7 +139,7 @@
       "highlights": [
         "Achieved equal or superior performance in both Korean and English compared to proprietary models such as GPT-4.1 and Claude Sonnet 3.7",
         "Applied SFT + PPO reinforcement learning on small models including Gemma 4B and Llama 3.1 8B",
-        "Outperformed proprietary large models with small open models (Aggregate Score 0.80, superior to GPT-4o)"
+        "Outperformed proprietary large models with small open models"
       ]
     }
   ],

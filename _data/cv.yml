@@ -18,9 +18,9 @@
       year: 2024.01 - 현재
       description:
         - "A.X Foundation Model Development"
-        - "Architected specialized Korean STEM language datasets for large-scale model training."
-        - "Developed proprietary in-house STEM benchmarks to evaluate model performance."
-        - "Developed Korean language understanding train data. Improved model performance over 15%p."
+        - "Designed and constructed post-training datasets for large-scale model training."
+        - "Developed proprietary in-house benchmarks to evaluate model performance."
+        - "Developed Korean language understanding train data and improved model performance."
         - "LLM Benchmarking"
         - "Development of Telco domain-specific benchmarks."
         - "Development of Korean safety benchmarks and LLM-as-a-Judge models."
@@ -65,15 +65,15 @@
       year: 2025.08 - 현재
       description:
         - "500B급 모델인 A.X K1 Foundation Model 데이터 설계 및 제작"
-        - "STEM 데이터 설계 및 제작"
+        - "Post-training data design and construction"
         - "한국어 언어이해관련 데이터 설계 및 제작"
     - title: TelcoLLM, TelBench, TelAgentBench 구축
       year: 2024.01 - 2025.10
       description:
         - "OpenAI 및 Anthropic와 협업을 통한 TelcoLLM 구축"
-        - "상담사 만족도 90.1점 달성"
+        - "Achieved high agent satisfaction score"
         - "TelBench 구축: Telco 능력을 평가하기 위한 Automatic Evaluation & LLM-as-a-Judge 설계 및 구축"
-        - "LLM-as-a-Judge Spearman Correlation: 0.78 / Kappa Coefficient: 0.33 확보"
+        - "Designed and built LLM-as-a-Judge evaluation with strong correlation metrics"
         - "AICC 탑재: 개발된 LLM이 AICC in-call RAG, post-call 분석용으로 상용화"
     - title: "Smaller, Safer, Stronger: SK Telecom Tunes Gemma 4B for Multilingual Customer Support Moderation"
       year: 2024.11 - 2025.07
@@ -81,7 +81,7 @@
         - "채팅·이메일의 유해·부적절 콘텐츠 탐지를 위한 다국어 LLM 모델 개발"
         - "기존 GPT-4.1, Claude Sonnet 3.7 등 독점 모델 대비 한국어·영어 모두에서 동등 이상 성능 확보"
         - "Gemma 4B, Llama 3.1 8B등 소형 모델을 기반으로 SFT + PPO 강화학습 적용"
-        - "소형 오픈모델로 독점 대형 모델 성능 초과 (Aggregate Score 0.80, GPT-4o 대비 우수)"
+        - "Outperformed proprietary large models with small open models"
 
 - title: Publications
   type: time_table
