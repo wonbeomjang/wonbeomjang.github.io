@@ -194,10 +194,18 @@ $$
 
 # Experiment
 
-Unsupervised 방법들 중에서는 가장 좋은 성능을 보인다.
-
 <p align="center">
     <img src="/assets/post/image/unsupervised-image-restoration/Untitled%204.png" width="70%">
     <img src="/assets/post/image/unsupervised-image-restoration/Untitled%205.png" width="70%">
     <img src="/assets/post/image/unsupervised-image-restoration/Untitled%206.png" width="70%">
 </p>
+
+**Unsupervised 방법들 중에서 SOTA 성능**을 달성했다. 핵심 관찰:
+
+- **Supervised 방법 대비**: 당연히 supervised 방법(pair 데이터 사용)보다는 성능이 낮다. 하지만 pair 데이터가 없는 현실적인 상황을 고려하면 의미있는 결과이다.
+- **CycleGAN 대비**: CycleGAN 기반 방법들은 domain boundary가 불명확한 image restoration에서 artifact이 발생하기 쉬운데, 이 논문은 semantic/texture representation 분리와 background consistency loss로 이를 완화했다.
+- **질적 비교**: 시각적으로 보면, 기존 unsupervised 방법들은 noise를 제거하면서 texture detail도 함께 사라지는 경우가 많은데, 이 논문의 방법은 noise는 제거하면서 semantic structure를 잘 보존한다. 이는 dual domain constraint가 두 representation을 효과적으로 분리했기 때문이다.
+
+## 이 논문의 의의
+
+Unsupervised image restoration이라는 어려운 문제에 대해, CycleGAN의 한계(불명확한 domain boundary, weak representation, poor generalization)를 체계적으로 분석하고, 각 문제에 대응하는 solution(background consistency loss, adversarial domain adaptation, detangling representation)을 제안한 것이 핵심 기여이다. 다만 loss가 7개로 매우 많아서 hyperparameter tuning이 어려울 수 있다는 점은 실용적 한계이다.
