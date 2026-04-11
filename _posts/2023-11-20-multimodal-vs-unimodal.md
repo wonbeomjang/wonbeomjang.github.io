@@ -134,18 +134,28 @@ Interactive Emotional Dyadic Motion Capture 데이터셋을 사용했습니다. 
 
 ### 결과
 
-1. **Modalities가 많을수록 정확도가 향상됩니다.**
-2. **Sample이 적을 경우, subset modalities가 더 나은 성능을 보일 수 있습니다.**
-3. **Multi-modal 학습은 더 나은 latent space quality를 제공합니다.**
-
 <p align="center">
     <img src="/assets/post/image/multi-modal-vs-uni-modal/table3.png" width="80%">
 </p>
+
+실험 결과에서 다음과 같은 핵심 관찰을 할 수 있습니다.
+
+**1. Modalities가 많을수록 정확도가 향상됩니다.**
+
+Text+Video+Audio 3개를 모두 사용했을 때 가장 높은 정확도를 달성합니다. 이는 Theorem 1의 예측과 일치합니다. 더 많은 modality를 사용할수록 latent space quality $$\eta(g)$$가 좋아져서 population risk가 줄어듭니다.
+
+**2. 하지만 Sample이 적을 경우, subset modalities가 더 나은 성능을 보일 수 있습니다.**
+
+데이터가 적을 때는 오히려 modality 수를 줄이는 것이 유리할 수 있습니다. Theorem 1의 $$O(1/m)$$ 항이 커지면서, 더 많은 modality에 의한 model complexity 증가가 이점을 상쇄하기 때문입니다. 직관적으로, 적은 데이터로 복잡한 multi-modal 관계를 학습하는 것은 overfitting을 유발할 수 있습니다.
+
+**3. Multi-modal 학습은 더 나은 latent space quality를 제공합니다.**
+
+같은 데이터 크기에서 multi-modal의 latent space quality가 uni-modal보다 일관되게 높았습니다. 이는 서로 다른 modality가 상호 보완적인 정보를 제공하여 더 풍부한 representation을 학습할 수 있기 때문입니다. 예를 들어, "행복한" 감정을 판단할 때 텍스트만으로는 반어법을 구분하기 어렵지만, 음성의 톤이나 표정을 함께 보면 더 정확한 판단이 가능합니다.
 
 ---
 
 ## 결론
 
-- 데이터 크기가 충분히 클 때 multi-modal을 사용하는 것이 유리합니다.
-- multi-modal 학습은 더 정확한 latent space representation을 학습할 수 있습니다.
-- 이론적 분석과 실험 결과 모두 이를 뒷받침합니다.
+- 데이터가 충분히 많을 때 multi-modal을 사용하는 것이 유리합니다.
+- Multi-modal 학습의 이점은 "더 정확한 latent space representation"에서 비롯되며, 이를 이론적으로 증명했습니다.
+- 다만 데이터가 적을 때는 modality 수를 줄이는 것이 오히려 나을 수 있으므로, **데이터 크기와 modality 수의 trade-off**를 고려해야 합니다.
