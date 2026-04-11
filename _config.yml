@@ -226,6 +226,11 @@ defaults:
       path: "assets"
     values:
       sitemap: false
+  - scope:
+      path: ""
+      type: "jekyll-archives"
+    values:
+      sitemap: false
 
 sass:
   style: compressed
