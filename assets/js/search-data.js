@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-triton-05-flash-attention-종합-프로젝트",
+        },{id: "post-",
+        
+          title: "",
+        
+        description: "",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/2022-05-09-fitnet/";
+          
+        },
+      },{id: "post-triton-05-flash-attention-종합-프로젝트",
         
           title: "Triton 05: Flash Attention — 종합 프로젝트",
         
@@ -100,7 +111,7 @@ ninja.data = [{
         
           title: "LoRA vs Full Fine-tuning: An Illusion of Equivalence",
         
-        description: "",
+        description: "LoRA와 Full Fine-tuning의 차이점 분석 논문 리뷰",
         section: "Posts",
         handler: () => {
           
@@ -122,7 +133,7 @@ ninja.data = [{
         
           title: "Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method 설명",
         
-        description: "",
+        description: "LLM 사전학습 데이터 탐지 방법론 논문 리뷰",
         section: "Posts",
         handler: () => {
           
@@ -133,7 +144,7 @@ ninja.data = [{
         
           title: "META-REWARDING LANGUAGE MODELS: Self-Improving Alignment with LLM-as-a-Meta-Judge 설명",
         
-        description: "",
+        description: "LLM-as-a-Meta-Judge 논문 리뷰",
         section: "Posts",
         handler: () => {
           
@@ -144,7 +155,7 @@ ninja.data = [{
         
           title: "2023년 회고록",
         
-        description: "",
+        description: "2023년을 돌아보며 - 뉴로클 인턴부터 SK텔레콤 합격까지",
         section: "Posts",
         handler: () => {
           
@@ -155,7 +166,7 @@ ninja.data = [{
         
           title: "Keras 3.0 설명",
         
-        description: "",
+        description: "Keras 3.0의 주요 변경사항과 멀티 백엔드 지원 설명",
         section: "Posts",
         handler: () => {
           
@@ -188,7 +199,7 @@ ninja.data = [{
         
           title: "FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning",
         
-        description: "",
+        description: "FlashAttention-2 논문 리뷰와 성능 분석",
         section: "Posts",
         handler: () => {
           
@@ -419,7 +430,7 @@ ninja.data = [{
         
           title: "Pytorch Tensorrt 적용",
         
-        description: "",
+        description: "PyTorch 모델을 TensorRT로 변환하는 방법",
         section: "Posts",
         handler: () => {
           
@@ -430,29 +441,18 @@ ninja.data = [{
         
           title: "Pytorch Quantization 적용",
         
-        description: "",
+        description: "PyTorch Quantization 적용 방법 가이드",
         section: "Posts",
         handler: () => {
           
             window.location.href = "/blog/2022/quantization-pytorch/";
           
         },
-      },{id: "post-fitnet",
-        
-          title: "FitNet",
-        
-        description: "",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2022/fitnet/";
-          
-        },
       },{id: "post-osam-3-이제-끝나는-건가",
         
           title: "[OSAM] 3. 이제 끝나는 건가?",
         
-        description: "",
+        description: "군장병 공개 SW 해커톤 프로젝트 3편",
         section: "Posts",
         handler: () => {
           
@@ -463,7 +463,7 @@ ninja.data = [{
         
           title: "[OSAM] 2. computer vision 개발 과정",
         
-        description: "",
+        description: "군장병 공개 SW 해커톤 프로젝트 2편",
         section: "Posts",
         handler: () => {
           
@@ -474,7 +474,7 @@ ninja.data = [{
         
           title: "[OSAM] 1. 팀 결정 및 주제&amp;시스템 설계",
         
-        description: "",
+        description: "군장병 공개 SW 해커톤 프로젝트 1편",
         section: "Posts",
         handler: () => {
           
@@ -485,7 +485,7 @@ ninja.data = [{
         
           title: "[AutoML] NASNet",
         
-        description: "",
+        description: "NASNet 논문 리뷰와 Neural Architecture Search 이해",
         section: "Posts",
         handler: () => {
           
@@ -496,7 +496,7 @@ ninja.data = [{
         
           title: "[Python] 우선순위 큐 (heapq vs priority queue)",
         
-        description: "",
+        description: "Python heapq와 PriorityQueue 비교 분석",
         section: "Posts",
         handler: () => {
           
@@ -507,7 +507,7 @@ ninja.data = [{
         
           title: "학부생이 본 SENet",
         
-        description: "",
+        description: "SENet(Squeeze-and-Excitation Networks) 논문 리뷰",
         section: "Posts",
         handler: () => {
           
@@ -518,7 +518,7 @@ ninja.data = [{
         
           title: "[네트워크 경량화] EfficientNet",
         
-        description: "",
+        description: "EfficientNet 논문 리뷰와 네트워크 경량화 방법론",
         section: "Posts",
         handler: () => {
           
@@ -529,7 +529,7 @@ ninja.data = [{
         
           title: "시각장애인을 위한 약학정보제공 서비스 기획기",
         
-        description: "",
+        description: "시각장애인을 위한 약학정보 제공 앱 개발기",
         section: "Posts",
         handler: () => {
           
@@ -540,7 +540,7 @@ ninja.data = [{
         
           title: "학부생이 보는 GAN",
         
-        description: "",
+        description: "GAN의 기본 개념과 학부생 관점에서의 이해",
         section: "Posts",
         handler: () => {
           
@@ -640,6 +640,20 @@ ninja.data = [{
         section: 'Socials',
         handler: () => {
           window.open("https://github.com/wonbeomjang", "_blank");
+        },
+      },{
+        id: 'social-linkedin',
+        title: 'LinkedIn',
+        section: 'Socials',
+        handler: () => {
+          window.open("https://www.linkedin.com/in/wonbeom-jang", "_blank");
+        },
+      },{
+        id: 'social-scholar',
+        title: 'Google Scholar',
+        section: 'Socials',
+        handler: () => {
+          window.open("https://scholar.google.com/citations?user=8tUyWWEAAAAJ", "_blank");
         },
       },{
         id: 'social-rss',
