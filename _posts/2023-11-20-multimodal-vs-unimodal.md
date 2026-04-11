@@ -2,7 +2,7 @@
 layout: post
 title: "What Makes Multi-modal Learning Better than Single (Provably)"
 date: 2023-11-20 00:00:00 +0900
-description: Multimodal vs Unimodal 성능 비교 논문 리뷰 (NeurIPS 2021)
+description: "Multimodal vs Unimodal 이론적 비교 논문 리뷰 — Latent Representation Quality 관점 (NeurIPS 2021)"
 categories: [paper]
 tags: [multi-modal, paper]
 giscus_comments: true
@@ -13,149 +13,242 @@ related_posts: true
 
 # Introduction
 
-우리 세상에는 다양한 modality가 존재합니다. 직관적으로 여러 modal의 정보를 결합(fusion)하면, uni-modal보다 더 나은 성능을 얻을 수 있을 것이라 생각됩니다. 이에 대해 다음과 같은 질문을 던질 수 있습니다.
+우리 세상에는 시각, 청각, 텍스트 등 다양한 modality가 존재한다. 직관적으로 여러 modality의 정보를 결합(fusion)하면 하나만 사용하는 것보다 더 나은 성능을 얻을 수 있을 것이라 기대된다. 실제로 딥러닝에서도 RGB-D semantic segmentation, audio-visual learning, Visual Question Answering 등 multi-modal 학습이 활발히 연구되고 있으며, 경험적으로 좋은 성과를 보이고 있다.
 
-<p align="center">
-  
-_multi-modal learning이 uni-modal learning보다 항상 좋은 성능을 제공할까?_
+하지만 **이론적 근거**는 부족했다. 기존 이론 연구들은 modality 간 확률 분포에 대한 강한 가정을 하거나, generalization 관점을 고려하지 않았다.
 
-</p>
+이 논문은 다음 두 가지 질문에 대해 **이론적 증명**과 **실험적 검증**을 제시한다.
 
-저자는 이 질문을 중심으로 연구를 시작하며, 다음 두 가지를 중점적으로 살펴보았습니다.
+1. **(When)** 어떤 조건에서 multi-modal이 uni-modal보다 성능이 좋은가?
+2. **(Why)** multi-modal 학습이 더 나은 성능을 제공하는 이유는 무엇인가?
 
-1. **어떤 상황에서 multi-modal이 uni-modal보다 성능이 좋은가?**
-2. **multi-modal 학습이 더 나은 성능을 제공하는 이유는 무엇인가?**
-
-이를 통해 저자는 다음과 같은 기여를 했습니다:
-
-- Multi-modal learning을 population risk 관점에서 설명하고, latent representation quality와 연결 지었습니다.
-- 특정 modality subset으로 학습한 network의 성능 상한선을 이론적으로 제시했습니다.
-- Modalities의 subset만 사용할 경우 성능이 저하되는 이유를 분석했습니다.
-
-결론은 다음과 같습니다:
-
-- Multiple modalities는 특정 modal subset보다 낮은 population risk를 갖습니다.
-- 이는 multi-modal 학습이 더 정확한 latent space representation을 제공하기 때문입니다.
-
-이제 세부적으로 살펴보겠습니다.
+핵심 결론: multi-modal 학습의 이점은 **더 정확한 latent space representation**을 학습할 수 있기 때문이다. 다만 **데이터가 충분히 많을 때**라는 조건이 필요하다.
 
 ---
 
 # The Multi-modal Learning Formulation
 
+## 데이터 정의
+
 <p align="center">
     <img src="/assets/post/image/multi-modal-vs-uni-modal/figure1.png" width="80%">
 </p>
 
-## Multi-modal 데이터의 수학적 정의
+$$K$$개의 modality가 있다고 하자. 데이터는 다음과 같이 표현된다.
 
-K개의 modalities에 대해 데이터는 다음과 같이 표현됩니다.  
-$$\mathbb{x}:=(x^{(1)},\cdots,x^{(K)})$$  
-이때, $$x^{(k)} \in \mathcal{X}^{(k)}$$ 이며, 전체 input data space는 다음과 같습니다.  
-$$\mathcal{X}=\mathcal{X}^{1} \times \cdots \times \mathcal{X}^{k}$$
+$$
+\mathbb{x} := (x^{(1)}, \cdots, x^{(K)}), \quad x^{(k)} \in \mathcal{X}^{(k)}
+$$
 
-target domain은 $$\mathcal{Y}$$, 공통된 latent space는 $$\mathcal{Z}$$로 정의합니다. True mapping은 다음과 같습니다:  
-$$g^\star: \mathcal{X} \mapsto \mathcal{Z}, \quad h^\star: \mathcal{Z} \mapsto \mathcal{Y}$$
+전체 input space는 $$\mathcal{X} = \mathcal{X}^{(1)} \times \cdots \times \mathcal{X}^{(K)}$$이다.
 
-데이터의 분포는 다음과 같이 정의됩니다.  
-$$\mathbb{P}_\mathcal{D}(\mathbb{x},y)\triangleq\mathbb{P}_{y|x}(y|h^\star\circ g^\star(\mathbb{x}))\mathbb{P}_\mathbb{x}(\mathbb{x})$$
+이 논문에서 사용하는 **composite multi-modal framework**는 두 단계로 구성된다.
+
+1. **Encoding**: 여러 modality의 feature를 공통 latent space $$\mathcal{Z}$$로 매핑 — $$g^\star: \mathcal{X} \mapsto \mathcal{Z}$$
+2. **Task mapping**: Latent representation을 target space로 매핑 — $$h^\star: \mathcal{Z} \mapsto \mathcal{Y}$$
+
+예를 들어, video classification에서 각 modality $$k$$ (RGB, audio, optical flow)를 개별 네트워크 $$\varphi_k$$로 인코딩하고, fusion operation $$\oplus$$로 합친 뒤, classifier $$\mathcal{C}$$에 통과시키는 late-fusion 구조가 이에 해당한다.
+
+$$
+g_\mathcal{M}(\mathbb{x}) = \varphi_1 \oplus \varphi_2 \oplus \cdots \oplus \varphi_M
+$$
 
 ## Subset Modalities
 
-우리는 K개의 modalities 중 $$\mathcal{N} \leq \mathcal{M}$$ 인 subset을 선택할 수 있습니다.  
-이때 modality의 superset은 다음과 같습니다:  
-$$\mathcal{X}^\prime := (\mathcal{X}^{(1)}\cup\bot)\times\cdots\times(\mathcal{X}^{(K)}\cup\bot)$$  
-여기서 $$\bot$$은 특정 modality를 사용하지 않음을 의미합니다.
-
-modality 선택 함수 $$p_\mathcal{M}$$는 다음과 같이 정의됩니다.
+$$K$$개의 modality 중 subset $$\mathcal{M}$$만 사용할 수 있다. 사용하지 않는 modality는 $$\bot$$으로 표시한다.
 
 $$
-p_\mathcal{M}(\mathbb{x})^{(k)}=
+p_\mathcal{M}(\mathbb{x})^{(k)} =
 \begin{cases}
-\mathbb{x}^{(k)} & \text{if } k\in\mathcal{M}, \\
-\bot & \text{else}.
+\mathbb{x}^{(k)} & \text{if } k \in \mathcal{M} \\
+\bot & \text{else}
 \end{cases}
 $$
 
-## 학습 목표: Empirical Risk Minimization (ERM)
+핵심 질문: $$\mathcal{N} \subset \mathcal{M}$$일 때 ($$\mathcal{N}$$이 $$\mathcal{M}$$의 부분집합), **항상** $$\mathcal{M}$$으로 학습하는 것이 더 좋은가?
 
-우리의 목표는 ERM에 따라 학습 objective를 최소화하는 것입니다:
+## 학습 목표: Empirical Risk Minimization
+
+데이터셋 $$\mathcal{S} = \{(\mathbb{x}_i, y_i)\}_{i=1}^m$$에 대해, ERM으로 학습한다.
 
 $$
-\text{min } \hat{r}(h\circ g_\mathcal{M}) = \frac{1}{m}\sum_{i=1}^ml(h\circ g_\mathcal{M}(\mathbb{x}_i),y_i),
-\quad \text{s.t. } h \in \mathcal{H}, g_\mathcal{M} \in \mathcal{G}.
+\min_{h \in \mathcal{H}, \, g_\mathcal{M} \in \mathcal{G}_\mathcal{M}} \hat{r}(h \circ g_\mathcal{M}) = \frac{1}{m} \sum_{i=1}^{m} \ell(h \circ g_\mathcal{M}(\mathbb{x}_i), y_i)
 $$
 
-최종적으로 population risk는 다음과 같이 정의됩니다.  
-$$r(h\circ g_\mathcal{M})=\mathbb{E}_{(\mathbb{x}_i, y_i)\sim\mathcal{D}}[\hat{r}(h\circ g_\mathcal{M})]$$
+Population risk는 이 empirical risk의 기댓값이다.
+
+$$
+r(h \circ g_\mathcal{M}) = \mathbb{E}_{(\mathbb{x}_i, y_i) \sim \mathcal{D}}[\hat{r}(h \circ g_\mathcal{M})]
+$$
 
 ---
 
-# Main Result
+# Main Results
 
-### Latent Representation Quality 정의
+## Latent Representation Quality
 
-> **Definition 1.**  
-> 데이터 분포에서 학습된 latent representation mapping $$g \in \mathcal{G}$$의 *quality*는 다음과 같이 정의됩니다.  
-> $$\eta(g) = \text{inf}_{h\in\mathcal{H}}[r(h\circ g)-r(h^\star\circ g^\star)]$$  
-> 즉, true latent space와의 차이를 측정하며, 이를 latent space quality라 부릅니다.
+학습된 latent representation $$g$$가 true representation $$g^\star$$에 얼마나 가까운지를 측정하는 핵심 지표를 정의한다.
 
----
+> **Definition 1.** 학습된 latent representation mapping $$g \in \mathcal{G}$$의 **latent representation quality**는 다음과 같이 정의된다.
+>
+> $$\eta(g) = \inf_{h \in \mathcal{H}} [r(h \circ g) - r(h^\star \circ g^\star)]$$
+
+직관적으로, $$\eta(g)$$는 학습된 representation $$g$$를 사용했을 때 **가장 좋은 경우에도** true representation 대비 얼마나 loss가 증가하는지를 측정한다. $$\eta(g) = 0$$이면 완벽한 representation이고, 클수록 나쁘다.
+
+**핵심 insight**: Population risk의 차이가 latent representation quality의 차이에 의해 결정된다면, **더 나은 representation을 학습하는 것이 곧 더 나은 성능**을 의미한다.
 
 ## Rademacher Complexity
 
-Model complexity를 측정하는 Rademacher complexity는 다음과 같습니다.
+모델의 complexity를 측정하기 위해 Rademacher complexity를 사용한다. 함수 집합 $$\mathcal{F}$$와 sample $$S = (Z_1, \ldots, Z_m)$$에 대해:
 
-- $$\mathcal{F}$$를 $$\mathbb{R}^d \mapsto \mathbb{R}$$인 함수 집합으로 정의합니다.
-- $$Z_1, \ldots, Z_m$$은 $$\mathbb{R}^d$$에서 iid로 샘플된 데이터이고, $$S=(Z_1,\ldots,Z_m)$$라고 합니다.
+$$
+\hat{\mathfrak{R}}_S(\mathcal{F}) := \mathbb{E}_\sigma \left[ \sup_{f \in \mathcal{F}} \frac{1}{m} \sum_{i=1}^{m} \sigma_i f(Z_i) \right]
+$$
 
-Empirical Rademacher complexity는 다음과 같이 정의됩니다.  
-$$\hat{\mathfrak{R}}_S(\mathcal{F}):=\mathbb{E}_\sigma[\underset{f\in\mathcal{F}}{\text{sup}} \frac{1}{m}\sum_{i=1}^m\sigma_if(Z_i)]$$
+여기서 $$\sigma_i \sim \text{Uniform}\{-1, +1\}$$이다. Rademacher complexity가 높을수록 함수 집합이 복잡하여 overfitting 위험이 크다.
 
-여기서 $$\sigma=(\sigma_1,...,\sigma_m)^\top$$이고, $$\sigma_i$$는 $$\{-1, 1\}$$에서 uniform하게 추출된 random variable입니다.
+## Theorem 1: Population Risk와 Latent Quality의 관계
 
----
+> **Theorem 1.** 데이터셋 $$S = \{(\mathbb{x}_i, y_i)\}_{i=1}^m$$이 분포 $$\mathcal{D}$$에서 i.i.d.로 추출되었다고 하자. $$\mathcal{M}, \mathcal{N}$$이 $$[K]$$의 서로 다른 부분집합이고, 각각으로 학습한 ERM minimizer가 $$(\hat{h}_\mathcal{M}, \hat{g}_\mathcal{M})$$, $$(\hat{h}_\mathcal{N}, \hat{g}_\mathcal{N})$$일 때, 확률 $$1 - \delta/2$$ 이상으로:
+>
+> $$r(\hat{h}_\mathcal{M} \circ \hat{g}_\mathcal{M}) - r(\hat{h}_\mathcal{N} \circ \hat{g}_\mathcal{N}) \leq \gamma_S(\mathcal{M}, \mathcal{N}) + 8L\mathfrak{R}_m(\mathcal{H} \circ \mathcal{G}_\mathcal{M}) + \frac{4C}{\sqrt{m}} + 2C\sqrt{\frac{2\ln(2/\delta)}{m}}$$
+>
+> 여기서 $$\gamma_S(\mathcal{M}, \mathcal{N}) \triangleq \eta(\hat{g}_\mathcal{M}) - \eta(\hat{g}_\mathcal{N})$$는 **latent representation quality의 차이**이다.
 
-## Latent Space Quality와 Population Risk의 관계
+### 이 정리가 말하는 것
 
-> **Theorem 1.**  
-> $$S = \{(x_i, y_i)\}_{i=1}^m$$이 데이터셋이고, $$\mathcal{M}, \mathcal{N}$$은 modality의 두 subset입니다. $$\mathcal{M}$$과 $$\mathcal{N}$$으로 각각 학습된 empirical risk minimizers $$(\hat{h}_\mathcal{M}, \hat{g}_\mathcal{M})$$와 $$(\hat{h}_\mathcal{N}, \hat{g}_\mathcal{N})$$에 대해, 다음이 성립합니다.
+우변의 항들을 분석하면:
 
-$$r(\hat{h}_{\mathcal{M}} \circ \hat{g}_{\mathcal{M}}) - r(\hat{h}_{\mathcal{N}} \circ \hat{g}_{\mathcal{N}}) \leq \gamma_{\mathcal{S}}(\mathcal{M},\mathcal{N}) + \text{O}(1/m)$$  
-여기서 $$\gamma_S(\mathcal{M},\mathcal{N})\triangleq\eta(\hat{g}_\mathcal{M})-\eta(\hat{g}_\mathcal{N})$$는 latent space quality의 차이입니다.
+1. **$$\gamma_S(\mathcal{M}, \mathcal{N})$$**: Latent representation quality의 차이. $$\mathcal{M}$$의 representation이 더 좋으면 음수가 되어 population risk가 줄어든다.
+2. **$$8L\mathfrak{R}_m(\mathcal{H} \circ \mathcal{G}_\mathcal{M})$$**: 모델 복잡도. Modality가 많을수록 함수 공간이 커져서 이 항이 증가한다.
+3. **$$O(1/\sqrt{m})$$ 항들**: 데이터 크기에 반비례. 데이터가 많으면 사라진다.
+
+즉, **데이터가 충분히 많으면** ($$m$$이 크면) 2, 3번 항이 사라지고 **latent representation quality만** 남는다. 더 많은 modality가 더 좋은 representation을 제공하므로 multi-modal이 유리하다.
+
+반대로 **데이터가 적으면** 2번 항(모델 복잡도)이 지배적이 되어, 오히려 modality 수를 줄이는 것이 나을 수 있다.
+
+## Theorem 2: Latent Quality의 Upper Bound
+
+> **Theorem 2.** $$\mathcal{M}$$ modalities로 학습한 ERM minimizer $$(\hat{h}_\mathcal{M}, \hat{g}_\mathcal{M})$$에 대해, 확률 $$1 - \delta$$ 이상으로:
+>
+> $$\eta(\hat{g}_\mathcal{M}) \leq 4L\mathfrak{R}_m(\mathcal{H} \circ \mathcal{G}) + 4\mathfrak{R}_m(\mathcal{H} \circ \mathcal{G}) + 6C\sqrt{\frac{2\ln(2/\delta)}{m}} + \hat{L}(\hat{h}_\mathcal{M} \circ \hat{g}_\mathcal{M}, S)$$
+
+이 정리에서 중요한 관찰: $$\mathcal{N} \subset \mathcal{M}$$이면 $$\mathcal{G}_\mathcal{N} \subset \mathcal{G}_\mathcal{M} \subset \mathcal{G}$$이므로, $$\mathcal{N}$$의 function class가 더 작다. 따라서 centered empirical loss $$\hat{L}$$이 더 커질 수 있다. 이는 더 적은 modality로 학습하면 latent quality가 더 나빠질 수 있음을 의미한다.
+
+### Modality 선택 원칙
+
+Theorem 2로부터 다음 원칙이 도출된다.
+
+> **Principle**: 더 많은 modality를 사용하는 것이 좋다. 단, 다음 조건을 만족해야 한다:
+>
+> $$\hat{L}(\hat{h}_\mathcal{N} \circ \hat{g}_\mathcal{N}, S) - \hat{L}(\hat{h}_\mathcal{M} \circ \hat{g}_\mathcal{M}, S) \geq \sqrt{\frac{C(\mathcal{H} \circ \mathcal{G}_\mathcal{M})}{m}} - \sqrt{\frac{C(\mathcal{H} \circ \mathcal{G}_\mathcal{N})}{m}}$$
+
+즉, **(i)** 데이터가 많으면 우변이 작아져서 거의 항상 multi-modal이 유리하고, **(ii)** 데이터가 적으면 function class complexity의 차이(우변)가 커져서 uni-modal이 나을 수 있다.
+
+## Proposition 1: Linear Model에서의 검증
+
+Linear model ($$g(\mathbb{x}) = A^\top \mathbb{x}$$, $$h(\mathbb{z}) = \beta^\top \mathbb{z}$$)에서, 전체 modality $$\mathcal{M} = [K]$$와 하나를 뺀 $$\mathcal{N} = [K-1]$$에 대해:
+
+$$
+\gamma_S(\mathcal{M}, \mathcal{N}) \leq 0
+$$
+
+이는 **더 많은 modality를 사용하면 latent representation quality가 항상 같거나 더 좋다**는 것을 직접 증명한다.
 
 ---
 
 # Experiment
 
-## Dataset: IEMOCAP
+실험은 실제 데이터셋과 합성 데이터셋으로 나누어 진행했다.
 
-Interactive Emotional Dyadic Motion Capture 데이터셋을 사용했습니다. 데이터셋에는 Text, Video, Audio 정보가 포함되어 있으며, 발화자의 감정을 예측하는 것이 목표입니다.
+## Real-world Dataset: IEMOCAP
 
-### 결과
+### 데이터셋
+
+Interactive Emotional Dyadic Motion Capture (IEMOCAP) 데이터베이스를 사용했다.
+
+- **Modalities**: Text (100차원), Video (500차원), Audio (100차원)
+- **Task**: 발화자의 감정 분류 (6개 클래스: happy, sad, neutral, angry, excited, frustrated)
+- **데이터 크기**: Training 13,200개, Testing 3,410개
+
+### 학습 설정
+
+- Encoder: 1개의 linear layer, hidden dimension 128
+- 각 modality별 개별 encoder (weight 비공유)
+- Late-fusion: 각 encoder 출력을 concatenation 후 task mapping
+- Optimizer: Adam (lr=0.01), batch size: 2048
+- Top-1 accuracy로 평가
+
+### 결과 1: Modality 조합별 성능
+
+| Modalities | Test Accuracy |
+|-----------|--------------|
+| Text (T) | 49.93 ± 0.57 |
+| Text + Video (TV) | 51.08 ± 0.66 |
+| Text + Audio (TA) | 53.03 ± 0.21 |
+| Text + Video + Audio (TVA) | **53.89 ± 0.47** |
+
+Modality가 많을수록 정확도가 향상된다. 특히 Audio가 추가되었을 때 가장 큰 폭의 향상이 있는데, 이는 감정 인식에서 음성 톤이 매우 중요한 정보를 제공하기 때문이다.
+
+### 결과 2: Sample Size와 Modality의 관계
+
+| Modalities | $$10^{-4}$$ | $$10^{-3}$$ | $$10^{-2}$$ | $$10^{-1}$$ | 1 (전체) |
+|-----------|-------|-------|-------|-------|-------|
+| T | 23.66 | 29.08 | 45.63 | 48.30 | 49.93 |
+| TA | **25.06** | 34.28 | **47.28** | 50.46 | 53.03 |
+| TV | 24.71 | **38.37** | 46.54 | 49.50 | 51.08 |
+| TVA | 24.71 | 32.24 | 46.39 | **50.75** | **53.89** |
+
+**핵심 관찰**: 데이터가 충분할 때(비율 $$10^{-1}$$ 이상)는 TVA가 최고 성능이다. 하지만 **데이터가 매우 적을 때($$10^{-4}$$)**는 TA(2개 modality)가 TVA(3개 modality)보다 오히려 높다.
+
+이는 Theorem 1의 예측과 정확히 일치한다. 데이터가 적으면 function class complexity ($$\mathfrak{R}_m$$) 항이 지배적이 되어, 더 많은 modality가 오히려 overfitting을 유발한다.
+
+### 결과 3: Latent Representation Quality 비교
 
 <p align="center">
     <img src="/assets/post/image/multi-modal-vs-uni-modal/table3.png" width="80%">
 </p>
 
-실험 결과에서 다음과 같은 핵심 관찰을 할 수 있습니다.
+| $$\mathcal{M}$$ | $$\mathcal{N}$$ | Test Acc Difference | $$\gamma_S(\mathcal{M}, \mathcal{N})$$ |
+|---|---|---|---|
+| TA | T | 1.15 | 1.36 |
+| TV | T | 3.10 | 3.57 |
+| TVA | TV | 0.86 | 0.19 |
+| TVA | TA | 2.81 | 2.4 |
 
-**1. Modalities가 많을수록 정확도가 향상됩니다.**
+모든 경우에서 $$\gamma_S(\mathcal{M}, \mathcal{N}) > 0$$이다. 즉, 더 많은 modality를 사용할수록 latent representation quality가 더 좋고, 이것이 test accuracy 향상으로 이어진다. **Test accuracy 차이와 $$\gamma_S$$ 값이 같은 부호**라는 것이 Theorem 1을 실험적으로 검증한다.
 
-Text+Video+Audio 3개를 모두 사용했을 때 가장 높은 정확도를 달성합니다. 이는 Theorem 1의 예측과 일치합니다. 더 많은 modality를 사용할수록 latent space quality $$\eta(g)$$가 좋아져서 population risk가 줄어듭니다.
+$$\eta(\hat{g}_\mathcal{M})$$는 다음과 같이 측정했다. Encoder $$\hat{g}_\mathcal{M}$$을 freeze한 후 classifier $$h$$만 fine-tuning하여 얻는 best population risk에서 oracle risk를 뺀 값이다.
 
-**2. 하지만 Sample이 적을 경우, subset modalities가 더 나은 성능을 보일 수 있습니다.**
+## Synthetic Data
 
-데이터가 적을 때는 오히려 modality 수를 줄이는 것이 유리할 수 있습니다. Theorem 1의 $$O(1/m)$$ 항이 커지면서, 더 많은 modality에 의한 model complexity 증가가 이점을 상쇄하기 때문입니다. 직관적으로, 적은 데이터로 복잡한 multi-modal 관계를 학습하는 것은 overfitting을 유발할 수 있습니다.
+합성 데이터로 modality 간 correlation의 영향을 분석했다. 4개의 modality $$m_1, m_2, m_3, m_4$$를 생성하되, overlap parameter $$w$$로 modality 간 정보 공유 정도를 조절한다.
 
-**3. Multi-modal 학습은 더 나은 latent space quality를 제공합니다.**
+- $$w = 1$$: 모든 modality가 같은 정보 공유 (높은 상관)
+- $$w = 0$$: 각 modality가 완전히 독립적
 
-같은 데이터 크기에서 multi-modal의 latent space quality가 uni-modal보다 일관되게 높았습니다. 이는 서로 다른 modality가 상호 보완적인 정보를 제공하여 더 풍부한 representation을 학습할 수 있기 때문입니다. 예를 들어, "행복한" 감정을 판단할 때 텍스트만으로는 반어법을 구분하기 어렵지만, 음성의 톤이나 표정을 함께 보면 더 정확한 판단이 가능합니다.
+| Modalities | $$w=1$$ | $$w=0.8$$ | $$w=0.5$$ | $$w=0.2$$ | $$w=0$$ |
+|---|---|---|---|---|---|
+| $$m_1$$ | 0 | 12.04 | 75.89 | 193.28 | 301.92 |
+| $$m_1, m_2$$ | 0 | 8.16 | 51.25 | 129.81 | 207.45 |
+| $$m_1, m_2, m_3$$ | 0 | 4.18 | 26.06 | 65.17 | 103.23 |
+| $$m_1, m_2, m_3, m_4$$ | 0 | 0 | 0 | 0 | 0 |
+
+**관찰**: modality 수가 많을수록 MSE loss($$\eta$$)가 줄어든다. 또한 **modality 간 상관이 높을수록**($$w$$가 클수록) 더 적은 modality로도 좋은 representation을 학습할 수 있다. 이는 Theorem 2의 예측과 일치한다.
 
 ---
 
-## 결론
+# Discussion
 
-- 데이터가 충분히 많을 때 multi-modal을 사용하는 것이 유리합니다.
-- Multi-modal 학습의 이점은 "더 정확한 latent space representation"에서 비롯되며, 이를 이론적으로 증명했습니다.
-- 다만 데이터가 적을 때는 modality 수를 줄이는 것이 오히려 나을 수 있으므로, **데이터 크기와 modality 수의 trade-off**를 고려해야 합니다.
+이 논문의 이론적 결과는 **generalization** 관점에서 multi-modal의 우위를 설명한다. 이는 optimization 관점의 기존 연구와 상호보완적이다.
+
+실제로 multi-modal 학습이 항상 좋지는 않다는 관찰도 있다. Modality 간 interaction이 학습 과정에서 최적화 어려움을 유발할 수 있는데, 이는 이 논문의 이론적 framework에서는 다루지 않는 부분이다. 이 논문은 "최적화가 잘 된다고 가정할 때" multi-modal이 더 나은 generalization을 보장한다는 것을 증명한다.
+
+---
+
+# Conclusion
+
+- **When**: 데이터가 충분히 많고 function class complexity가 잘 통제될 때 multi-modal이 유리하다.
+- **Why**: Multi-modal은 더 정확한 latent space representation을 학습할 수 있기 때문이다. 이는 latent representation quality $$\eta(g)$$로 형식화되며, population risk와 직접 연결된다.
+- 이론적 분석(Theorem 1, 2)과 실험(IEMOCAP, 합성 데이터) 모두 이를 뒷받침한다.
+- 다만 **데이터가 적을 때는 modality 수를 줄이는 것이 나을 수 있으며**, 이는 function class complexity와 latent quality 사이의 trade-off에 기인한다.
