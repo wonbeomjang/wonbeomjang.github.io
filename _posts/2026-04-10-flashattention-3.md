@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision"
-date: 2026-04-11 00:00:00 +0900
+date: 2026-04-10 00:00:00 +0900
 description: "FlashAttention-3 논문 리뷰 — Hopper GPU의 비동기 실행과 FP8을 활용한 Attention 최적화"
 categories: [optimization]
 tags: [attention, hardware-optimization, paper, flash-attention]
