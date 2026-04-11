@@ -2,7 +2,7 @@
 layout: post
 title: "FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning"
 date: 2023-08-07 00:00:00 +0900
-description: FlashAttention-2 논문 리뷰와 성능 분석
+description: FlashAttention-2 논문 리뷰 — non-matmul FLOPs 감소, 병렬화, warp partitioning 개선
 categories: [optimization]
 tags: [attention, hardware-optimization, paper]
 giscus_comments: true
@@ -12,189 +12,316 @@ featured: true
 
 # Introduction
 
-GPT부터 시작해서 ViT 등 여러 분야에서 attention layer를 많이 쓰고 있다. 그런데 이 attention layer는 dimension의 제곱에 비례해서 계산 비용이 커서 모델의 병목이 될 수 있다. 그래서 attention layer를 효율적으로 만드는 여러 시도가 있는데, 그 중 하나가 FlashAttention이다. FlashAttention은 tiling과 kernel fusion을 사용해서 기존 attention layer보다 2.4배 더 빠르게 동작한다. 하지만 FlashAttention도 GPU의 이론적 성능에 비해 25~40%밖에 성능을 내지 못한다고 한다.
+GPT부터 시작해서 ViT 등 여러 분야에서 attention layer를 많이 쓰고 있다. 그런데 이 attention layer는 dimension의 제곱에 비례해서 계산 비용이 커서 모델의 병목이 될 수 있다. 그래서 attention layer를 효율적으로 만드는 여러 시도가 있는데, 그 중 하나가 FlashAttention이다. FlashAttention은 tiling과 kernel fusion을 사용해서 기존 attention layer보다 2~4배 더 빠르게 동작한다.
 
-이런 문제를 해결하기 위해 저자는 FlashAttention을 분석하면서 thread block 간 work partitioning이 비효율적이라는 점을 발견했다. 이로 인해 GPU에서 low-occupancy와 불필요한 memory IO가 발생한다고 느꼈다. 그래서 저자는 이를 개선하기 위해 세 가지 방법을 제안했다.
+하지만 FlashAttention도 GPU의 이론적 성능에 비해 **25~40%**밖에 성능을 내지 못한다. A100 GPU의 이론 최대 312 TFLOPS/s 대비, FlashAttention은 약 72~120 TFLOPS/s 정도에 그친다. 최적화된 GEMM 커널이 80~90%를 달성하는 것과 비교하면 아직 많은 개선 여지가 있다.
 
-1. Output을 바꾸지 않고 non-matmul operation의 FLOPS를 줄인다.
-2. Single head attention이라도 병렬 처리를 하도록 연산 순서를 바꾼다.
-3. Thread block 내에서 warps 간 통신을 줄인다.
+저자는 FlashAttention의 비효율성을 분석하면서 세 가지 문제를 발견했다.
 
-저자는 이 세 가지 방법을 통해 기존 FlashAttention보다 2배 빠른 성능을 달성하고, GPU 이론적 성능의 50~73%까지 성능을 끌어올렸다.
+1. **non-matmul FLOPs가 많다**: Attention에서 matmul이 아닌 연산(softmax의 rescaling, exp, max, sum 등)이 전체 FLOPs에서 상당한 비중을 차지한다. GPU의 matmul 처리량이 non-matmul 대비 **최대 16배** 빠르므로, non-matmul FLOPs를 줄이는 것이 중요하다.
+2. **병렬화가 부족하다**: FlashAttention은 batch size와 head 수에 대해서만 병렬화한다. Batch가 작거나 head가 적으면 GPU의 SM을 충분히 활용하지 못한다.
+3. **Warp 간 work partitioning이 비효율적이다**: FlashAttention의 "split-K" 방식은 warp 간 불필요한 shared memory 읽기/쓰기와 동기화를 유발한다.
+
+저자는 이 세 가지를 개선하여 FlashAttention 대비 **약 2배** 빠른 성능을 달성하고, A100에서 이론 성능의 **50~73%**까지 도달했다.
 
 # Background
 
-하드웨어 최적화 관련 논문은 익숙하지 않아서 배경 부분을 꼼꼼하게 읽어보자.
+## Hardware Characteristics
 
-## Hardware characteristics
+### GPU Performance Characteristics
 
-### GPU performance characteristics
+GPU는 compute element와 memory hierarchy를 가지고 있다. Nvidia의 tensor core는 FP16/BF16 같은 저정밀도 matmul에 최적화되어 있다. A100 기준:
 
-GPU는 compute element와 memory hierarchy를 가지고 있다. 예를 들어, Nvidia의 tensor core는 FP16/BF16 같은 저정밀도 연산을 matmul에 최적화하고 있다. 하지만 non-matmul 연산은 최적화가 부족해서 matmul보다 최대 16배 느리다.
+| 연산 | 처리량 |
+|------|--------|
+| FP16/BF16 matmul | 312 TFLOPS/s |
+| non-matmul FP32 | 19.5 TFLOPS/s |
 
-메모리 계층 구조에 대해 보면, GPU는 기본적으로 high bandwidth memory(HBM)와 on-chip SRAM(공유 메모리)을 갖고 있다. A100 기준으로 40~80GB의 HBM은 1.5~2.0TB/s의 대역폭을 가지며, 108개의 stream multiprocessor는 각각 192KB의 on-chip SRAM을 갖고 있어 19TB/s의 대역폭을 제공한다. L2 캐시도 있지만, 이는 사용자가 컨트롤할 수 없어서 논의에서는 제외한다.
+matmul이 non-matmul보다 약 **16배** 빠르다. 따라서 전체 연산에서 non-matmul이 차지하는 비중이 크면, matmul을 아무리 빠르게 해도 성능이 제한된다. 이것이 FlashAttention의 첫 번째 문제이다.
+
+메모리 계층 구조: A100 기준으로 40~80GB의 HBM은 1.5~2.0TB/s의 대역폭을 가지며, 108개의 stream multiprocessor는 각각 192KB의 on-chip SRAM을 갖고 있어 약 19TB/s의 대역폭을 제공한다. L2 캐시도 있지만, 이는 사용자가 컨트롤할 수 없어서 논의에서는 제외한다.
 
 ### Execution Model
 
-GPU는 수많은 thread로 구성되며, 이 thread들이 모여 thread block을 구성한다. 각 thread block은 stream multiprocessor(SM)에서 실행된다. thread block 내에서 thread는 warp이라는 단위로 묶이며, 이 warp들은 공유 메모리를 통해 서로 통신한다.
+GPU의 실행 단위는 계층적이다.
+
+- **Thread**: 가장 작은 실행 단위
+- **Warp**: 32개 thread의 묶음. SIMT 방식으로 같은 명령을 동시 실행한다.
+- **Thread block**: 여러 warp의 묶음. 하나의 SM에서 실행되며, **shared memory(SRAM)**를 공유한다.
+- **Grid**: 전체 커널의 모든 thread block
+
+Thread block 내의 warp들은 shared memory를 통해 통신할 수 있지만, 다른 thread block의 warp과는 통신할 수 없다. 따라서 한 thread block 내에서의 work partitioning이 성능에 큰 영향을 미친다.
 
 ## Standard Attention Implementation
 
-기존의 attention은 query, key, value들 간의 연산으로 구성된다. 시퀀스 길이를 N, head dimension을 d라고 하자. Input sequence $$Q, K, V \in \mathbb{R}^{N\times d}$$에 대해 attention output $$O \in \mathbb{R}^{N \times d}$$를 계산하는 방식은 아래와 같다.
+기존의 attention은 query, key, value들 간의 연산으로 구성된다. 시퀀스 길이를 $$N$$, head dimension을 $$d$$라고 하자. Input sequence $$Q, K, V \in \mathbb{R}^{N \times d}$$에 대해 attention output $$O \in \mathbb{R}^{N \times d}$$를 계산하는 방식은 아래와 같다.
 
-$$S=QK^{\intercal}\in \mathbb{R}^{N\times N}$$
+$$S = QK^\intercal \in \mathbb{R}^{N \times N}$$
 
-$$P=\text{softmax}(S)\in\mathbb{R}^{N\times N}$$
+$$P = \text{softmax}(S) \in \mathbb{R}^{N \times N}$$
 
-$$O=PV\in \mathbb{R}^{N\times d}$$
+$$O = PV \in \mathbb{R}^{N \times d}$$
 
 여기서 softmax는 row-wise로 적용된다.
+
+### Backward Pass
+
 Backward pass는 아래 과정을 거친다.
 
-$$dV=P^{\intercal}dO\in\mathbb{R}^{N\times d}$$
+$$dV = P^\intercal dO \in \mathbb{R}^{N \times d}$$
 
-$$dP=dOV^{\intercal}\in\mathbb{R}^{N\times N}$$
+$$dP = dO V^\intercal \in \mathbb{R}^{N \times N}$$
 
-$$dS=\text{dsoftmax}(dP)\in\mathbb{R}^{N\times N}$$
+$$dS = \text{dsoftmax}(dP) \in \mathbb{R}^{N \times N}$$
 
-$$dQ=dSK\in\mathbb{R}^{N\times d}$$
+$$dQ = dS \cdot K \in \mathbb{R}^{N \times d}$$
 
-$$dK=QdS^\intercal\in\mathbb{R}^{N\times d}$$
+$$dK = dS^\intercal \cdot Q \in \mathbb{R}^{N \times d}$$
 
-FlashAttention에 대해 더 자세한 내용은 다른 포스트에서 확인할 수 있다.
+여기서 softmax의 gradient는 $$ds = (\text{diag}(p) - pp^\top) dp$$로 주어진다. 벡터 $$p = \text{softmax}(s)$$에 대해, 이는 다음과 같이 단순화할 수 있다.
 
-## FlashAttention
+$$
+dS_{ij} = P_{ij} (dP_{ij} - D_i), \quad D_i = \sum_j P_{ij} \cdot dP_{ij} = (P_i \circ dP_i)^\top \mathbf{1}
+$$
 
-FlashAttention의 구체적인 내용은 이전에 다뤘던 [FlashAttention 1 포스트](https://www.wonbeomjang.kr/blog/2023/fastattention/)에서 참고할 수 있다.
+$$D_i$$는 $$P$$의 $$i$$번째 행과 $$dP$$의 $$i$$번째 행의 element-wise 곱의 합이다. 이 $$D_i$$ 값은 FlashAttention-2의 backward에서 중요한 역할을 한다.
 
-### Forward pass
+## FlashAttention 복습
 
-FlashAttention은 K와 V를 tiling하여 병렬적으로 계산한 뒤, on-line softmax를 통해 병렬적으로 softmax를 적용한다. 그 후 tiling한 Q를 불러와 on-chip 연산을 한다. 이를 통해 연산을 fusion하고, Q, K, V는 HBM에서 불러와 연산을 마친 후 다시 HBM에 저장한다. 연산 과정은 아래와 같다. 여기서 $$S$$는 $$S=QK^T$$이다.
+FlashAttention의 구체적인 내용은 이전에 다뤘던 [FlashAttention 1 포스트](/blog/2023/fastattention/)에서 참고할 수 있다.
 
-$$m^{(1)}=\text{rowmax}(S^{(1)})\in\mathbb{R}^{B_r}$$
+### Forward Pass
 
-$$l^{(1)}=\text{rowsum}(e^{S^{(1)}-m^{(1)}})\in\mathbb{R}^{B_r}$$
+FlashAttention은 K와 V를 outer loop에서 순회하고, Q를 inner loop에서 순회한다. 각 iteration에서 on-line softmax를 통해 점진적으로 softmax를 적용하고, $$O$$를 누적한다. 구체적으로 두 블록을 처리하는 과정은 다음과 같다.
 
-$$\tilde{P}^{(1)}=\text{diag}(l^{(1)})^{-1}e^{S^{(1)}-m^{(1)}}\in\mathbb{R}^{B_r\times B_c}$$
+**블록 1 처리:**
 
-$$O^{(1)}=\tilde{P}^{(1)}V^{(1)}=\text{diag}(l^{(1)})^{-1}e^{S^{(1)}-m^{(1)}}V^{(1)}\in\mathbb{R}^{B_r\times d}$$
+$$m^{(1)} = \text{rowmax}(S^{(1)}) \in \mathbb{R}^{B_r}$$
 
-$$m^{(2)}=\text{max}(m^{(1)},\text{rowmax}(S^{(2)}))=m$$
+$$l^{(1)} = \text{rowsum}(e^{S^{(1)} - m^{(1)}}) \in \mathbb{R}^{B_r}$$
 
-$$l^{(2)}=e^{m^{(1)}-m^{(2)}}l^{(1)}+\text{rowsum}(e^{S^{(2)}-m})=\text{rowsum}(e^{S^{(1)}-m})+\text{rowsum}(e^{S^{(2)}-m})=l$$
+$$\tilde{P}^{(1)} = \text{diag}(l^{(1)})^{-1} e^{S^{(1)} - m^{(1)}} \in \mathbb{R}^{B_r \times B_c}$$
 
-$$\tilde{P}^{(2)}=\text{diag}(l^{(2)})^{-1}e^{S^{(2)}-m^{(2)}}$$
+$$O^{(1)} = \tilde{P}^{(1)} V^{(1)} = \text{diag}(l^{(1)})^{-1} e^{S^{(1)} - m^{(1)}} V^{(1)} \in \mathbb{R}^{B_r \times d}$$
 
-$$O^{(2)}=\text{diag}(l^{(1)}/l^{(2)})^{-1}O^{(1)}+\tilde{P}^{(2)}V^{(2)}=\text{diag}(l^{(2)})^{-1}e^{S^{(1)}-m}V^{(1)}+\text{diag}(l^{(2)})^{-1}e^{S^{(2)}-m}V^{(2)}=O$$
+**블록 2 처리 (블록 1 결과를 보정):**
 
-이 과정에서 vector를 쪼개고 합치는 방식으로 memory IO를 줄여서 속도를 높였다.
+$$m^{(2)} = \max(m^{(1)}, \text{rowmax}(S^{(2)})) = m$$
+
+$$l^{(2)} = e^{m^{(1)} - m^{(2)}} l^{(1)} + \text{rowsum}(e^{S^{(2)} - m}) = l$$
+
+$$O^{(2)} = \text{diag}(l^{(1)}/l^{(2)})^{-1} O^{(1)} + \text{diag}(l^{(2)})^{-1} e^{S^{(2)} - m^{(2)}} V^{(2)} = O$$
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/fig1.png" width="80%">
 </p>
 
+이 과정에서 **매 블록마다** $$\text{diag}(l^{(1)}/l^{(2)})^{-1}$$로 이전 결과를 rescaling한다. 이 rescaling에 사용되는 $$\text{diag}(l)^{-1}$$가 non-matmul 연산이고, 매 iteration마다 수행되어 전체 FLOPs에서 상당한 비중을 차지한다. FlashAttention-2는 이 점을 개선한다.
+
 ### Backward Pass
 
-Backward pass에서는 attention 연산 중에 계산된 $$m$$과 $$l$$을 사용해서 다시 연산을 재구성할 수 있다.
+Backward pass에서는 forward에서 저장한 $$m$$과 $$l$$을 사용해서 $$S, P$$를 재계산(recomputation)할 수 있다.
 
 # FlashAttention-2
 
-FlashAttention-2는 기존 FlashAttention보다 non-matmul FLOPs를 줄인다. 예를 들어, Nvidia의 A100 GPU는 FP16/BF16 matmul 연산에서 이론적으로 312 TFLOPs/s의 성능을 보이지만, non-matmul 연산은 19.5 TFLOPs/s로 훨씬 느리다. 그래서 non-matmul 연산이 전체 연산에서 차지하는 비중이 크면, 이를 최적화하는 것이 중요하다.
+FlashAttention-2는 기존 FlashAttention보다 non-matmul FLOPs를 줄인다. A100 GPU 기준으로 FP16/BF16 matmul은 312 TFLOPS/s이지만, non-matmul 연산은 19.5 TFLOPS/s로 **16배** 느리다. 따라서 non-matmul 비중이 전체 성능을 좌우한다.
 
-## Forward pass
+## Forward Pass 개선
 
-FlashAttention에서는 on-line softmax를 먼저 주목하고, 이를 개선할 수 있는 방법을 제시했다.
+FlashAttention-2는 online softmax의 rescaling 방식을 변경하여 non-matmul FLOPs를 줄인다.
 
-### Recalling
+### 개선 1: Rescaling을 마지막에 한 번만
 
-기존에는 $$\text{diag}(l^{(2)})^{-1}$$를 두 번 rescaling했으나, FlashAttention-2에서는 마지막 결과 $$\tilde{O}^{(last)}$$를 계산하고, 한 번에 $$\text{diag}(l^{(last)})^{-1}$$으로 rescaling을 한다.
+기존 FlashAttention에서는 매 블록마다 $$O_i$$에 $$\text{diag}(l_i)^{-1}$$를 곱해서 정규화된(normalized) output을 유지했다. 즉, 매 iteration마다 나누기 연산이 들어갔다.
 
-$$\tilde{O}^{(2)}=\text{diag}(l^{(1)})^{-1}O^{(1)}+e^{S^{(2)}-m^{(2)}}V^{(2)}$$
+FlashAttention-2에서는 **정규화하지 않은 상태**의 $$\tilde{O}$$를 유지하고, 모든 블록 처리가 끝난 후 **마지막에 한 번만** $$\text{diag}(l)^{-1}$$을 곱한다.
 
-$$O^{(2)}=\tilde{O}^{(2)}\text{diag}(l^{(2)})^{-1}$$
+기존 (FlashAttention):
 
-### Memorization
+$$O^{(1)} = \text{diag}(l^{(1)})^{-1} e^{S^{(1)} - m^{(1)}} V^{(1)}$$
 
-Backward pass를 위해 $$m$$과 $$l$$을 저장할 필요 없이 $$L^{(j)}=m^{(j)}+\text{log}(l^{(j)})$$을 저장해도 같은 결과를 얻을 수 있다. 그래서 $$m$$과 $$l$$ 대신 $$L$$을 저장한다.
+$$O^{(2)} = \text{diag}(l^{(1)}/l^{(2)})^{-1} O^{(1)} + \text{diag}(l^{(2)})^{-1} e^{S^{(2)} - m^{(2)}} V^{(2)}$$
 
-### Result
+개선 (FlashAttention-2): 정규화하지 않은 $$\tilde{O}$$를 유지:
 
-결과적으로 FlashAttention-2는 다음과 같은 방법으로 attention을 구현한다.
+$$\tilde{O}^{(1)} = e^{S^{(1)} - m^{(1)}} V^{(1)}$$
 
-$$m^{(1)}=\text{rowmax}(S^{(1)})\in\mathbb{R}^{B_r}$$
+$$\tilde{O}^{(2)} = \text{diag}(e^{m^{(1)} - m^{(2)}}) \tilde{O}^{(1)} + e^{S^{(2)} - m^{(2)}} V^{(2)}$$
 
-$$l^{(1)}=\text{rowsum}(e^{S^{(1)}-m^{(1)}})\in\mathbb{R}^{B_r\times B_c}$$
+$$O^{(2)} = \text{diag}(l^{(2)})^{-1} \tilde{O}^{(2)}$$
 
-$$\tilde{O}^{(1)}=e^{S^{(1)}-m^{(1)}}V^{(1)}\in\mathbb{R}^{B_r\times d}$$
+이렇게 하면 매 iteration마다 $$\text{diag}(l)^{-1}$$을 곱하는 대신, $$\text{diag}(e^{m^{(1)} - m^{(2)}})$$만 곱하면 된다. 최종 나누기는 모든 블록 처리 후 한 번만 수행한다.
 
-$$m^{(2)}=\text{max}(m^{(1)},\text{rowmax}(S^{(2)}))=m$$
+### 개선 2: $$m$$과 $$l$$ 대신 $$L$$만 저장
 
-$$l^{(2)}=e^{m^{(1)}-m^{(2)}}l^{(1)}+\text{rowsum}(e^{S^{(2)}-m})=\text{rowsum}(e^{S^{(1)}-m})+\text{rowsum}(e^{S^{(2)}-m})=l$$
+Backward pass를 위해 FlashAttention은 $$m \in \mathbb{R}^N$$과 $$l \in \mathbb{R}^N$$을 각각 저장했다. FlashAttention-2에서는 이를 하나로 합친다.
 
-$$\tilde{P}^{(2)}=\text{diag}(l^{(2)})^{-1}e^{S^{(2)}-m^{(2)}}$$
+$$L^{(j)} = m^{(j)} + \log(l^{(j)})$$
 
-$$\tilde{O}^{(2)}=\text{diag}(e^{m^{(1)}-m^{(2)}})^{-1}\tilde{O}^{(1)}+e^{S^{(2)}-m^{(2)}}V^{(2)}=e^{S^{(1)}-m}V^{(1)}+e^{S^{(2)}-m}V^{(2)}$$
+이 $$L$$은 log-sum-exp 값으로, $$m$$과 $$l$$의 정보를 하나로 압축한다. Backward에서 softmax를 재계산할 때:
 
-$$O^{(2)}=\text{diag}(l^{(2)})^{-1}\tilde{O}^{(2)}=O$$
+$$P_{ij} = \exp(S_{ij} - L_i)$$
 
-FlashAttention-2에서는 기존과 달리 term 자체가 줄어들었다. Forward pass 알고리즘을 정리하면 다음과 같다.
+$$m$$과 $$l$$을 개별적으로 사용하는 것과 수학적으로 동일하지만, 저장 공간이 절반으로 줄고 HBM 접근도 줄어든다.
+
+### 결과: FlashAttention-2 Forward 알고리즘
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/alg1.png" width="100%">
 </p>
 
-## Backward
+FlashAttention-2의 forward pass를 단계별로 정리하면:
+
+1. $$Q$$를 $$T_r = \lceil N/B_r \rceil$$개, $$K, V$$를 $$T_c = \lceil N/B_c \rceil$$개 블록으로 나눈다.
+2. **Outer loop**: $$i = 1, \ldots, T_r$$에 대해 ($$Q$$ 블록 순회):
+   - $$O_i = (0)$$, $$l_i = (0)$$, $$m_i = (-\infty)$$ 초기화
+   - **Inner loop**: $$j = 1, \ldots, T_c$$에 대해 ($$K, V$$ 블록 순회):
+     - $$S_{ij} = Q_i K_j^\top$$
+     - $$m_{ij} = \text{rowmax}(S_{ij})$$
+     - $$\tilde{P}_{ij} = \exp(S_{ij} - m_{ij})$$
+     - $$l_{ij} = \text{rowsum}(\tilde{P}_{ij})$$
+     - $$m_i^{\text{new}} = \max(m_i, m_{ij})$$
+     - $$l_i^{\text{new}} = e^{m_i - m_i^{\text{new}}} l_i + e^{m_{ij} - m_i^{\text{new}}} l_{ij}$$
+     - $$O_i \leftarrow \text{diag}(e^{m_i - m_i^{\text{new}}}) O_i + e^{m_{ij} - m_i^{\text{new}}} \tilde{P}_{ij} V_j$$
+     - $$m_i \leftarrow m_i^{\text{new}}$$, $$l_i \leftarrow l_i^{\text{new}}$$
+   - $$O_i \leftarrow \text{diag}(l_i)^{-1} O_i$$  ← **마지막에 한 번만 정규화**
+   - $$L_i \leftarrow m_i + \log(l_i)$$
+
+**FA1과의 핵심 차이점**: outer loop과 inner loop의 순서가 바뀌었다!
+
+| | FlashAttention | FlashAttention-2 |
+|---|---|---|
+| **Outer loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)** |
+| **Inner loop** | Q 블록 ($$i$$) | **K, V 블록 ($$j$$)** |
+
+FA1에서는 같은 $$K_j, V_j$$를 올려놓고 모든 $$Q_i$$를 순회했다. FA2에서는 하나의 $$Q_i$$를 올려놓고 모든 $$K_j, V_j$$를 순회한다. 이 변경이 왜 중요한지는 병렬화 섹션에서 설명한다.
+
+## Backward Pass
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/alg2.png" width="100%">
 </p>
 
-Backward는 $$L$$을 사용한다는 것 말고는 다른 차이점은 없다.
+Backward에서도 비슷한 최적화를 적용한다. $$L$$을 사용하여 $$S, P$$를 재계산하고, $$D_i = \text{rowsum}(dO_i \circ O_i)$$를 미리 계산해둔다.
 
-## Parallelism
+Backward의 loop 순서는 forward와 **반대**이다.
 
-기본적으로 GPU는 병렬 처리가 가능하다. 각 GPU thread block마다 1개의 attention module이 들어가고, 보통 batch size와 self-attention head 수에 맞춰 thread block을 구성한다. 만약 sequence 길이가 길어지거나, batch size가 작거나, self-attention head가 적으면 병렬 처리가 잘 이루어지지 않는다. 그래서 저자는 sequence length dimension에 따라 병렬 처리를 하도록 했다.
+| | Forward | Backward |
+|---|---|---|
+| **Outer loop** | Q 블록 ($$i$$) | **K, V 블록 ($$j$$)** |
+| **Inner loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)** |
 
-**Forward pass**
-저자는 sequence length dimension으로 병렬처리를 하도록 했으며, 이는 한 sequence 내에서 독립적으로 처리되게 구성했다. 물론 기존처럼 batch와 multi-head 간 병렬처리는 계속 유지된다.
+이유: backward에서는 $$dK_j, dV_j$$를 누적해야 한다. $$K_j, V_j$$를 outer loop에 두면 하나의 thread block이 $$dK_j, dV_j$$를 독립적으로 계산할 수 있어서, thread block 간 동기화 없이 병렬 처리가 가능하다.
 
-**Backward pass**
-Algorithm 2에 따르면, backward pass는 column block 간 병렬처리가 이루어진다. 또한 sequence length dimension을 병렬 처리할 수 있도록 추가적인 방법을 사용한다.
+## Parallelism: 시퀀스 길이 차원 병렬화
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/fig2.png" width="80%">
 </p>
 
-결과적으로 worker마다 병렬 처리가 잘 되도록 구성되었다.
+기본적으로 FlashAttention은 batch size와 head 수에 대해 thread block을 할당한다. GPU의 SM 수는 A100 기준 108개이므로, `batch × heads ≥ 108`이어야 GPU를 충분히 활용할 수 있다.
 
-## Work Partitioning Between Warp
+하지만 긴 시퀀스 + 작은 batch에서는 `batch × heads`가 108보다 작을 수 있다. 예를 들어 batch=1, heads=8이면 8개의 thread block만 활용되어 SM의 7%만 쓰게 된다.
 
-### Forward
+### Forward: Q 블록 병렬화
+
+FlashAttention-2에서 outer loop을 Q 블록으로 바꾼 핵심 이유가 여기에 있다. 각 $$Q_i$$는 독립적으로 $$O_i$$를 계산하므로, $$T_r$$개의 Q 블록을 **병렬로** 처리할 수 있다. 따라서 총 thread block 수는:
+
+$$
+\text{batch} \times \text{heads} \times T_r
+$$
+
+시퀀스가 길수록 $$T_r$$이 커져서 자동으로 병렬도가 높아진다.
+
+FA1에서는 outer loop이 K, V였기 때문에 이런 병렬화가 불가능했다. K, V를 바꿀 때마다 모든 Q의 중간 결과를 업데이트해야 하므로, Q 블록 간에 의존성이 생기기 때문이다.
+
+### Backward: K, V 블록 병렬화
+
+Backward에서는 outer loop이 K, V 블록이므로, 마찬가지로 $$T_c$$개의 블록을 병렬로 처리한다. 각 thread block은 $$dK_j, dV_j$$를 독립적으로 계산한다.
+
+$$dQ$$는 모든 K, V 블록의 기여를 합산해야 하므로 thread block 간 동기화가 필요하다. 이를 위해 $$dQ$$를 atomic add로 누적하거나, 별도의 reduction 단계를 사용한다.
+
+## Work Partitioning Between Warps
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/fig3.png" width="100%">
 </p>
 
-기존 FlashAttention에서는 $$K$$와 $$V$$를 각각의 warp에 나눠서 partition하고, $$Q$$는 모든 warp이 접근할 수 있도록 했다. 이를 "split-K"라고 부른다. 하지만 이 방식은 $$QK^T$$와 $$V$$의 연산이 partition된 후 중간 계산 결과를 저장하고, 읽고, 동기화를 자주 해야 해서 IO에서 병목이 생긴다. 그래서 $$Q$$를 partition하고, $$K$$와 $$Q$$는 공유하게 해서 IO를 줄여 속도를 높였다.
+Thread block 내에서 여러 warp이 어떻게 작업을 나누느냐도 성능에 큰 영향을 미친다.
 
-## Backward
+### FlashAttention의 "Split-K" 방식
 
-Backward에서도 forward와 마찬가지로 "split-K" 방식을 피한다. 즉, $$K$$와 $$V$$를 warp 간에 나누는 대신 $$Q$$를 partition하여 warp 간 통신과 shared memory 읽기/쓰기를 줄인다. 이를 통해 forward와 동일한 원리로 IO 병목을 완화한다.
+기존 FlashAttention에서는 $$K$$와 $$V$$를 warp 간에 나누고, $$Q$$는 모든 warp이 공유했다. 4개의 warp이 있다면, 각 warp이 $$K$$의 일부로 $$QK^\top$$의 일부를 계산한다.
 
-### Tuning block sizes
+**문제**: 각 warp이 $$QK^\top$$의 서로 다른 열 블록을 계산한 후, softmax를 위해 이들을 합쳐야 한다. 이 과정에서:
+1. 각 warp이 자기 결과를 **shared memory에 쓴다**
+2. **동기화 배리어** ($$\text{\_\_syncthreads}$$)
+3. 다른 warp의 결과를 **shared memory에서 읽는다**
+4. Reduction으로 max, sum을 계산한다
 
-Block size를 늘리면 memory IO가 줄어든다. 하지만 block 수가 많아지면 registers 수가 늘어나고, total shared memory 크기가 커져 비효율적이 될 수 있다. 너무 많은 registers는 속도를 저하시킬 수 있고, shared memory가 너무 커지면 GPU 메모리가 부족해질 수 있다. 그래서 GPU마다 적절한 block size를 조정해야 한다.
+이 shared memory 읽기/쓰기와 동기화가 반복되어 overhead가 크다.
+
+### FlashAttention-2의 "Split-Q" 방식
+
+FlashAttention-2에서는 $$Q$$를 warp 간에 나누고, $$K$$와 $$V$$는 모든 warp이 공유한다. 4개의 warp이 있다면, 각 warp이 $$Q$$의 서로 다른 행 블록을 담당한다.
+
+**장점**: 각 warp이 독립적인 행을 담당하므로, softmax를 위한 warp 간 통신이 **전혀 필요 없다**. Softmax는 row-wise 연산이기 때문에, 자기가 담당하는 행에 대해서만 계산하면 된다. $$K, V$$는 shared memory에 한 번 올려놓으면 모든 warp이 읽기만 하면 되므로 동기화도 필요 없다.
+
+결과적으로 warp 간 shared memory 쓰기와 동기화가 사라져서, 실제 속도가 크게 향상된다.
+
+### Backward에서의 Warp Partitioning
+
+Backward에서도 "split-K"를 피하고, 각 warp이 독립적으로 작업할 수 있도록 partitioning한다. 구체적으로, 각 warp이 $$K, V$$의 서로 다른 열 블록을 담당하여 $$dQ$$의 일부를 독립적으로 계산한다.
+
+## Tuning Block Sizes
+
+Block size를 늘리면 memory IO가 줄어든다. 하지만 두 가지 제약이 있다.
+
+1. **레지스터 압력**: 블록이 커지면 각 thread가 보관해야 할 intermediate 값이 많아져서 레지스터가 부족해진다. 레지스터가 부족하면 **register spilling**이 발생하여 값을 local memory(실제로는 HBM)에 저장해야 하므로 속도가 크게 떨어진다.
+
+2. **Shared memory 크기**: $$K, V$$ 블록을 shared memory에 올려야 하므로, 블록 크기가 SM당 shared memory 용량(A100: 192KB)을 초과하면 안 된다. Shared memory를 많이 쓰면 SM당 동시 실행 가능한 thread block 수(occupancy)도 줄어든다.
+
+따라서 GPU마다 최적의 block size가 다르며, 실험적으로 튜닝해야 한다. A100에서는 보통 $$B_r = B_c = 128$$ (head dim 64) 또는 $$B_r = 64, B_c = 128$$ (head dim 128) 정도가 최적이다.
+
+## Causal Masking 최적화
+
+Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없으므로 causal mask를 적용한다. FlashAttention-2에서는 Q의 행 인덱스가 K의 열 인덱스보다 작은 블록은 전체가 mask되므로, 해당 블록의 연산을 **완전히 건너뛴다**. 이렇게 하면 causal attention의 연산량이 non-causal 대비 약 절반으로 줄어든다.
 
 # Empirical Validation
-
-결과적으로 FlashAttention-2는 기존 FlashAttention, xFormer보다 2배 이상의 성능 향상을 보였고, 특히 A100 GPU에서 2.7배까지 성능 향상이 일어났다. 전체적으로 FlashAttention-2는 GPU의 이론적인 성능에 가까운 성능을 보여주었다.
 
 <p align="center">
     <img src="/assets/post/image/flashattention2/fig4.png" width="80%">
 </p>
 
-## Conclusion
+A100 80GB SXM GPU에서 다양한 설정으로 벤치마크를 수행했다.
 
-FlashAttention-2는 기존 FlashAttention을 개선한 방법으로, 다양한 최적화를 통해 성능을 2배 이상 향상시켰다. GPU의 이론적 성능에 근접한 성능을 내면서, low-occupancy와 memory IO를 줄였다. 이 논문은 attention을 최적화하고 성능을 향상시키기 위한 여러 기술적 접근을 다뤘다.
+## 벤치마크 결과
+
+FlashAttention-2는 FlashAttention, xFormers 대비 약 **2배**의 speed up을 보였다. 구체적으로:
+
+- **Head dim 64, seqlen 2K**: FlashAttention ~130 TFLOPS → FlashAttention-2 ~220 TFLOPS
+- **Head dim 128, seqlen 2K**: FlashAttention ~135 TFLOPS → FlashAttention-2 ~230 TFLOPS
+- Causal masking 적용 시 최대 **2.7배** speed up (건너뛸 수 있는 블록이 많아짐)
+
+GPT 스타일 학습 기준으로 A100당 **225 TFLOPS/s**, 모델 FLOPs utilization **72%**를 달성했다. 이론 최대 312 TFLOPS 대비 약 72%로, FlashAttention의 25~40% 대비 크게 향상되었다.
+
+## FlashAttention vs FlashAttention-2 요약
+
+| | FlashAttention | FlashAttention-2 |
+|---|---|---|
+| **Rescaling** | 매 블록마다 정규화 | 마지막에 한 번만 |
+| **Logsumexp 저장** | $$m, l$$ 별도 저장 | $$L = m + \log(l)$$ 합쳐서 저장 |
+| **Forward outer loop** | K, V 블록 | **Q 블록** |
+| **Backward outer loop** | Q 블록 | **K, V 블록** |
+| **Warp partitioning** | Split-K (통신 필요) | **Split-Q (통신 불필요)** |
+| **시퀀스 병렬화** | 없음 | **있음** |
+| **A100 활용률** | 25~40% | **50~73%** |
+| **성능** | 72~120 TFLOPS | **~230 TFLOPS** |
+
+# Conclusion
+
+FlashAttention-2는 기존 FlashAttention을 세 가지 측면에서 개선했다. Non-matmul FLOPs를 줄이고, 시퀀스 길이 차원으로 병렬화를 추가하고, warp 간 통신을 제거하여 약 2배의 speed up을 달성했다. 이를 통해 A100에서 이론 성능의 50~73%까지 도달할 수 있었다.
+
+다만 A100에서도 여전히 이론 최대와 gap이 있으며, 이는 주로 non-matmul 연산(softmax의 exp, max, sum)이 matmul 대비 16배 느리기 때문이다. 이 문제는 [FlashAttention-3](/blog/2026/flashattention-3/)에서 Hopper GPU의 비동기 실행을 통해 GEMM과 softmax를 겹치는 방식으로 해결된다.
 
 > Hopper GPU에서 비동기 실행과 FP8을 활용한 추가 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를 참고하자.
