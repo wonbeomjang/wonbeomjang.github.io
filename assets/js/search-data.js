@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-flashattention-4-algorithm-and-kernel-pipelining-co-design-for-asymmetric-hardware-scaling",
+        },{id: "post-llm-엔지니어가-알아야-할-gpu-아키텍처-ampere-hopper-blackwell",
+        
+          title: "LLM 엔지니어가 알아야 할 GPU 아키텍처: Ampere → Hopper → Blackwell",
+        
+        description: "A100, H100, B200 GPU를 LLM 학습/추론 관점에서 비교 — 메모리, 연산, 정밀도, 병목 분석",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/gpu-architecture-for-llm-engineers/";
+          
+        },
+      },{id: "post-flashattention-4-algorithm-and-kernel-pipelining-co-design-for-asymmetric-hardware-scaling",
         
           title: "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling",
         
