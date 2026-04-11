@@ -351,3 +351,15 @@ FA1이 "IO를 줄이자", FA2가 "non-matmul을 줄이자", FA3가 "GEMM과 soft
 ---
 
 > FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Triton으로 직접 구현하고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을 참고하자.
+
+---
+
+# 참고 문헌
+
+- [FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling (arXiv)](https://arxiv.org/abs/2603.05451)
+- [We reverse-engineered Flash Attention 4 — Modal Blog](https://modal.com/blog/reverse-engineer-flash-attention-4)
+- [FlashAttention GitHub — Dao-AILab](https://github.com/Dao-AILab/flash-attention)
+- [FlashAttention-4 CuTe-DSL Implementation](https://github.com/Dao-AILab/flash-attention/tree/main/flash_attn/cute)
+- [NVIDIA Blackwell Architecture Technical Brief](https://nvdam.widen.net/s/xqt56dflgh/nvidia-blackwell-architecture-technical-brief)
+- [NVIDIA CuTe-DSL Documentation](https://docs.nvidia.com/cutlass/media/docs/pythonDSL/cute_dsl_general/dsl_introduction.html)
+- [NVIDIA cuDNN Release Notes](https://docs.nvidia.com/deeplearning/cudnn/backend/latest/release-notes.html)
