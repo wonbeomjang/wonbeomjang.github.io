@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-flashattention-3-fast-and-accurate-attention-with-asynchrony-and-low-precision",
+        },{id: "post-flashattention-4-algorithm-and-kernel-pipelining-co-design-for-asymmetric-hardware-scaling",
+        
+          title: "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling",
+        
+        description: "FlashAttention-4 논문 리뷰 — Blackwell GPU의 비대칭 스케일링에 맞춘 파이프라인 재설계와 소프트웨어 지수함수",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/flashattention-4/";
+          
+        },
+      },{id: "post-flashattention-3-fast-and-accurate-attention-with-asynchrony-and-low-precision",
         
           title: "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision",
         
