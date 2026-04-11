@@ -18,7 +18,7 @@ Image restoration에서 SOTA Network들은 많은 모듈을 추가하여 complex
 
 기본적으로 UNet구조를 따랐고, convolution-relu-shortcut으로 구성된 간단한 plain block으로 시작하였다.
 이후 plain block에서 SOTA method 중 필수적이라고 생각하는 것 만을 하나씩 추가하였고 결과적으로 GELU, Channel Attention을 추가하였다.
-이후 더 발전사항으로 GELU를 GLU로 대체하 Channel Attanetion을 GLU형태로 변환해 SC(Simple Channel Attention)로 변경하였다.
+이후 더 발전사항으로 GELU를 GLU로 대체하고 Channel Attention을 GLU형태로 변환해 SC(Simple Channel Attention)로 변경하였다.
 
 <p align="center">
     <img src="/assets/post/image/legacy/nafnet-perforamce.png" width="80%">
@@ -83,7 +83,7 @@ $$
 Gate({X},f,g,\sigma)=f({X}) \odot \sigma(g({X}))
 $$
 
-이는 GELU의 generalization한 format이었고 따라서 GELU를 GLU로 대체하였다. 이 때 $\odot$은 element-wise product이다.
+이는 GELU의 generalization한 format이었고 따라서 GELU를 GLU로 대체하였다. 이 때 $$\odot$$은 element-wise product이다.
 
 ## SimpleGate
 

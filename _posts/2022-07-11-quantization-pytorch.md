@@ -11,7 +11,7 @@ related_posts: true
 
 딥러닝 모델이 실제 device에 deploy 하는데 2가지 문제점이 있다.
 
-1. 느린 inferfence time
+1. 느린 inference time
 2. 큰 model parameter size
 
 Pytorch는 float32에서 int8로 데이터 크기를 줄여 연산을 하는 Quantization을 제공한다.
@@ -30,7 +30,7 @@ Pytorch는 float32에서 int8로 데이터 크기를 줄여 연산을 하는 Qua
 
 ## Code
 
-### 1. Declear Model
+### 1. Declare Model
 
 모델은 resnet 사용하기로 한다. 그리고 편의를 위해 학습은 미리 시켰다고 가정한다.
 먼저 resnet의 BottleNeck을 선언하고 resnet18을 구현한다.
@@ -41,7 +41,7 @@ Pytorch는 float32에서 int8로 데이터 크기를 줄여 연산을 하는 Qua
 
 이후 각 모듈에 layer fusion을 적용한다.
 layer를 건드리지 않고 상속을 쓰면 결과적으로 parameter가 같기 때문에 QuantizableResNet18은 ResNet18의 파라미터를 쓸 수 있다.
-QuantizableBottleNeck에서는 두 tensor를 더하는 연산이 있으므로 기존의 방식이 아닌 FloatFunctional을 이용하야한다.
+QuantizableBottleNeck에서는 두 tensor를 더하는 연산이 있으므로 기존의 방식이 아닌 FloatFunctional을 이용해야한다.
 
 <script src="https://gist.github.com/wonbeomjang/0ce010f6a9cb984b9a73d440c7c3dd67.js"></script>
 

@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-이 논문은 CVPR2023에 accept된 논문이고 award 후보에도 올랐다. 주된 초점은 모델 사이즈별로 성능하락 없이 pruning하는 내용인데, 상당히 아이디어도 괜찮고 앞으로 응용가능성도 있어보인다. 하지만 가벼운 네트워크만 실험을 하여 EfficientNet-L과 같은 무거둔 네크워크나 ViT와 같은 self-attention 메커니즘을 사용한 네트워크의 결과는 없다. 따라서 실제로 사용하려면 이론적토대가 더 필요할 것으로 보인다. 이제 논문을 살표보자.
-기존의 DNN은 많은 분야에서 좋은 성능을 냈다. Kolmogorov superposition theorem과 universal approximation theorem에서 DNN은 어떠한 continuous multivariate function이라도 모사할 수 있다고 이야기한다. 이러한 이론에 따라서 DNN은 발전했고 파라미터 수도 많아졌다. 연구자들을 이를 극복하기 위해 경량화 기법으로 pruning, quantization, NAS를 사용하여 모델의 크기를 줄였다. 하지만 이와 같은 방법은 모델 사이즈가 줄어듬에 따라 성능하락이 발생했고 각각의 사이즈의 모델을 따로 학습시켜야한다는 단점이 있다.
-따라서 저자는 neural network에서 사용하는 discrete한 representaiton을 continuous representation으로 바꾸어 inference시 quadrature approximation procedure를 통해 여러 크기의 모델을 만들 수 있도록 제안했다. 따라서 기존에 있는 CNN, FC 연산과 같은 discrete operation을 integral operator로 교체하는 과정을 거치게 된다.
+이 논문은 CVPR2023에 accept된 논문이고 award 후보에도 올랐다. 주된 초점은 모델 사이즈별로 성능하락 없이 pruning하는 내용인데, 상당히 아이디어도 괜찮고 앞으로 응용가능성도 있어보인다. 하지만 가벼운 네트워크만 실험을 하여 EfficientNet-L과 같은 무거운 네트워크나 ViT와 같은 self-attention 메커니즘을 사용한 네트워크의 결과는 없다. 따라서 실제로 사용하려면 이론적 토대가 더 필요할 것으로 보인다. 이제 논문을 살펴보자.
+기존의 DNN은 많은 분야에서 좋은 성능을 냈다. Kolmogorov superposition theorem과 universal approximation theorem에서 DNN은 어떠한 continuous multivariate function이라도 모사할 수 있다고 이야기한다. 이러한 이론에 따라서 DNN은 발전했고 파라미터 수도 많아졌다. 연구자들은 이를 극복하기 위해 경량화 기법으로 pruning, quantization, NAS를 사용하여 모델의 크기를 줄였다. 하지만 이와 같은 방법은 모델 사이즈가 줄어듬에 따라 성능하락이 발생했고 각각의 사이즈의 모델을 따로 학습시켜야한다는 단점이 있다.
+따라서 저자는 neural network에서 사용하는 discrete한 representation을 continuous representation으로 바꾸어 inference시 quadrature approximation procedure를 통해 여러 크기의 모델을 만들 수 있도록 제안했다. 따라서 기존에 있는 CNN, FC 연산과 같은 discrete operation을 integral operator로 교체하는 과정을 거치게 된다.
 
 # Neural Networks and Integral Operators
 
@@ -81,11 +81,11 @@ Backpropagation은 기존과 같은 chain-rule이 사용된다. 이는 Appendix 
 
 ## Continuous parameters representation
 
-더 풍부하고 일반화된 continuous parameter representation을 위해서 inference time에 어떠한 해상도(sampling rate)로든 sampling을 하야한다. 따라서 저자는 continuous한 weight을 \[0, 1]에서 존재하는 line segment에 interpolation kernel의 linear combination으로 정의한다. 따라서 다음과 같이 나타낼 수 있다.
+더 풍부하고 일반화된 continuous parameter representation을 위해서 inference time에 어떠한 해상도(sampling rate)로든 sampling을 해야한다. 따라서 저자는 continuous한 weight을 \[0, 1]에서 존재하는 line segment에 interpolation kernel의 linear combination으로 정의한다. 따라서 다음과 같이 나타낼 수 있다.
 
 $$F_W(\lambda,x)=\sum_{i=0}^m\lambda_i u(xm-i)$$
 
-여기서$$m$과$$n$$은 interpolation node의 개수와 그들의 값이다.
+여기서 $$m$$과 $$n$$은 interpolation node의 개수와 그들의 값이다.
 
 <p align="center">
     <img src="/assets/post/image/integral-neural-network/fig4.png" width="80%">
@@ -118,7 +118,7 @@ $$\vec{\delta}_{norm}=\frac{\vec{\delta}^2}{sum(\vec{\delta}^2)}, \vec{P}=cumsum
     <img src="/assets/post/image/integral-neural-network/fig5.png" width="80%">
 </p>
 
-network를 가능하면 smooth한 structure로 만들기 위해서 weight tensor의 특정방향의 total variation이 최소가 되도록 만들어아햔다. 이 문제는 많이 알려진 Traveling Salesman Problem (TSP)문제로 환원될 수 있다. 이 task에서는$$c^{out}$$ dimension에 따라 weight tensor는 city로 대응되고 distance는 total variance로 대응된다. 따라서 optimal permutation은 route로 대응되어 다음 식을 최소화 하는 것으로 문제를 해결하게 된다.
+network를 가능하면 smooth한 structure로 만들기 위해서 weight tensor의 특정방향의 total variation이 최소가 되도록 만들어야한다. 이 문제는 많이 알려진 Traveling Salesman Problem (TSP)문제로 환원될 수 있다. 이 task에서는$$c^{out}$$ dimension에 따라 weight tensor는 city로 대응되고 distance는 total variance로 대응된다. 따라서 optimal permutation은 route로 대응되어 다음 식을 최소화 하는 것으로 문제를 해결하게 된다.
 
 $$min_{\sigma \in S_n}\sum|W[\sigma(i)]-W[\sigma(i+1)]|$$
 
@@ -136,7 +136,7 @@ INN은 보통의 gradient descent-based method를 사용할 수 있으며 Lemma 
 
 $$|Net(X,P_1)-Net(X,P_2)|\leq|Net(X,P_1)-Y|+|Net(X,P_2)-Y|$$
 
-# Expertimant
+# Experiment
 
 <p align="center">
     <img src="/assets/post/image/integral-neural-network/pipline.png" width="100%">

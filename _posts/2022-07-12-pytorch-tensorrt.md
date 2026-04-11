@@ -10,7 +10,7 @@ related_posts: true
 ---
 
 TensorRT는 Deep Learning 모델을 최적화해 GPU에서 inference 속도를 향상시킬 수 있는 최적화 엔진이다.
-TensorRT는 GPU에서 최적화된 성능을 낼 수 있도록 Network Compression, Netword Optimization을 진행한다.
+TensorRT는 GPU에서 최적화된 성능을 낼 수 있도록 Network Compression, Network Optimization을 진행한다.
 
 <p align="center"><img src="https://blogs.nvidia.co.kr/2020/02/19/nvidia-tensor-rt/219-%eb%b8%94%eb%a1%9c%ea%b7%b83/" width="80%"></p>
 
@@ -19,25 +19,25 @@ TensorRT는 GPU에서 최적화된 성능을 낼 수 있도록 Network Compressi
 quantization을 통한 precision reduction은 network의 파라미터의 bit가 작기 때문에 더 좋은 성능을 발휘할 수 있다.
 TensorRT는 Symmetric Linear Quantization을 사용하고 있으며, float32 데이터를 float16, int8로 낮출 수 있다.
 하지만 int8로 precision을 낮추면 숫자표현이 급격히 줄어들어 성능에서 문제가 생긴다.
-따라서 TensorRT는 callibration을 통해 weight과 intermidiate tensor에서의 정보손실을 최소화한다.
+따라서 TensorRT는 calibration을 통해 weight과 intermediate tensor에서의 정보손실을 최소화한다.
 
 <p align="center"><img src="https://blogs.nvidia.co.kr/wp-content/uploads/sites/16/2020/02/Figure-5.-Calibration-methodology.png" width="80%"></p>
 
 ### Graph Optimization
 
 TensorRT는 또한 platform에 최적화된 graph를 위해 Layer Fusion 방식과 Tensor Fusion을 사용한다.
-따라서 Vertical Layer Fusion, Horizontal Layer Fusion, Tensor Fusion이 적용되어 graph를 단순하게 만들어 속도를 높힌다.
+따라서 Vertical Layer Fusion, Horizontal Layer Fusion, Tensor Fusion이 적용되어 graph를 단순하게 만들어 속도를 높인다.
 
 <p align="center"><img src="https://blogs.nvidia.co.kr/wp-content/uploads/sites/16/2020/02/219-%EB%B8%94%EB%A1%9C%EA%B7%B8-6.png" width="80%"></p>
 
 ### Etc
 
-Kernel Auto-tuning을 통해 GPU의 cuda core 수, 아키텍쳐 등을 고려하여 optimization을 진행하고,
-Dynamic Tensor Memory & Multi-stream execution을 통해 footprint를 줄여 성능을 높힌다.
+Kernel Auto-tuning을 통해 GPU의 cuda core 수, 아키텍처 등을 고려하여 optimization을 진행하고,
+Dynamic Tensor Memory & Multi-stream execution을 통해 footprint를 줄여 성능을 높인다.
 
 ## TensorRT설치
 
-필자 Docker를 사용하므로 Docker를 기준으로 설명하겠다.
+필자는 Docker를 사용하므로 Docker를 기준으로 설명하겠다.
 
 ## 1. 도커 설치
 
@@ -114,7 +114,7 @@ pip install torch-tensorrt -f https://github.com/pytorch/TensorRT/releases
 
 ## 4. TensorRT적용
 
-현재 pytorch는 torch script -> onnx -> tensorrt이렇게 변환한다. 먼제 model을 선언해주자.
+현재 pytorch는 torch script -> onnx -> tensorrt 이렇게 변환한다. 먼저 model을 선언해주자.
 
 <script src="https://gist.github.com/wonbeomjang/d549423cec450527a70455696d4bfa81.js"></script>
 

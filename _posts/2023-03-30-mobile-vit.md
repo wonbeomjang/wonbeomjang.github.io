@@ -59,7 +59,7 @@ $$
     <img src="/assets/post/image/legacy/mobilevit-cnn-patch-relationship.png" width="80%">
 </p>
 
-위의 그림에서 볼 수 있 듯 convolution을 통해 local feature를 encode 한 후 transformer연산을 통해 inter-patch relationship을 encode하여 결과적으로 한 pixel이 다른 모든 pixel을 고려할 수 있게되었다.
+위의 그림에서 볼 수 있듯 convolution을 통해 local feature를 encode 한 후 transformer연산을 통해 inter-patch relationship을 encode하여 결과적으로 한 pixel이 다른 모든 pixel을 고려할 수 있게되었다.
 
 ### Relationship to convolution
 

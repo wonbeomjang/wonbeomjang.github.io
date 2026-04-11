@@ -74,8 +74,7 @@ EMA에서 batch size가 커지면 절대적인 update수가 적어져 validation
 
 ## Small Batch Size
 
-EMA는 mini-batch만 볼 수 있기때문에 batch size가 작을수록 성능하락이 커 PreciseBN의 성능이 높았다. 하
-지만 실험적으로는 EMA는 모델이 충분히 학습하여 수렴했을 때와 Batch size가 충분히 큰 경우 Precise BN과 성능차이가 별로 없었다.
+EMA는 mini-batch만 볼 수 있기때문에 batch size가 작을수록 성능하락이 커 PreciseBN의 성능이 높았다. 하지만 실험적으로는 EMA는 모델이 충분히 학습하여 수렴했을 때와 Batch size가 충분히 큰 경우 Precise BN과 성능차이가 별로 없었다.
 
 <p align="center">
     <img src="/assets/post/image/legacy/presize_bn_ema_result_with_NBS.png" width="50%">
@@ -91,7 +90,7 @@ EMA는 Batchsize가 작아질수록 train-test inconsisitency가 커진다.
 
 # FrozenBN
 
-Finetuning할 때 batch norm을 freeze한다. 하지만 일반적인 training에서도 효과를 보는 것을 찾아냈다. 이 때 학습 epoch에서 중간쯤부터 batchnorm을 freeze하면 된다. ImageNet실험에서는 마지막 20 epoch때 frozneBN을 사용하요 train-test-inconsistency를 개선했다.
+Finetuning할 때 batch norm을 freeze한다. 하지만 일반적인 training에서도 효과를 보는 것을 찾아냈다. 이 때 학습 epoch에서 중간쯤부터 batchnorm을 freeze하면 된다. ImageNet실험에서는 마지막 20 epoch때 frozenBN을 사용하여 train-test-inconsistency를 개선했다.
 
 <p align="center">
     <img src="/assets/post/image/legacy/precise_bn_freezebn.png" width="50%">
@@ -99,7 +98,7 @@ Finetuning할 때 batch norm을 freeze한다. 하지만 일반적인 training에
 
 # Adaptive BatchNorm
 
-Train test에서 큰 domain inconsistency가 존재한다. 따라서 Test set에서 batch norm의 polution statistics를 학습 후 평가했을 때 정확도가 상승했다. 이 때 train과 evalutation의 augmentation 방법이 동일해야한다.
+Train test에서 큰 domain inconsistency가 존재한다. 따라서 Test set에서 batch norm의 population statistics를 학습 후 평가했을 때 정확도가 상승했다. 이 때 train과 evalutation의 augmentation 방법이 동일해야한다.
 
 <p align="center">
     <img src="/assets/post/image/legacy/presizebn_adaptive_bn.png" width="50%">
@@ -115,7 +114,7 @@ $$
 
 즉, domain 별로 normalize하는 것과 domain을 합쳐 normalize하는 것과 다르다. 이것이 문제를 일으킨다.
 
-저자는 이를 retinanet에 실험을 했다. Retinanet은 size가 다른 featuremap을 공유된 head로 detection을 진행한다. 하지만 의 각각의 feature map은 다른 domain을 볼 수 있다. 따라서 각각의 featuremap을 normaization하는 것이 아닌 합쳐서 normalization을 하면 성능이 높아진다. 이 대 traning과 population statistics과 affine parameter의 환경을 일치하는 것이 중요하다.
+저자는 이를 retinanet에 실험을 했다. Retinanet은 size가 다른 featuremap을 공유된 head로 detection을 진행한다. 하지만 각각의 feature map은 다른 domain을 볼 수 있다. 따라서 각각의 featuremap을 normalization하는 것이 아닌 합쳐서 normalization을 하면 성능이 높아진다. 이때 training과 population statistics과 affine parameter의 환경을 일치하는 것이 중요하다.
 
 <p align="center">
     <img src="/assets/post/image/legacy/presizebn_bn_with_multidomain.png" width="80%">

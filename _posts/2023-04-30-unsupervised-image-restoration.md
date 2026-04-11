@@ -152,7 +152,7 @@ $$
 
 ### Self Reconstruction Loss
 
-안정적인 학습 진행을 위해서 self reconstruction loss도 추가해였다.
+안정적인 학습 진행을 위해서 self reconstruction loss도 추가하였다.
 
 $$
 \hat{x}=G_\mathcal{X}(E_\mathcal{X}(x)\oplus E_\mathcal{X}^N(x)), \hat{y}=G_\mathcal{Y}(E_\mathcal{Y}(y))

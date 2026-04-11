@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-MobleNet, ShuufleNet등 경량화 네트워크들은 parameter의 수와 FLOPS를 기준으로 모델을 경량화하고 있다. MobileNetV3, MNasNet 등 만이 실제 기기에서 latency를 측정하여 반영하고 있다. 저자는 parameter 수와 FLOPS가 줄어들수록 latency가 줄어드는 관계가 항상 일치하지 않는다는 것을 발견하여 실제로 모델의 어떤 부분이 높은 복잡도를 갖는지 평가하여 모델을 제작했다.
+MobileNet, ShuffleNet등 경량화 네트워크들은 parameter의 수와 FLOPS를 기준으로 모델을 경량화하고 있다. MobileNetV3, MNasNet 등 만이 실제 기기에서 latency를 측정하여 반영하고 있다. 저자는 parameter 수와 FLOPS가 줄어들수록 latency가 줄어드는 관계가 항상 일치하지 않는다는 것을 발견하여 실제로 모델의 어떤 부분이 높은 복잡도를 갖는지 평가하여 모델을 제작했다.
 
 # Method
 
@@ -47,7 +47,7 @@ Dynamic Shift-Max등 여러 강력한 activation function이 있으나 이는 la
 
 ### Architectural Blocks
 
-Runtime performace에 영향을 주는 원인은 크게 memory access cost과 degree of parallelism이 있다. 예를 들면 skip connection은 이전 feature map에 대한 정보를 저장하고 읽어와야하기 때문에 memory access cost가 늘어나고 SE-block에서 사용하는 global pooling operation은 동기화를 해야하기 때문에 degree of parallelism이 줄어든다. 따라서 MobileOne에서는 skip connection을 제거하고 SE-block의 수는 적당히 조절하였다.
+Runtime performance에 영향을 주는 원인은 크게 memory access cost과 degree of parallelism이 있다. 예를 들면 skip connection은 이전 feature map에 대한 정보를 저장하고 읽어와야하기 때문에 memory access cost가 늘어나고 SE-block에서 사용하는 global pooling operation은 동기화를 해야하기 때문에 degree of parallelism이 줄어든다. 따라서 MobileOne에서는 skip connection을 제거하고 SE-block의 수는 적당히 조절하였다.
 
 ## MobileOne Architecture
 
@@ -60,7 +60,7 @@ Runtime performace에 영향을 주는 원인은 크게 memory access cost과 de
     <img src="/assets/post/image/mobileone/Untitled%206.png" width="50%">
 </p>
 
-Convolution에 대해서는 BachNorm을 Conv layer에 folding하였다. Kernel size $$K$$, Input channel dimension $$C_{in}$$, output channel dimension $$C_{out}$$에 대해서 weight matix는 $$W^\prime \in \mathbb{R}^{C_{out} \times C_{in} \times K \times K}$$, bias는 $$b^\prime \in \mathbb{R}^D$$로 표시할 수 있다. 또한 BatchNorm은 accumulated mean $$\mu$$, accumulated standard deviation $$\sigma$$, scale $$\gamma$$, bias $$\beta$$로 구성되어 있다. Conv와 BN은 모두 linear operation이므로 이를 다음과 같이 합칠 수 있다.
+Convolution에 대해서는 BatchNorm을 Conv layer에 folding하였다. Kernel size $$K$$, Input channel dimension $$C_{in}$$, output channel dimension $$C_{out}$$에 대해서 weight matix는 $$W^\prime \in \mathbb{R}^{C_{out} \times C_{in} \times K \times K}$$, bias는 $$b^\prime \in \mathbb{R}^D$$로 표시할 수 있다. 또한 BatchNorm은 accumulated mean $$\mu$$, accumulated standard deviation $$\sigma$$, scale $$\gamma$$, bias $$\beta$$로 구성되어 있다. Conv와 BN은 모두 linear operation이므로 이를 다음과 같이 합칠 수 있다.
 
 - Weight
 
