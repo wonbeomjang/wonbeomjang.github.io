@@ -4,7 +4,6 @@ title: "Pytorch Quantization 적용"
 date: 2022-07-11 18:50:11 +0900
 description: PyTorch Quantization 적용 방법 가이드
 categories: [optimization]
-description: PyTorch Quantization 적용 방법 가이드
 tags: [pytorch, quantization, optimization]
 giscus_comments: true
 related_posts: true
