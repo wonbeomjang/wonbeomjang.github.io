@@ -177,7 +177,7 @@ ninja.data = [{
         
           title: "What Makes Multi-modal Learning Better than Single (Provably)",
         
-        description: "NeurIPS 2021",
+        description: "Multimodal vs Unimodal 성능 비교 논문 리뷰 (NeurIPS 2021)",
         section: "Posts",
         handler: () => {
           
@@ -210,7 +210,7 @@ ninja.data = [{
         
           title: "Fairness-aware Data Valuation for Supervised Learning",
         
-        description: "ICLR 2023 workshop paper",
+        description: "FADO 논문 리뷰 — Feature Alignment Domain Adaptation (ICLR 2023 Workshop)",
         section: "Posts",
         handler: () => {
           
@@ -221,7 +221,7 @@ ninja.data = [{
         
           title: "TinyViT",
         
-        description: "ECCV 2022; ViT를 knowledge distillation 시키기",
+        description: "TinyViT 논문 리뷰 — Knowledge Distillation으로 ViT 경량화 (ECCV 2022)",
         section: "Posts",
         handler: () => {
           
@@ -232,7 +232,7 @@ ninja.data = [{
         
           title: "EdgeViT",
         
-        description: "CVPR2023 award 후보",
+        description: "EdgeViT 논문 리뷰 — 엣지 디바이스를 위한 경량 Vision Transformer",
         section: "Posts",
         handler: () => {
           
@@ -243,7 +243,7 @@ ninja.data = [{
         
           title: "Integral Neural Network",
         
-        description: "CVPR2023 award 후보",
+        description: "Integral Neural Network 논문 리뷰 — 연속 파라미터 공간 활용 (CVPR 2023)",
         section: "Posts",
         handler: () => {
           
@@ -254,7 +254,7 @@ ninja.data = [{
         
           title: "Invariant Representation for Unsupervised Image Restoration",
         
-        description: "First unsupervised image restoration",
+        description: "비지도 이미지 복원 논문 리뷰 — 라벨 없이 이미지를 복원하는 방법",
         section: "Posts",
         handler: () => {
           
@@ -265,7 +265,7 @@ ninja.data = [{
         
           title: "DINE: Domain Adaptation from Single and Multiple Black-box Predictors",
         
-        description: "SOTA domain adaptation for object detection",
+        description: "DINE 논문 리뷰 — Domain Adaptation 기반 Object Detection SOTA",
         section: "Posts",
         handler: () => {
           
@@ -276,7 +276,7 @@ ninja.data = [{
         
           title: "MobileOne: An Improved One millisecond Mobile Backbone",
         
-        description: "SOTA model of mobile backbone",
+        description: "MobileOne 논문 리뷰 — 모바일 환경 SOTA backbone 모델",
         section: "Posts",
         handler: () => {
           
@@ -287,7 +287,7 @@ ninja.data = [{
         
           title: "Proper Reuse of Image Classification Features Improves Object Detection",
         
-        description: "Neck is important",
+        description: "Classification feature를 Object Detection에 재활용하는 방법 논문 리뷰",
         section: "Posts",
         handler: () => {
           
@@ -298,7 +298,7 @@ ninja.data = [{
         
           title: "Meta Pseudo Labels",
         
-        description: "SOTA cnn technique on imagenet",
+        description: "Meta Pseudo Labels 논문 리뷰 — ImageNet SOTA 반지도 학습 기법",
         section: "Posts",
         handler: () => {
           
@@ -309,7 +309,7 @@ ninja.data = [{
         
           title: "MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer",
         
-        description: "transformer for mobile device",
+        description: "MobileViT 논문 리뷰 — 모바일 환경을 위한 경량 Vision Transformer",
         section: "Posts",
         handler: () => {
           
@@ -331,7 +331,7 @@ ninja.data = [{
         
           title: "Cross-Domain Adaptive Teacher for Object Detection",
         
-        description: "sota of cross domain DA in object detection",
+        description: "Cross-domain Adaptive Teacher 논문 리뷰 — Domain Adaptation 기반 Object Detection",
         section: "Posts",
         handler: () => {
           
@@ -342,7 +342,7 @@ ninja.data = [{
         
           title: "Rethinking “Batch” in BatchNorm",
         
-        description: "Introduce the PreciseBN",
+        description: "PreciseBN 논문 리뷰 — BatchNorm의 batch 개념 재고",
         section: "Posts",
         handler: () => {
           
@@ -353,7 +353,7 @@ ninja.data = [{
         
           title: "Convolutional Character Network",
         
-        description: "CharNet; single stage scene text detection",
+        description: "CharNet 논문 리뷰 — Single-stage Scene Text Detection",
         section: "Posts",
         handler: () => {
           
@@ -364,7 +364,7 @@ ninja.data = [{
         
           title: "Jetson Nano Tensorrt 적용",
         
-        description: "pytorch to tensorrt using onnx",
+        description: "Jetson Nano에서 PyTorch 모델을 ONNX 경유 TensorRT로 변환하는 방법",
         section: "Posts",
         handler: () => {
           
@@ -375,7 +375,7 @@ ninja.data = [{
         
           title: "error: command &#39;aarch64-linux-gnu-gcc&#39; failed with exit status 1",
         
-        description: "jetson nano pycuda install error",
+        description: "Jetson Nano에서 PyCUDA 설치 오류 해결 방법",
         section: "Posts",
         handler: () => {
           
@@ -397,7 +397,7 @@ ninja.data = [{
         
           title: "Jetson nano Ubuntu 20.04 (우분투 20.04) 설치",
         
-        description: "pytorch 1.13을 향하여",
+        description: "Jetson Nano Ubuntu 환경에서 PyTorch 1.13 설치하기",
         section: "Posts",
         handler: () => {
           
@@ -408,7 +408,7 @@ ninja.data = [{
         
           title: "Bootstrap your own latent",
         
-        description: "A new approach to self-supervised Learning",
+        description: "BYOL 논문 리뷰 — Negative sample 없는 자기지도 학습 방법",
         section: "Posts",
         handler: () => {
           
@@ -593,22 +593,7 @@ ninja.data = [{
           section: "News",},{id: "news-a-x-k1-publicly-released-a-519b-parameter-moe-language-model-by-sk-telecom",
           title: 'A.X K1 publicly released — a 519B-parameter MoE language model by SK Telecom....',
           description: "",
-          section: "News",},{id: "projects-project-7",
-          title: 'project 7',
-          description: "with background image",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/7_project/";
-            },},{id: "projects-project-8",
-          title: 'project 8',
-          description: "an other project with a background image and giscus comments",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/8_project/";
-            },},{id: "projects-project-9",
-          title: 'project 9',
-          description: "another project with an image 🎉",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/9_project/";
-            },},{id: "projects-카나리아",
+          section: "News",},{id: "projects-카나리아",
           title: '카나리아',
           description: "모두를 위한 군사보안 경보 시스템",
           section: "Projects",handler: () => {
