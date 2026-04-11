@@ -41,6 +41,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/2022-05-09-fitnet/";
           
         },
+      },{id: "post-flashattention-3-fast-and-accurate-attention-with-asynchrony-and-low-precision",
+        
+          title: "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision",
+        
+        description: "FlashAttention-3 논문 리뷰 — Hopper GPU의 비동기 실행과 FP8을 활용한 Attention 최적화",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/flashattention-3/";
+          
+        },
       },{id: "post-triton-05-flash-attention-종합-프로젝트",
         
           title: "Triton 05: Flash Attention — 종합 프로젝트",
@@ -199,7 +210,7 @@ ninja.data = [{
         
           title: "FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning",
         
-        description: "FlashAttention-2 논문 리뷰와 성능 분석",
+        description: "FlashAttention-2 논문 리뷰 — non-matmul FLOPs 감소, 병렬화, warp partitioning 개선",
         section: "Posts",
         handler: () => {
           
@@ -320,7 +331,7 @@ ninja.data = [{
         
           title: "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
         
-        description: "optimize transformer on gpu device",
+        description: "FlashAttention 논문 리뷰 — GPU 메모리 계층을 고려한 IO-aware Attention 최적화",
         section: "Posts",
         handler: () => {
           
