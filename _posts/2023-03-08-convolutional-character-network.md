@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/1910.07954)
+
 # Intorduction
 
 대부분 Scene Text Detection은 Text Detection과 Text Recognization으로 나누어져 있다.

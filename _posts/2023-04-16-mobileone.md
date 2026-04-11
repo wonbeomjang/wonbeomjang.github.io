@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2206.04040)
+
 # Introduction
 
 MobleNet, ShuufleNet등 경량화 네트워크들은 parameter의 수와 FLOPS를 기준으로 모델을 경량화하고 있다. MobileNetV3, MNasNet 등 만이 실제 기기에서 latency를 측정하여 반영하고 있다. 저자는 paramter수와 FLOPS가 줄어들수록 latency줄어드는 의 관계가 항상 일치하지 않는다는 것을 발견하여 실제로 모델의 어떤 부분이 높은 복잡로를 갖는지 평가하여 모델을 제작했다.

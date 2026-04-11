@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2111.13216)
+
 # Intorduction
 
 데이터셋 중에서 label이 있는 데이터도 있지만 label이 없는 데이터도 있다.

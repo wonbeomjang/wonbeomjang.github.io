@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2205.14135)
+
 # Introduction
 
 현재 NLP와 Vision 분야에서 transformer는 활발히 사용되고 있다. 하지만 transformer의 핵심인 attention은 시퀀스 길이 $$N$$에 대해 $$O(N^2)$$의 시간과 메모리를 사용한다. 이를 해결하기 위해 sparse-approximation, low-rank approximation 등 다양한 approximate attention 방법이 제안되었지만, 이론적인 FLOP 감소에도 불구하고 실제 wall-clock 속도는 크게 개선되지 않는 경우가 많았다.

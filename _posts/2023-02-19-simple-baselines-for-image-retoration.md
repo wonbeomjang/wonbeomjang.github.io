@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2204.04676)
+
 # Introduction
 
 Image restoration에서 SOTA Network들은 많은 모듈을 추가하여 complexity가 증가하였다.

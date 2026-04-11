@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2110.02178)
+
 # Introduction
 
 Transformer는 NLP에서 좋은 성능을 보였고 vision task에서도 ViT를 통하여 좋은 성능을 보여줬다.

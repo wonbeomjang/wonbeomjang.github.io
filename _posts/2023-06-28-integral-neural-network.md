@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2206.12418)
+
 # Introduction
 
 이 논문은 CVPR2023에 accept된 논문이고 award 후보에도 올랐다. 주된 초점은 모델 사이즈별로 성능하락 없이 pruning하는 내용인데, 상당히 아이디어도 괜찮고 앞으로 응용가능성도 있어보인다. 하지만 가벼운 네트워크만 실험을 하여 EfficientNet-L과 같은 무거둔 네크워크나 ViT와 같은 self-attention 메커니즘을 사용한 네트워크의 결과는 없다. 따라서 실제로 사용하려면 이론적토대가 더 필요할 것으로 보인다. 이제 논문을 살표보자.

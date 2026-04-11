@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2105.07576)
+
 # Intorduction
 
 BatchNorm은 layer의 중간에 들어가며 학습을 안정화하여 학습속도를 상승시키고 오버피팅을 방지한다.

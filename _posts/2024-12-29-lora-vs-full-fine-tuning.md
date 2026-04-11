@@ -10,6 +10,8 @@ related_posts: true
 featured: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2410.21228)
+
 # Introduction
 
 Pre-trained 모델을 downstream task에 finetuning하는 것은 computation-, data-efficient한 방법이다. 하지만 full-finetuning은 시간과 비용적으로 부담이 크다. 이를 해결하기 위해 LoRA와 같은 PEFT 방법이 제시되었다. 그러나 LoRA로 full-finetuning과 동일한 성능을 내도록 학습했을 때, 두 방법이 실제로 동일하게 작동하는지는 명확하지 않다. 저자는 이러한 의문을 실험을 통해 분석하며 다음과 같은 결론을 얻었다.

@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2106.04538)
+
 # Introduction
 
 우리 세상에는 다양한 modality가 존재합니다. 직관적으로 여러 modal의 정보를 결합(fusion)하면, uni-modal보다 더 나은 성능을 얻을 수 있을 것이라 생각됩니다. 이에 대해 다음과 같은 질문을 던질 수 있습니다.

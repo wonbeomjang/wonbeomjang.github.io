@@ -10,6 +10,8 @@ related_posts: true
 featured: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2407.08608)
+
 # Introduction
 
 Transformer의 핵심인 attention은 시퀀스 길이에 대해 $$O(N^2)$$의 연산량을 가지고, LLM과 long-context 애플리케이션에서 가장 큰 병목이다. [FlashAttention](/blog/2023/fastattention/)은 tiling과 kernel fusion으로 HBM IO를 줄여서 이를 해결했고, [FlashAttention-2](/blog/2023/flashattention-2/)는 non-matmul FLOPs 감소와 warp partitioning 개선으로 한 단계 더 발전했다.

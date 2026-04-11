@@ -10,6 +10,8 @@ related_posts: true
 featured: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2407.19594)
+
 # Introduction
 
 InstructGPT의 성공 이후, LLM의 instruction following 능력은 매우 중요한 요소로 자리 잡았다.  

@@ -10,6 +10,8 @@ related_posts: true
 featured: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2307.08691)
+
 # Introduction
 
 GPT부터 시작해서 ViT 등 여러 분야에서 attention layer를 많이 쓰고 있다. 그런데 이 attention layer는 dimension의 제곱에 비례해서 계산 비용이 커서 모델의 병목이 될 수 있다. 그래서 attention layer를 효율적으로 만드는 여러 시도가 있는데, 그 중 하나가 FlashAttention이다. FlashAttention은 tiling과 kernel fusion을 사용해서 기존 attention layer보다 2~4배 더 빠르게 동작한다.

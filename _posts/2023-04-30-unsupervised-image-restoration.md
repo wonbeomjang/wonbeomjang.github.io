@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2106.06927)
+
 # Introduction
 
 Image restortation은 대부분 pair한 dataset이 필요하다. 하지만 이를 구하는 것은 어려워서 CycleGAN을 이용하여 Image Restoration을 진행하는 경우가 있다. 하지만 CycleGAN과 같은 Image to Image translation과 DIRT와 같은 unsupervised domain adaptation은 다음과 같은 단점을 가지고 있다.

@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [논문 링크](https://arxiv.org/abs/2003.06957)
+
 # Introduction
 
 기존 object detection을 학습시킬 때 imagenet backbone을 사용하여 pretrain후 transfer learning을 통해 target dataset에 대해 학습을 했다. 이 상황에서 보통 object detection의 backbone만 pretrain시키고 detection관련 module은 random으로 initalize시킨다. 따라서 이에 관한 연구가 있었는데 크게 두 가지가 있다.
