@@ -2,7 +2,7 @@
 layout: post
 title: "Integral Neural Network"
 date: 2023-06-22 00:00:00 +0900
-description: CVPR2023 award 후보
+description: Integral Neural Network 논문 리뷰 — 연속 파라미터 공간 활용 (CVPR 2023)
 categories: [paper]
 tags: [backbone, paper, cvpr, vit]
 giscus_comments: true

@@ -2,7 +2,7 @@
 layout: post
 title: "What Makes Multi-modal Learning Better than Single (Provably)"
 date: 2023-11-20 00:00:00 +0900
-description: NeurIPS 2021
+description: Multimodal vs Unimodal 성능 비교 논문 리뷰 (NeurIPS 2021)
 categories: [paper]
 tags: [multi-modal, paper]
 giscus_comments: true

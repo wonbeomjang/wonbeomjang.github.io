@@ -2,7 +2,7 @@
 layout: post
 title: "Jetson Nano Tensorrt 적용"
 date: 2023-03-01 00:00:11 +0900
-description: pytorch to tensorrt using onnx
+description: Jetson Nano에서 PyTorch 모델을 ONNX 경유 TensorRT로 변환하는 방법
 categories: [optimization]
 tags: [jetson, tensorrt, edge-computing]
 giscus_comments: true

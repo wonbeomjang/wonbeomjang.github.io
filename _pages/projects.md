@@ -1,8 +1,8 @@
 ---
 layout: page
-title: Projects
+title: 토이프로젝트
 permalink: /projects/
-description: 그 동안 수행했던 프로젝트입니다.
+description: 그 동안 수행했던 토이프로젝트입니다.
 nav: false
 nav_order: 2
 display_categories: [toy-project]

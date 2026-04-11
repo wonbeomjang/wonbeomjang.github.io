@@ -2,7 +2,7 @@
 layout: post
 title: "Proper Reuse of Image Classification Features Improves Object Detection"
 date: 2023-04-09 00:00:00 +0900
-description: Neck is important
+description: Classification feature를 Object Detection에 재활용하는 방법 논문 리뷰
 categories: [paper]
 tags: [paper, object-detection, classification]
 giscus_comments: true

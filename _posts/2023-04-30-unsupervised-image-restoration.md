@@ -2,7 +2,7 @@
 layout: post
 title: "Invariant Representation for Unsupervised Image Restoration"
 date: 2023-04-30 00:00:00 +0900
-description: First unsupervised image restoration
+description: 비지도 이미지 복원 논문 리뷰 — 라벨 없이 이미지를 복원하는 방법
 categories: [paper]
 tags: [paper, image-restoration, unsupervised]
 giscus_comments: true

@@ -2,7 +2,7 @@
 layout: post
 title: "Rethinking “Batch” in BatchNorm"
 date: 2023-03-15 00:00:00 +0900
-description: Introduce the PreciseBN
+description: PreciseBN 논문 리뷰 — BatchNorm의 batch 개념 재고
 categories: [paper]
 tags: [paper, batch-normalization, training]
 giscus_comments: true

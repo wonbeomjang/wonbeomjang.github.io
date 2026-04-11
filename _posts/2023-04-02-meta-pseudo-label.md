@@ -2,7 +2,7 @@
 layout: post
 title: "Meta Pseudo Labels"
 date: 2023-04-02 00:00:00 +0900
-description: SOTA cnn technique on imagenet
+description: Meta Pseudo Labels 논문 리뷰 — ImageNet SOTA 반지도 학습 기법
 categories: [paper]
 tags: [paper, semi-supervised, pseudo-label]
 giscus_comments: true
