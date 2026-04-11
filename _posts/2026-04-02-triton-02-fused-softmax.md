@@ -14,7 +14,6 @@ related_posts: true
 Softmax를 하나의 커널로 퓨전(fusion)하여 메모리 접근을 최소화합니다.
 커널 퓨전이 왜 중요한지, reduction 연산을 어떻게 처리하는지 학습합니다.
 
-
 ---
 
 ## 핵심 개념
@@ -35,12 +34,12 @@ softmax(x_i) = exp(x_i - max(x)) / Σ exp(x_j - max(x))
 ### Reduction 연산
 
 전체 데이터에서 하나의 값을 계산하는 연산:
+
 - `max`: 최대값
 - `sum`: 합계
 - `mean`: 평균
 
 Triton에서는 `tl.max(x, axis=0)`, `tl.sum(x, axis=0)` 으로 간단하게 수행합니다.
-
 
 ---
 
@@ -49,7 +48,6 @@ Triton에서는 `tl.max(x, axis=0)`, `tl.sum(x, axis=0)` 으로 간단하게 수
 입력 행렬의 각 **행(row)** 을 하나의 프로그램이 처리합니다.
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/row_processing.png" class="img-fluid rounded z-depth-1" %}
-
 
 ---
 
@@ -66,18 +64,16 @@ PyTorch는 이 4단계를 각각 별도 커널로 실행하므로 매번 Global 
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=02_fused_softmax_snippet02_%EB%9E%98%ED%8D%BC_%ED%95%A8%EC%88%98.py"></script>
 
-
 ---
 
 ## 01 Vector Add와의 차이점
 
-| | 01 Vector Add | 02 Fused Softmax |
-|---|---|---|
-| 처리 단위 | 1D 벡터의 청크 | 2D 행렬의 행 |
-| 프로그램당 연산 | 덧셈 1번 | max+exp+sum+나누기 |
-| 퓨전 효과 | 없음 (연산이 1개) | 4개 연산을 1커널로 |
-| 새로운 기능 | - | `tl.max`, `tl.sum`, `tl.exp`, stride |
-
+|                 | 01 Vector Add     | 02 Fused Softmax                     |
+| --------------- | ----------------- | ------------------------------------ |
+| 처리 단위       | 1D 벡터의 청크    | 2D 행렬의 행                         |
+| 프로그램당 연산 | 덧셈 1번          | max+exp+sum+나누기                   |
+| 퓨전 효과       | 없음 (연산이 1개) | 4개 연산을 1커널로                   |
+| 새로운 기능     | -                 | `tl.max`, `tl.sum`, `tl.exp`, stride |
 
 ---
 
@@ -87,7 +83,6 @@ PyTorch는 이 4단계를 각각 별도 커널로 실행하므로 매번 Global 
 
 커널 퓨전 덕분에 메모리 대역폭을 절약하여,
 특히 열(column) 수가 클수록 PyTorch 대비 성능 향상이 눈에 띕니다.
-
 
 ---
 

@@ -34,10 +34,10 @@ GPT부터 시작해서 ViT 등 여러 분야에서 attention layer를 많이 쓰
 
 GPU는 compute element와 memory hierarchy를 가지고 있다. Nvidia의 tensor core는 FP16/BF16 같은 저정밀도 matmul에 최적화되어 있다. A100 기준:
 
-| 연산 | 처리량 |
-|------|--------|
-| FP16/BF16 matmul | 312 TFLOPS/s |
-| non-matmul FP32 | 19.5 TFLOPS/s |
+| 연산             | 처리량        |
+| ---------------- | ------------- |
+| FP16/BF16 matmul | 312 TFLOPS/s  |
+| non-matmul FP32  | 19.5 TFLOPS/s |
 
 matmul이 non-matmul보다 약 **16배** 빠르다. 따라서 전체 연산에서 non-matmul이 차지하는 비중이 크면, matmul을 아무리 빠르게 해도 성능이 제한된다. 이것이 FlashAttention의 첫 번째 문제이다.
 
@@ -186,15 +186,15 @@ FlashAttention-2의 forward pass를 단계별로 정리하면:
      - $$l_i^{\text{new}} = e^{m_i - m_i^{\text{new}}} l_i + e^{m_{ij} - m_i^{\text{new}}} l_{ij}$$
      - $$O_i \leftarrow \text{diag}(e^{m_i - m_i^{\text{new}}}) O_i + e^{m_{ij} - m_i^{\text{new}}} \tilde{P}_{ij} V_j$$
      - $$m_i \leftarrow m_i^{\text{new}}$$, $$l_i \leftarrow l_i^{\text{new}}$$
-   - $$O_i \leftarrow \text{diag}(l_i)^{-1} O_i$$  ← **마지막에 한 번만 정규화**
+   - $$O_i \leftarrow \text{diag}(l_i)^{-1} O_i$$ ← **마지막에 한 번만 정규화**
    - $$L_i \leftarrow m_i + \log(l_i)$$
 
 **FA1과의 핵심 차이점**: outer loop과 inner loop의 순서가 바뀌었다!
 
-| | FlashAttention | FlashAttention-2 |
-|---|---|---|
-| **Outer loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)** |
-| **Inner loop** | Q 블록 ($$i$$) | **K, V 블록 ($$j$$)** |
+|                | FlashAttention    | FlashAttention-2      |
+| -------------- | ----------------- | --------------------- |
+| **Outer loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)**    |
+| **Inner loop** | Q 블록 ($$i$$)    | **K, V 블록 ($$j$$)** |
 
 FA1에서는 같은 $$K_j, V_j$$를 올려놓고 모든 $$Q_i$$를 순회했다. FA2에서는 하나의 $$Q_i$$를 올려놓고 모든 $$K_j, V_j$$를 순회한다. 이 변경이 왜 중요한지는 병렬화 섹션에서 설명한다.
 
@@ -208,10 +208,10 @@ Backward에서도 비슷한 최적화를 적용한다. $$L$$을 사용하여 $$S
 
 Backward의 loop 순서는 forward와 **반대**이다.
 
-| | Forward | Backward |
-|---|---|---|
-| **Outer loop** | Q 블록 ($$i$$) | **K, V 블록 ($$j$$)** |
-| **Inner loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)** |
+|                | Forward           | Backward              |
+| -------------- | ----------------- | --------------------- |
+| **Outer loop** | Q 블록 ($$i$$)    | **K, V 블록 ($$j$$)** |
+| **Inner loop** | K, V 블록 ($$j$$) | **Q 블록 ($$i$$)**    |
 
 이유: backward에서는 $$dK_j, dV_j$$를 누적해야 한다. $$K_j, V_j$$를 outer loop에 두면 하나의 thread block이 $$dK_j, dV_j$$를 독립적으로 계산할 수 있어서, thread block 간 동기화 없이 병렬 처리가 가능하다.
 
@@ -256,6 +256,7 @@ Thread block 내에서 여러 warp이 어떻게 작업을 나누느냐도 성능
 기존 FlashAttention에서는 $$K$$와 $$V$$를 warp 간에 나누고, $$Q$$는 모든 warp이 공유했다. 4개의 warp이 있다면, 각 warp이 $$K$$의 일부로 $$QK^\top$$의 일부를 계산한다.
 
 **문제**: 각 warp이 $$QK^\top$$의 서로 다른 열 블록을 계산한 후, softmax를 위해 이들을 합쳐야 한다. 이 과정에서:
+
 1. 각 warp이 자기 결과를 **shared memory에 쓴다**
 2. **동기화 배리어** ($$\text{\_\_syncthreads}$$)
 3. 다른 warp의 결과를 **shared memory에서 읽는다**
@@ -309,16 +310,16 @@ GPT 스타일 학습 기준으로 A100당 **225 TFLOPS/s**, 모델 FLOPs utiliza
 
 ## FlashAttention vs FlashAttention-2 요약
 
-| | FlashAttention | FlashAttention-2 |
-|---|---|---|
-| **Rescaling** | 매 블록마다 정규화 | 마지막에 한 번만 |
-| **Logsumexp 저장** | $$m, l$$ 별도 저장 | $$L = m + \log(l)$$ 합쳐서 저장 |
-| **Forward outer loop** | K, V 블록 | **Q 블록** |
-| **Backward outer loop** | Q 블록 | **K, V 블록** |
-| **Warp partitioning** | Split-K (통신 필요) | **Split-Q (통신 불필요)** |
-| **시퀀스 병렬화** | 없음 | **있음** |
-| **A100 활용률** | 25~40% | **50~73%** |
-| **성능** | 72~120 TFLOPS | **~230 TFLOPS** |
+|                         | FlashAttention      | FlashAttention-2                |
+| ----------------------- | ------------------- | ------------------------------- |
+| **Rescaling**           | 매 블록마다 정규화  | 마지막에 한 번만                |
+| **Logsumexp 저장**      | $$m, l$$ 별도 저장  | $$L = m + \log(l)$$ 합쳐서 저장 |
+| **Forward outer loop**  | K, V 블록           | **Q 블록**                      |
+| **Backward outer loop** | Q 블록              | **K, V 블록**                   |
+| **Warp partitioning**   | Split-K (통신 필요) | **Split-Q (통신 불필요)**       |
+| **시퀀스 병렬화**       | 없음                | **있음**                        |
+| **A100 활용률**         | 25~40%              | **50~73%**                      |
+| **성능**                | 72~120 TFLOPS       | **~230 TFLOPS**                 |
 
 # Conclusion
 

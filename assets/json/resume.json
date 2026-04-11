@@ -41,9 +41,7 @@
       "url": "https://sites.google.com/view/cau-cvml/",
       "startDate": "2019-08",
       "endDate": "2020-08",
-      "highlights": [
-        "DPSGAN experiment and MDADN lightweight project were conducted"
-      ]
+      "highlights": ["DPSGAN experiment and MDADN lightweight project were conducted"]
     }
   ],
   "education": [
@@ -114,10 +112,7 @@
       "name": "A.X Foundation Model",
       "startDate": "2025-08",
       "description": "Data design and construction for the 500B-parameter A.X K1 Foundation Model",
-      "highlights": [
-        "Designed and constructed post-training datasets",
-        "Designed and constructed Korean language understanding datasets"
-      ]
+      "highlights": ["Designed and constructed post-training datasets", "Designed and constructed Korean language understanding datasets"]
     },
     {
       "name": "TelcoLLM, TelBench, TelAgentBench",

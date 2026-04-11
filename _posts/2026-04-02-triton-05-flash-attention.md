@@ -17,7 +17,6 @@ LLM 추론/학습에서 가장 중요한 최적화 기법 중 하나입니다.
 
 > Flash Attention의 원리와 논문 내용이 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를 먼저 읽어보는 것을 추천한다.
 
-
 ---
 
 ## 핵심 개념
@@ -35,6 +34,7 @@ $$O = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d}}\right) \cdot V$$
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet01_Standard_Attention%EC%9D%98_%EB%AC%B8%EC%A0%9C.py"></script>
 
 시퀀스 길이 N=4096, float16이면:
+
 - S 행렬 크기: 4096 × 4096 × 2 bytes = **32MB**
 - N=16384이면: **512MB** — 시퀀스가 길어질수록 VRAM 폭발
 
@@ -81,11 +81,10 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 ### 메모리 복잡도
 
-| 방식 | 메모리 | RTX 4080 (16GB)에서 최대 seq_len |
-|------|--------|----------------------------------|
-| Standard | O(N²) | ~8K (float16) |
-| Flash | O(N) | 수십만+ |
-
+| 방식     | 메모리 | RTX 4080 (16GB)에서 최대 seq_len |
+| -------- | ------ | -------------------------------- |
+| Standard | O(N²)  | ~8K (float16)                    |
+| Flash    | O(N)   | 수십만+                          |
 
 ---
 
@@ -97,7 +96,6 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet02_%EB%8B%A8%EA%B3%84%EB%B3%84_%EC%9D%98%EC%82%AC%EC%BD%94%EB%93%9C.py"></script>
 
-
 ---
 
 ## Causal Masking
@@ -107,7 +105,6 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 {% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/causal_mask.png" class="img-fluid rounded z-depth-1" %}
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet03_Causal_Masking.py"></script>
-
 
 ---
 
@@ -147,20 +144,18 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet06_%EC%B5%9C%EC%A2%85_%EC%A0%95%EA%B7%9C%ED%99%94.py"></script>
 
-
 ---
 
 ## 전체 튜토리얼과의 연결
 
-| 개념 | 어디서 배웠나 | Flash Attention에서의 역할 |
-|---|---|---|
-| `tl.load`, mask | 01 Vector Add | Q, K, V 블록 로드 |
-| reduction, `tl.exp` | 02 Softmax | Online Softmax의 max, sum, exp |
-| stride, 다중 포인터 | 03 RMSNorm | batch, head, seq, dim 차원 접근 |
-| `tl.dot`, 2D 타일링 | 04 MatMul | S = Q@K^T, O += P@V |
-| K 차원 루프 | 04 MatMul | K/V 블록 순회 (내부 루프) |
-| **Online Softmax** | **신규** | SRAM 제한 극복의 핵심 |
-
+| 개념                | 어디서 배웠나 | Flash Attention에서의 역할      |
+| ------------------- | ------------- | ------------------------------- |
+| `tl.load`, mask     | 01 Vector Add | Q, K, V 블록 로드               |
+| reduction, `tl.exp` | 02 Softmax    | Online Softmax의 max, sum, exp  |
+| stride, 다중 포인터 | 03 RMSNorm    | batch, head, seq, dim 차원 접근 |
+| `tl.dot`, 2D 타일링 | 04 MatMul     | S = Q@K^T, O += P@V             |
+| K 차원 루프         | 04 MatMul     | K/V 블록 순회 (내부 루프)       |
+| **Online Softmax**  | **신규**      | SRAM 제한 극복의 핵심           |
 
 ---
 
@@ -171,7 +166,6 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 - **정확도**: PyTorch standard attention과 거의 동일한 결과
 - **속도**: 시퀀스 길이가 길수록 (1024+) 큰 속도 향상
 - **메모리**: O(N²) → O(N)으로 극적인 메모리 절약
-
 
 ---
 

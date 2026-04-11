@@ -10,6 +10,7 @@
 ### 행렬 곱셈이 왜 중요한가
 
 딥러닝의 거의 모든 연산이 행렬 곱셈:
+
 - Linear layer: `y = xW + b`
 - Attention: `QK^T`, `PV`
 - MLP: 모든 Feed-Forward 블록
@@ -27,6 +28,7 @@ GPU 시간의 대부분이 행렬 곱셈에 소비됩니다.
 ### 데이터 재사용
 
 타일링의 핵심은 **데이터 재사용**:
+
 - A의 한 블록은 B의 여러 열 블록과 곱해짐
 - B의 한 블록은 A의 여러 행 블록과 곱해짐
 - SRAM에 올린 데이터를 최대한 재활용
@@ -117,13 +119,13 @@ C(1,1): A행1 + B열1  ← B열1 캐시에서 바로 재활용!
 
 ## 사용된 Triton 기능
 
-| 기능 | 설명 |
-|------|------|
-| `tl.dot(a, b)` | 블록 행렬 곱 (텐서 코어 활용) |
-| `tl.zeros()` | accumulator 초기화 |
-| `triton.autotune` | 최적 파라미터 자동 탐색 |
-| `triton.Config` | autotune 탐색 공간 정의 |
-| `GROUP_SIZE_M` | L2 캐시 최적화를 위한 swizzling 파라미터 |
+| 기능              | 설명                                     |
+| ----------------- | ---------------------------------------- |
+| `tl.dot(a, b)`    | 블록 행렬 곱 (텐서 코어 활용)            |
+| `tl.zeros()`      | accumulator 초기화                       |
+| `triton.autotune` | 최적 파라미터 자동 탐색                  |
+| `triton.Config`   | autotune 탐색 공간 정의                  |
+| `GROUP_SIZE_M`    | L2 캐시 최적화를 위한 swizzling 파라미터 |
 
 ### `triton.autotune` 이란?
 
@@ -281,14 +283,14 @@ def triton_matmul(a, b):
 
 ### 이전 튜토리얼과의 차이점
 
-| | 01~03 | 04 MatMul |
-|---|---|---|
-| 그리드 | 1D (행 수) | 1D (M타일 × N타일) |
-| 데이터 | 1D 벡터/행 | 2D 블록 (타일) |
-| 포인터 | 1D offsets | 2D `[:, None]` + `[None, :]` |
-| 루프 | 없음 | K 차원 루프 |
-| 핵심 연산 | `+`, `exp`, `sum` | `tl.dot` (텐서 코어) |
-| 파라미터 튜닝 | 수동 BLOCK_SIZE | `triton.autotune` |
+|               | 01~03             | 04 MatMul                    |
+| ------------- | ----------------- | ---------------------------- |
+| 그리드        | 1D (행 수)        | 1D (M타일 × N타일)           |
+| 데이터        | 1D 벡터/행        | 2D 블록 (타일)               |
+| 포인터        | 1D offsets        | 2D `[:, None]` + `[None, :]` |
+| 루프          | 없음              | K 차원 루프                  |
+| 핵심 연산     | `+`, `exp`, `sum` | `tl.dot` (텐서 코어)         |
+| 파라미터 튜닝 | 수동 BLOCK_SIZE   | `triton.autotune`            |
 
 ## 실행 방법
 

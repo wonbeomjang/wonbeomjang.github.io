@@ -84,12 +84,12 @@ $$
 
 Ablation 결과를 보면, 각 구성 요소의 기여가 명확하다.
 
-| 구성 요소 | 효과 |
-|----------|------|
-| EMA (Teacher update) | Student의 noisy gradient를 smoothing하여 안정적인 pseudo-label 생성 |
-| Weak/Strong augmentation | Teacher는 정확한 pseudo-label을, Student는 robust한 feature를 학습 |
-| Discriminator | Source-target domain 간 feature alignment으로 domain gap 감소 |
-| Confidence threshold ($$\delta$$) | 저품질 pseudo-label 필터링으로 noise 감소 |
+| 구성 요소                         | 효과                                                                |
+| --------------------------------- | ------------------------------------------------------------------- |
+| EMA (Teacher update)              | Student의 noisy gradient를 smoothing하여 안정적인 pseudo-label 생성 |
+| Weak/Strong augmentation          | Teacher는 정확한 pseudo-label을, Student는 robust한 feature를 학습  |
+| Discriminator                     | Source-target domain 간 feature alignment으로 domain gap 감소       |
+| Confidence threshold ($$\delta$$) | 저품질 pseudo-label 필터링으로 noise 감소                           |
 
 <p align="center">
     <img src="/assets/post/image/legacy/da_result_3.png" width="80%">

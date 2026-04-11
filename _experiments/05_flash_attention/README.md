@@ -28,6 +28,7 @@ O = P @ V               # (N, d)
 ```
 
 시퀀스 길이 N=4096, float16이면:
+
 - S 행렬 크기: 4096 × 4096 × 2 bytes = **32MB**
 - N=16384이면: **512MB** — 시퀀스가 길어질수록 VRAM 폭발
 
@@ -98,10 +99,10 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 ### 메모리 복잡도
 
-| 방식 | 메모리 | RTX 4080 (16GB)에서 최대 seq_len |
-|------|--------|----------------------------------|
-| Standard | O(N²) | ~8K (float16) |
-| Flash | O(N) | 수십만+ |
+| 방식     | 메모리 | RTX 4080 (16GB)에서 최대 seq_len |
+| -------- | ------ | -------------------------------- |
+| Standard | O(N²)  | ~8K (float16)                    |
+| Flash    | O(N)   | 수십만+                          |
 
 ## 커널 동작 원리
 
@@ -141,14 +142,14 @@ S = tl.where(causal_mask, S, float('-inf'))
 
 ## 사용된 Triton 기능 (종합)
 
-| 튜토리얼 | 기능 | Flash Attention에서의 역할 |
-|----------|------|---------------------------|
-| 01 | `tl.load`, `tl.store`, mask | Q, K, V 블록 로드/저장 |
-| 02 | `tl.max`, `tl.sum`, `tl.exp` | Online Softmax |
-| 03 | stride 기반 접근 | batch, head 차원 처리 |
-| 04 | `tl.dot`, 2D 타일링 | S = Q @ K^T, O += P @ V |
-| **신규** | 중첩 루프 | K, V 블록 순회 |
-| **신규** | 다차원 포인터 | (batch, head, seq, dim) 접근 |
+| 튜토리얼 | 기능                         | Flash Attention에서의 역할   |
+| -------- | ---------------------------- | ---------------------------- |
+| 01       | `tl.load`, `tl.store`, mask  | Q, K, V 블록 로드/저장       |
+| 02       | `tl.max`, `tl.sum`, `tl.exp` | Online Softmax               |
+| 03       | stride 기반 접근             | batch, head 차원 처리        |
+| 04       | `tl.dot`, 2D 타일링          | S = Q @ K^T, O += P @ V      |
+| **신규** | 중첩 루프                    | K, V 블록 순회               |
+| **신규** | 다차원 포인터                | (batch, head, seq, dim) 접근 |
 
 ## 코드 라인별 설명
 
@@ -324,14 +325,14 @@ def flash_attention(q, k, v, causal=False):
 
 ### 전체 튜토리얼과의 연결
 
-| 개념 | 어디서 배웠나 | Flash Attention에서의 역할 |
-|---|---|---|
-| `tl.load`, mask | 01 Vector Add | Q, K, V 블록 로드 |
-| reduction, `tl.exp` | 02 Softmax | Online Softmax의 max, sum, exp |
-| stride, 다중 포인터 | 03 RMSNorm | batch, head, seq, dim 차원 접근 |
-| `tl.dot`, 2D 타일링 | 04 MatMul | S = Q@K^T, O += P@V |
-| K 차원 루프 | 04 MatMul | K/V 블록 순회 (내부 루프) |
-| **Online Softmax** | **신규** | SRAM 제한 극복의 핵심 |
+| 개념                | 어디서 배웠나 | Flash Attention에서의 역할      |
+| ------------------- | ------------- | ------------------------------- |
+| `tl.load`, mask     | 01 Vector Add | Q, K, V 블록 로드               |
+| reduction, `tl.exp` | 02 Softmax    | Online Softmax의 max, sum, exp  |
+| stride, 다중 포인터 | 03 RMSNorm    | batch, head, seq, dim 차원 접근 |
+| `tl.dot`, 2D 타일링 | 04 MatMul     | S = Q@K^T, O += P@V             |
+| K 차원 루프         | 04 MatMul     | K/V 블록 순회 (내부 루프)       |
+| **Online Softmax**  | **신규**      | SRAM 제한 극복의 핵심           |
 
 ## 실행 방법
 

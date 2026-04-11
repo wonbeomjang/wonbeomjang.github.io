@@ -14,7 +14,6 @@ related_posts: true
 LLaMA, Mistral, Gemma 등 최신 LLM에서 사용하는 RMSNorm을 Triton으로 구현합니다.
 Softmax와 유사한 패턴이지만, 학습 가능한 가중치(gamma)가 추가됩니다.
 
-
 ---
 
 ## 핵심 개념
@@ -27,6 +26,7 @@ RMSNorm:    y = x / sqrt(mean(x²) + ε) * γ
 ```
 
 RMSNorm이 LLM에서 선호되는 이유:
+
 - mean 계산이 필요 없음 → 연산량 감소
 - bias(β) 없음 → 파라미터 수 감소
 - 실험적으로 LayerNorm과 성능이 비슷
@@ -40,13 +40,11 @@ RMSNorm이 LLM에서 선호되는 이유:
 4. 스케일링:  y = x_norm * γ
 ```
 
-
 ---
 
 ## 커널 동작 원리
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/03_rmsnorm/rmsnorm_flow.png" class="img-fluid rounded z-depth-1" %}
-
 
 ---
 
@@ -64,19 +62,17 @@ RMSNorm이 LLM에서 선호되는 이유:
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=03_rmsnorm_snippet03_%EB%9E%98%ED%8D%BC_%ED%95%A8%EC%88%98.py"></script>
 
-
 ---
 
 ## 02 Fused Softmax와의 차이점
 
-| | 02 Softmax | 03 RMSNorm |
-|---|---|---|
-| reduction | `max` + `sum` (2번) | `sum` (1번) |
-| 수치 안정성 | max 빼기 | eps 더하기 |
-| 범위 밖 채움 | `-inf` | `0.0` |
-| 추가 입력 | 없음 | 가중치 γ |
-| 입력 shape | 2D만 | 3D/4D → 2D 변환 |
-
+|              | 02 Softmax          | 03 RMSNorm      |
+| ------------ | ------------------- | --------------- |
+| reduction    | `max` + `sum` (2번) | `sum` (1번)     |
+| 수치 안정성  | max 빼기            | eps 더하기      |
+| 범위 밖 채움 | `-inf`              | `0.0`           |
+| 추가 입력    | 없음                | 가중치 γ        |
+| 입력 shape   | 2D만                | 3D/4D → 2D 변환 |
 
 ---
 
@@ -86,7 +82,6 @@ RMSNorm이 LLM에서 선호되는 이유:
 
 PyTorch의 수동 RMSNorm 구현 대비 커널 퓨전으로 인한 성능 향상이 나타납니다.
 hidden_size가 클수록(2048, 4096 등) 차이가 명확합니다.
-
 
 ---
 

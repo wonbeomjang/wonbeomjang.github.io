@@ -15,6 +15,7 @@ RMSNorm:    y = x / sqrt(mean(x²) + ε) * γ
 ```
 
 RMSNorm이 LLM에서 선호되는 이유:
+
 - mean 계산이 필요 없음 → 연산량 감소
 - bias(β) 없음 → 파라미터 수 감소
 - 실험적으로 LayerNorm과 성능이 비슷
@@ -48,12 +49,12 @@ row_ptr = input_ptr + row_idx * stride
 
 ## 사용된 Triton 기능
 
-| 기능 | 설명 |
-|------|------|
-| `tl.sum(x * x, axis=0)` | 제곱합 계산 |
-| `tl.sqrt(x)` | 제곱근 |
-| 다중 포인터 | input, weight, output 각각의 포인터 |
-| stride 인자 | 행 간 메모리 간격 전달 |
+| 기능                    | 설명                                |
+| ----------------------- | ----------------------------------- |
+| `tl.sum(x * x, axis=0)` | 제곱합 계산                         |
+| `tl.sqrt(x)`            | 제곱근                              |
+| 다중 포인터             | input, weight, output 각각의 포인터 |
+| stride 인자             | 행 간 메모리 간격 전달              |
 
 ## 이전 튜토리얼과의 연결
 
@@ -162,13 +163,13 @@ def triton_rmsnorm(x, weight, eps=1e-6):
 
 ### 02 Fused Softmax와의 차이점
 
-| | 02 Softmax | 03 RMSNorm |
-|---|---|---|
-| reduction | `max` + `sum` (2번) | `sum` (1번) |
-| 수치 안정성 | max 빼기 | eps 더하기 |
-| 범위 밖 채움 | `-inf` | `0.0` |
-| 추가 입력 | 없음 | 가중치 γ |
-| 입력 shape | 2D만 | 3D/4D → 2D 변환 |
+|              | 02 Softmax          | 03 RMSNorm      |
+| ------------ | ------------------- | --------------- |
+| reduction    | `max` + `sum` (2번) | `sum` (1번)     |
+| 수치 안정성  | max 빼기            | eps 더하기      |
+| 범위 밖 채움 | `-inf`              | `0.0`           |
+| 추가 입력    | 없음                | 가중치 γ        |
+| 입력 shape   | 2D만                | 3D/4D → 2D 변환 |
 
 ## 실행 방법
 

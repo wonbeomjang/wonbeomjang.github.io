@@ -23,6 +23,7 @@ softmax(x_i) = exp(x_i - max(x)) / Σ exp(x_j - max(x))
 ### Reduction 연산
 
 전체 데이터에서 하나의 값을 계산하는 연산:
+
 - `max`: 최대값
 - `sum`: 합계
 - `mean`: 평균
@@ -42,11 +43,11 @@ RTX 4080의 SRAM은 SM당 64KB이므로, float32 기준 최대 ~16,384개 열까
 
 ## 사용된 Triton 기능
 
-| 기능 | 설명 |
-|------|------|
-| `tl.max(x, axis=0)` | 벡터의 최대값 (reduction) |
-| `tl.sum(x, axis=0)` | 벡터의 합 (reduction) |
-| `tl.exp(x)` | element-wise 지수 함수 |
+| 기능                   | 설명                                           |
+| ---------------------- | ---------------------------------------------- |
+| `tl.max(x, axis=0)`    | 벡터의 최대값 (reduction)                      |
+| `tl.sum(x, axis=0)`    | 벡터의 합 (reduction)                          |
+| `tl.exp(x)`            | element-wise 지수 함수                         |
 | `tl.where(cond, a, b)` | 조건에 따라 a 또는 b 선택 (마스크 패딩에 사용) |
 
 ### `tl.where`의 역할
@@ -60,6 +61,7 @@ x = tl.where(mask, x, float('-inf'))
 ```
 
 `-inf`를 사용하는 이유:
+
 - `exp(-inf) = 0` → softmax 계산에 영향 없음
 - `max(..., -inf) = 원래 max` → max 계산에 영향 없음
 
@@ -159,12 +161,12 @@ def fused_softmax(x: torch.Tensor) -> torch.Tensor:
 
 ### 01 Vector Add와의 차이점
 
-| | 01 Vector Add | 02 Fused Softmax |
-|---|---|---|
-| 처리 단위 | 1D 벡터의 청크 | 2D 행렬의 행 |
-| 프로그램당 연산 | 덧셈 1번 | max+exp+sum+나누기 |
-| 퓨전 효과 | 없음 (연산이 1개) | 4개 연산을 1커널로 |
-| 새로운 기능 | - | `tl.max`, `tl.sum`, `tl.exp`, stride |
+|                 | 01 Vector Add     | 02 Fused Softmax                     |
+| --------------- | ----------------- | ------------------------------------ |
+| 처리 단위       | 1D 벡터의 청크    | 2D 행렬의 행                         |
+| 프로그램당 연산 | 덧셈 1번          | max+exp+sum+나누기                   |
+| 퓨전 효과       | 없음 (연산이 1개) | 4개 연산을 1커널로                   |
+| 새로운 기능     | -                 | `tl.max`, `tl.sum`, `tl.exp`, stride |
 
 ## 실행 방법
 

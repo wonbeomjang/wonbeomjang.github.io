@@ -14,7 +14,6 @@ related_posts: true
 딥러닝의 핵심 연산인 행렬 곱셈(GEMM)을 Triton으로 구현합니다.
 2D 타일링, `tl.dot`, `triton.autotune` 등 고급 기능을 학습합니다.
 
-
 ---
 
 ## 핵심 개념
@@ -22,6 +21,7 @@ related_posts: true
 ### 행렬 곱셈이 왜 중요한가
 
 딥러닝의 거의 모든 연산이 행렬 곱셈:
+
 - Linear layer: `y = xW + b`
 - Attention: `QK^T`, `PV`
 - MLP: 모든 Feed-Forward 블록
@@ -33,7 +33,6 @@ related_posts: true
 **타일링**: 행렬을 작은 블록으로 나누어 SRAM에 올리고, 블록 단위로 계산
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/tiling.png" class="img-fluid rounded z-depth-1" %}
-
 
 ---
 
@@ -70,7 +69,6 @@ related_posts: true
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=04_matmul_snippet02_triton_autotune__%EC%9D%B4%EB%9E%80.py"></script>
 
-
 ---
 
 ## 코드 라인별 설명
@@ -81,14 +79,13 @@ related_posts: true
 
 ### 이전 튜토리얼과의 차이점
 
-| | 01~03 | 04 MatMul |
-|---|---|---|
-| 그리드 | 1D (행 수) | 1D (M타일 × N타일) |
-| 데이터 | 1D 벡터/행 | 2D 블록 (타일) |
-| 루프 | 없음 | K 차원 루프 |
-| 핵심 연산 | `+`, `exp`, `sum` | `tl.dot` (텐서 코어) |
-| 파라미터 튜닝 | 수동 BLOCK_SIZE | `triton.autotune` |
-
+|               | 01~03             | 04 MatMul            |
+| ------------- | ----------------- | -------------------- |
+| 그리드        | 1D (행 수)        | 1D (M타일 × N타일)   |
+| 데이터        | 1D 벡터/행        | 2D 블록 (타일)       |
+| 루프          | 없음              | K 차원 루프          |
+| 핵심 연산     | `+`, `exp`, `sum` | `tl.dot` (텐서 코어) |
+| 파라미터 튜닝 | 수동 BLOCK_SIZE   | `triton.autotune`    |
 
 ---
 
@@ -98,7 +95,6 @@ related_posts: true
 
 cuBLAS(`torch.matmul`)는 수십 년간 최적화된 라이브러리입니다.
 Triton으로 cuBLAS의 **80~90%** 성능에 도달하는 것이 목표입니다.
-
 
 ---
 
