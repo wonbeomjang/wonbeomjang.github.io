@@ -30,18 +30,7 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-",
-        
-          title: "",
-        
-        description: "",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/2022-05-09-fitnet/";
-          
-        },
-      },{id: "post-flashattention-3-fast-and-accurate-attention-with-asynchrony-and-low-precision",
+        },{id: "post-flashattention-3-fast-and-accurate-attention-with-asynchrony-and-low-precision",
         
           title: "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision",
         
@@ -457,6 +446,17 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2022/quantization-pytorch/";
+          
+        },
+      },{id: "post-fitnet",
+        
+          title: "FitNet",
+        
+        description: "FitNet 논문 리뷰: Knowledge Distillation 기법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2022/fitnet/";
           
         },
       },{id: "post-osam-3-이제-끝나는-건가",
