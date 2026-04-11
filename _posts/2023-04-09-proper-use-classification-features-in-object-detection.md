@@ -88,7 +88,7 @@ Detection dataset으로 MS-COCO, LVIS를 사용했고, classification dataset으
     <img src="/assets/post/image/proper-reuse-of-image-classification-features-improve-object-detection/Untitled%201.png" width="50%">
 </p>
 
-pretraing과 fine-tuning의 관계를 알아보기위해 실험을 진행했다. 첫 번째를 보았을 때 traning schedule이 짧을 경우엔 pretranig에 사용된 classfication dataset의 크기가 커질수록 성능이 좋았따. 두 번째를 보았을 때 training schedule이 길수록 pretran classification dataset에따른 성능차이가 줄어든 것을 보아 pretran은 성능에 도움이 되지 않는다고 한다. 저자는 이를 확장하여 large dataset으로 pretrain하고 backbone을 freeze시켜 long traning schedule으로부터 knowledge를 보호한다. 또한 high-capacity detector component사용하여 domain이 다른 문제를 해결했다.
+pretraining과 fine-tuning의 관계를 알아보기 위해 실험을 진행했다. 첫 번째를 보았을 때 training schedule이 짧을 경우엔 pretraining에 사용된 classification dataset의 크기가 커질수록 성능이 좋았다. 두 번째를 보았을 때 training schedule이 길수록 pretrain classification dataset에 따른 성능차이가 줄어든 것을 보아 pretrain은 성능에 도움이 되지 않는다고 한다. 저자는 이를 확장하여 large dataset으로 pretrain하고 backbone을 freeze시켜 long training schedule으로부터 knowledge를 보호한다. 또한 high-capacity detector component를 사용하여 domain이 다른 문제를 해결했다.
 
 <p align="center">
     <img src="/assets/post/image/proper-reuse-of-image-classification-features-improve-object-detection/Untitled%202.png" width="50%">

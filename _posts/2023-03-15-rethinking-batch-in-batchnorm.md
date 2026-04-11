@@ -11,7 +11,7 @@ related_posts: true
 
 > [논문 링크](https://arxiv.org/abs/2105.07576)
 
-# Intorduction
+# Introduction
 
 BatchNorm은 layer의 중간에 들어가며 학습을 안정화하여 학습속도를 상승시키고 오버피팅을 방지한다.
 하지만 train test domain이 많이 다르거나 batch size가 현저하게 작다면 batch norm은 문제를 일으키기도 한다.
@@ -51,10 +51,10 @@ $$
     <img src="/assets/post/image/legacy/precisebn_bn_plot.png" width="80%">
 </p>
 
-# PresizeBN
+# PreciseBN
 
 따라서 저자는 PreciseBN을 제안했다.
-PresizeBN은 mini-batch마다 batch parameter를 update하지 않고 한 epoch이 끝나면 model을 freeze한 후 batch statistics를 aggregation을 하여 update한다.
+PreciseBN은 mini-batch마다 batch parameter를 update하지 않고 한 epoch이 끝나면 model을 freeze한 후 batch statistics를 aggregation을 하여 update한다.
 
 $$
 \mu_{pop}=E[\mu_{\mathcal{B}}], \sigma_{pop}^2=E[\mu_{\mathcal{B}}^2+\sigma_M^2]-E[\mu_{\mathcal{B}}^2]

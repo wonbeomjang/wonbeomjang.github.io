@@ -14,7 +14,7 @@ related_posts: true
 # Introduction
 
 Image restoration에서 SOTA Network들은 많은 모듈을 추가하여 complexity가 증가하였다.
-저자는 이를 inter-block complexity, intra-block complexity로 나누오 생각했고, low inter-block complexity와 low intra-block complexity로 SOTA를 달성하기 위해 여러 실험을 진행하였다.
+저자는 이를 inter-block complexity, intra-block complexity로 나누어 생각했고, low inter-block complexity와 low intra-block complexity로 SOTA를 달성하기 위해 여러 실험을 진행하였다.
 
 기본적으로 UNet구조를 따랐고, convolution-relu-shortcut으로 구성된 간단한 plain block으로 시작하였다.
 이후 plain block에서 SOTA method 중 필수적이라고 생각하는 것 만을 하나씩 추가하였고 결과적으로 GELU, Channel Attention을 추가하였다.

@@ -28,13 +28,13 @@ related_posts: true
 
 ## Backbone
 
-Backbone으로 ResNet50을사용하였고 높은 해상돌르 위하하여 featuremap size를 1/4로만 줄인다.
+Backbone으로 ResNet50을사용하였고 높은 해상도를 위하하여 featuremap size를 1/4로만 줄인다.
 또한 두 개의 Hour Glass Module을 쌓는다. 이때 Hourglass-104에서 down sampling과 마지막 몇 개의 layer를 제거하여 Hourglass-88을 제작한다.
 
 ## Character Branch
 
 Word 단위로 인식하는 네트워크들은 필연적으로 RNN계열의 모델이 들어간다.
-하지만 이로인해 더 많은 데이터와 작업이 필요하므로 word단위가 아닌 character단위로 만드는 것이 성능을 높힐 수 있다.
+하지만 이로인해 더 많은 데이터와 작업이 필요하므로 word단위가 아닌 character단위로 만드는 것이 성능을 높일 수 있다.
 따라서 저자는 Character branch를 도입했다.
 
 Character branch는 Text instance segmentation, character detection, character recognization으로 이루어져있으며
