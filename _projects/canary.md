@@ -2,7 +2,7 @@
 layout: page
 title: 카나리아
 description: 모두를 위한 군사보안 경보 시스템
-img: /assets/img/project_preview/canary.png
+img: assets/img/project_preview/canary.png
 importance: 2
 category: toy-project
 ---

@@ -2,7 +2,7 @@
 layout: page
 title: 집약
 description: 시각장애인을 위한 약학정보제공서비스
-img: /assets/img/project_preview/zipyak.png
+img: assets/img/project_preview/zipyak.png
 importance: 3
 category: toy-project
 ---

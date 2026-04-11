@@ -2,7 +2,7 @@
 layout: page
 title: 염색프로그램
 description: HairMatteNet + Quantization 구현
-img: /assets/img/project_preview/hairmattenet.png
+img: assets/img/project_preview/hairmattenet.png
 importance: 3
 category: toy-project
 ---

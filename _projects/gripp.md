@@ -2,7 +2,7 @@
 layout: page
 title: Gripp
 description: 딥러닝 영상 분석을 활용한 클라이밍 경쟁 서비스
-img: /assets/img/project_preview/gripp.png
+img: assets/img/project_preview/gripp.png
 importance: 1
 category: toy-project
 ---

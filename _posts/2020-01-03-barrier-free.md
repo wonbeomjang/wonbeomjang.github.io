@@ -1,8 +1,7 @@
 ---
-layout: post #require
+layout: post
 title: "시각장애인을 위한 약학정보제공 서비스 기획기"
-author: "wonbeomjang"
-date: 2020-01-03 21:49 # 작성 날짜 등록
+date: 2020-01-03 21:49 +0900
 description: 시각장애인을 위한 약학정보 제공 앱 개발기
 categories: [project] # 원하는 태그 등록
 tags: [app, accessibility, project]

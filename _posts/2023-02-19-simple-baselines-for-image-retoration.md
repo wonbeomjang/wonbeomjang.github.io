@@ -2,7 +2,7 @@
 layout: post
 title: "Simple Baselines for Image Restoration"
 date: 2023-02-19 00:00:00 +0900
-description: NAFNet
+description: NAFNet 기반 이미지 복원의 Simple Baseline 논문 리뷰
 categories: [paper]
 tags: [paper, image-restoration, baseline]
 giscus_comments: true
