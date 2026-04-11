@@ -111,7 +111,7 @@ ninja.data = [{
         
           title: "LoRA vs Full Fine-tuning: An Illusion of Equivalence",
         
-        description: "LoRA와 Full Fine-tuning의 차이점 분석 논문 리뷰",
+        description: "LoRA vs Full Fine-tuning 논문 리뷰 — Intruder Dimensions과 Spectral 분석을 통한 차이점 분석",
         section: "Posts",
         handler: () => {
           
@@ -133,7 +133,7 @@ ninja.data = [{
         
           title: "Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method 설명",
         
-        description: "LLM 사전학습 데이터 탐지 방법론 논문 리뷰",
+        description: "LLM 사전학습 데이터 탐지 논문 리뷰 — Divergence 기반 Calibration으로 학습 데이터 포함 여부 판별",
         section: "Posts",
         handler: () => {
           
@@ -144,7 +144,7 @@ ninja.data = [{
         
           title: "META-REWARDING LANGUAGE MODELS: Self-Improving Alignment with LLM-as-a-Meta-Judge 설명",
         
-        description: "LLM-as-a-Meta-Judge 논문 리뷰",
+        description: "Meta-Rewarding 논문 리뷰 — Actor, Judge, Meta-Judge 3역할 자기 개선 학습",
         section: "Posts",
         handler: () => {
           
