@@ -4,6 +4,7 @@ title: "Invariant Representation for Unsupervised Image Restoration"
 date: 2023-04-30 00:00:00 +0900
 description: First unsupervised image restoration
 categories: [image-restoration, unsupervised-learning]
+tags: [paper, image-restoration, unsupervised]
 giscus_comments: true
 related_posts: true
 ---

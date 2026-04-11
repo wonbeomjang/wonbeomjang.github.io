@@ -2,7 +2,10 @@
 layout: post
 title: "Pytorch Tensorrt 적용"
 date: 2022-07-12 18:50:11 +0900
+description: PyTorch 모델을 TensorRT로 변환하는 방법
 categories: [pytorch, hardware-optimization]
+description: PyTorch 모델을 TensorRT로 변환하는 방법
+tags: [pytorch, tensorrt, optimization]
 giscus_comments: true
 related_posts: true
 ---

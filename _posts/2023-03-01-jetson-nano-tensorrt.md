@@ -4,6 +4,7 @@ title: "Jetson Nano Tensorrt 적용"
 date: 2023-03-01 00:00:11 +0900
 description: pytorch to tensorrt using onnx
 categories: [jetson-nano, tensorrt, hardware-optimization]
+tags: [jetson, tensorrt, edge-computing]
 giscus_comments: true
 related_posts: true
 ---

@@ -4,6 +4,7 @@ title: "Convolutional Character Network"
 date: 2023-03-08 00:00:00 +0900
 description: CharNet; single stage scene text detection
 categories: [scene-text-detection, scene-text-recognition, paper]
+tags: [paper, ocr, text-detection]
 giscus_comments: true
 related_posts: true
 ---

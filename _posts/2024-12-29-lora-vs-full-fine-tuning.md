@@ -2,11 +2,12 @@
 layout: post
 title: "LoRA vs Full Fine-tuning: An Illusion of Equivalence"
 date: 2024-12-29 00:00:00 +0900
-description:
+description: LoRA와 Full Fine-tuning의 차이점 분석 논문 리뷰
 categories: [paper, llm]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true
+featured: true
 ---
 
 # Introduction

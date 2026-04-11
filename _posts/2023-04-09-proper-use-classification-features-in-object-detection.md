@@ -4,6 +4,7 @@ title: "Proper Reuse of Image Classification Features Improves Object Detection"
 date: 2023-04-09 00:00:00 +0900
 description: Neck is important
 categories: [transfer-learning, object-detection]
+tags: [paper, object-detection, classification]
 giscus_comments: true
 related_posts: true
 ---

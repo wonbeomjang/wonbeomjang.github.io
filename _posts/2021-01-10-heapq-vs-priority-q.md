@@ -2,7 +2,10 @@
 layout: post
 title: "[Python] 우선순위 큐 (heapq vs priority queue)"
 date: 2021-01-10 15:41:11 +0900
+description: Python heapq와 PriorityQueue 비교 분석
 categories: [Data Structure, Python]
+description: Python heapq와 PriorityQueue 비교 분석
+tags: [python, data-structure, algorithm]
 giscus_comments: true
 related_posts: true
 ---

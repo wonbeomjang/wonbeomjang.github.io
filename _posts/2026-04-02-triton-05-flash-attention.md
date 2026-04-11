@@ -7,6 +7,7 @@ categories: [triton, gpu]
 tags: [triton, gpu, flash-attention, llm, attention]
 giscus_comments: true
 related_posts: true
+featured: true
 ---
 
 ## 개요
