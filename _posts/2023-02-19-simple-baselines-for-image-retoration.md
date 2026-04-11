@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2204.04676)
+> [Simple Baselines for Image Restoration](https://arxiv.org/abs/2204.04676)
 
 # Introduction
 

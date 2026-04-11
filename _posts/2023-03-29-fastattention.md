@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2205.14135)
+> [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
 
 # Introduction
 

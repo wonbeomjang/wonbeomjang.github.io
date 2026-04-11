@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2105.07576)
+> [Rethinking "Batch" in BatchNorm](https://arxiv.org/abs/2105.07576)
 
 # Introduction
 

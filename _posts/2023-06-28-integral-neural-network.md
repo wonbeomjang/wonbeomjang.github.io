@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2206.12418)
+> [Integral Neural Networks](https://arxiv.org/abs/2206.12418)
 
 # Introduction
 

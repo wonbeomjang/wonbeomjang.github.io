@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/1910.07954)
+> [Convolutional Character Networks](https://arxiv.org/abs/1910.07954)
 
 # Introduction
 

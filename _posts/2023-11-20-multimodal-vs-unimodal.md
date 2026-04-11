@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2106.04538)
+> [What Makes Multi-modal Learning Better than Single (Provably)](https://arxiv.org/abs/2106.04538)
 
 # Introduction
 

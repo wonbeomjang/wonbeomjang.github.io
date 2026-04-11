@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2407.08608)
+> [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608)
 
 # Introduction
 

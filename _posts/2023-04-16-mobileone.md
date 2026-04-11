@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2206.04040)
+> [MobileOne: An Improved One millisecond Mobile Backbone](https://arxiv.org/abs/2206.04040)
 
 # Introduction
 

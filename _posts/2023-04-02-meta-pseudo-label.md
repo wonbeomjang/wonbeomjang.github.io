@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2003.10580)
+> [Meta Pseudo Labels](https://arxiv.org/abs/2003.10580)
 
 # Introduction
 

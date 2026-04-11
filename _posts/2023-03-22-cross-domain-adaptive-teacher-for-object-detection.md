@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2111.13216)
+> [Cross-Domain Adaptive Teacher for Object Detection](https://arxiv.org/abs/2111.13216)
 
 # Introduction
 

@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [논문 링크](https://arxiv.org/abs/2307.08691)
+> [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691)
 
 # Introduction
 
