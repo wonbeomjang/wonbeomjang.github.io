@@ -3,7 +3,7 @@ layout: post
 title: "[네트워크 경량화] EfficientNet"
 date: 2021-01-03 16:41:11 +0900
 description: EfficientNet 논문 리뷰와 네트워크 경량화 방법론
-categories: [backbone, paper]
+categories: [paper]
 description: EfficientNet 논문 리뷰와 네트워크 경량화 방법론
 tags: [paper, lightweight, efficientnet]
 giscus_comments: true

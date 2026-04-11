@@ -3,7 +3,7 @@ layout: post
 title: "MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer"
 date: 2023-03-30 00:00:00 +0900
 description: transformer for mobile device
-categories: [transformer, mobile-backbone, backbone, paper]
+categories: [paper]
 tags: [paper, lightweight, vision-transformer]
 giscus_comments: true
 related_posts: true

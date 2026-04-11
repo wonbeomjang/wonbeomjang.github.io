@@ -3,7 +3,7 @@ layout: post
 title: "Triton 05: Flash Attention — 종합 프로젝트"
 date: 2026-04-02 00:00:00 +0900
 description: 지금까지 배운 모든 기법을 종합하여 Flash Attention을 Triton으로 구현합니다.
-categories: [triton, gpu]
+categories: [triton]
 tags: [triton, gpu, flash-attention, llm, attention]
 giscus_comments: true
 related_posts: true

@@ -3,7 +3,7 @@ layout: post
 title: "error: command 'aarch64-linux-gnu-gcc' failed with exit status 1"
 date: 2023-02-24 18:50:11 +0900
 description: jetson nano pycuda install error
-categories: [jetson-nano, error]
+categories: [optimization]
 tags: [jetson, pycuda, troubleshooting]
 giscus_comments: true
 related_posts: true

@@ -3,7 +3,7 @@ layout: post
 title: "Cross-Domain Adaptive Teacher for Object Detection"
 date: 2023-03-22 00:00:00 +0900
 description: sota of cross domain DA in object detection
-categories: [domain-adaptation, paper]
+categories: [paper]
 tags: [paper, object-detection, domain-adaptation]
 giscus_comments: true
 related_posts: true

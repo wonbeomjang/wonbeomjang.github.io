@@ -3,7 +3,7 @@ layout: post
 title: "FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning"
 date: 2023-08-07 00:00:00 +0900
 description: FlashAttention-2 논문 리뷰와 성능 분석
-categories: [attention, hardware-optimization, paper]
+categories: [optimization]
 tags: [attention, hardware-optimization, paper]
 giscus_comments: true
 related_posts: true

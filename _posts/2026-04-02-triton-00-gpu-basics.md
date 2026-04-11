@@ -3,7 +3,7 @@ layout: post
 title: "Triton 00: GPU 기초 — Triton을 시작하기 전에 알아야 할 것들"
 date: 2026-04-02 00:00:00 +0900
 description: GPU 아키텍처, 메모리 계층, SM 구조, 텐서 코어, Roofline Model 등 GPU 프로그래밍의 기초 개념을 정리합니다.
-categories: [triton, gpu]
+categories: [triton]
 tags: [triton, gpu, cuda, deep-learning]
 giscus_comments: true
 related_posts: true

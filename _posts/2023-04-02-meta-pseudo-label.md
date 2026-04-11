@@ -3,7 +3,7 @@ layout: post
 title: "Meta Pseudo Labels"
 date: 2023-04-02 00:00:00 +0900
 description: SOTA cnn technique on imagenet
-categories: [semi-supervised-learning, paper]
+categories: [paper]
 tags: [paper, semi-supervised, pseudo-label]
 giscus_comments: true
 related_posts: true

@@ -3,7 +3,7 @@ layout: post
 title: "스타트업 리서치 인턴 후기"
 date: 2023-08-23 00:00:00 +0900
 description: 8개월간의 인턴을 마치며
-categories: [daily]
+categories: [review]
 tags: [daily]
 giscus_comments: true
 related_posts: true

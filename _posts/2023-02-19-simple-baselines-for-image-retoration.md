@@ -3,7 +3,7 @@ layout: post
 title: "Simple Baselines for Image Restoration"
 date: 2023-02-19 00:00:00 +0900
 description: NAFNet
-categories: [deblurring, denosing, paper]
+categories: [paper]
 tags: [paper, image-restoration, baseline]
 giscus_comments: true
 related_posts: true
