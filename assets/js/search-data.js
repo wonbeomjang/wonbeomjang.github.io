@@ -177,7 +177,7 @@ ninja.data = [{
         
           title: "What Makes Multi-modal Learning Better than Single (Provably)",
         
-        description: "Multimodal vs Unimodal 성능 비교 논문 리뷰 (NeurIPS 2021)",
+        description: "Multimodal vs Unimodal 이론적 비교 논문 리뷰 — Latent Representation Quality 관점 (NeurIPS 2021)",
         section: "Posts",
         handler: () => {
           
