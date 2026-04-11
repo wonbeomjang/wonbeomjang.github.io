@@ -522,7 +522,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2021/%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EA%B2%BD%EB%9F%89%ED%99%94-EffientNet/";
+            window.location.href = "/blog/2021/efficientnet/";
           
         },
       },{id: "post-시각장애인을-위한-약학정보제공-서비스-기획기",
@@ -544,7 +544,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2019/%ED%95%99%EB%B6%80%EC%83%9D%EC%9D%B4-%EB%B3%B4%EB%8A%94-gan/";
+            window.location.href = "/blog/2019/intro-to-gan/";
           
         },
       },{id: "books-the-godfather",
