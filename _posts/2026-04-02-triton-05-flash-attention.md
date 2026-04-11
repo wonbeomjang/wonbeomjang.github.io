@@ -15,6 +15,8 @@ featured: true
 지금까지 배운 모든 기법을 종합하여 Flash Attention을 구현합니다.
 LLM 추론/학습에서 가장 중요한 최적화 기법 중 하나입니다.
 
+> Flash Attention의 원리와 논문 내용이 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를 먼저 읽어보는 것을 추천한다.
+
 
 ---
 
