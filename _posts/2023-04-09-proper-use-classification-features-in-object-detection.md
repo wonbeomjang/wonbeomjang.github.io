@@ -107,7 +107,7 @@ Backbone은 ImageNet에서 학습시켰다. 따라서 object detection과 domain
 <p align="center">
     <img src="/assets/post/image/proper-reuse-of-image-classification-features-improve-object-detection/Untitled%205.png" width="50%">
 </p>
-capacity가 충분한 detector component를 추가하고 backbone을 freeze시키는 것이 좋은 성능을 냈으며 Copy-Paste라는 강한 augmentation을 사용했을 떄도 성능향상이 있었다.
+capacity가 충분한 detector component를 추가하고 backbone을 freeze시키는 것이 좋은 성능을 냈으며 Copy-Paste라는 강한 augmentation을 사용했을 때도 성능향상이 있었다.
 
 <p align="center">
     <img src="/assets/post/image/proper-reuse-of-image-classification-features-improve-object-detection/Untitled%206.png" width="100%">

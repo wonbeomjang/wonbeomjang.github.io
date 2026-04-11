@@ -16,7 +16,7 @@ TensorRT는 GPU에서 최적화된 성능을 낼 수 있도록 Network Compressi
 
 ### Quantization & Precision Calibration
 
-quantization을 통한 precision reduction은 network의 파라미터의 bit가 작기 떄문에 더 좋은 성능을 발휘할 수 있다.
+quantization을 통한 precision reduction은 network의 파라미터의 bit가 작기 때문에 더 좋은 성능을 발휘할 수 있다.
 TensorRT는 Symmetric Linear Quantization을 사용하고 있으며, float32 데이터를 float16, int8로 낮출 수 있다.
 하지만 int8로 precision을 낮추면 숫자표현이 급격히 줄어들어 성능에서 문제가 생긴다.
 따라서 TensorRT는 callibration을 통해 weight과 intermidiate tensor에서의 정보손실을 최소화한다.

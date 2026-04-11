@@ -74,7 +74,7 @@ EMA에서 batch size가 커지면 절대적인 update수가 적어져 validation
 
 ## Small Batch Size
 
-EMA는 mini-batch만 볼 수 있기떄문에 batch size가 작을수록 성능하락이 커 PresiceBN의 성능이 높았다. 하
+EMA는 mini-batch만 볼 수 있기때문에 batch size가 작을수록 성능하락이 커 PreciseBN의 성능이 높았다. 하
 지만 실험적으로는 EMA는 모델이 충분히 학습하여 수렴했을 때와 Batch size가 충분히 큰 경우 Precise BN과 성능차이가 별로 없었다.
 
 <p align="center">

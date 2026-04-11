@@ -10,7 +10,7 @@ related_posts: true
 ---
 
 Quantization은 precision reduction으로 parameter의 용량을 줄이기위해 나왔다.
-하지만 실제로 써봤을 떄 유의미한 속도차이가 있었다. 왜 그런 것일까 궁금해서 몇 까지 측정을했다.
+하지만 실제로 써봤을 때 유의미한 속도차이가 있었다. 왜 그런 것일까 궁금해서 몇 까지 측정을했다.
 먼저 3가지 모델을 준비했다. 일반 cpu에서의 MobileNetV2, quatization을 진행한 MobilNetV2, layer fusion과 qutization을 진행한 mobileNetV2이다.
 각각 모델에게 image를 5000씩 inference하도록하고 time elapese와 cache miss, intruction per cycle을 비교했다.
 <br>
@@ -67,8 +67,8 @@ Quantization은 precision reduction으로 parameter의 용량을 줄이기위해
 **이건 순전히 필자의 추측이다**
 vanilla MobileNetV2와 quantization MobileNetV2을 보면 instruction per cycle 차이보다 cache miss 가 더 유의미하다. (같은 instruction per cycle 에서 MobileNetV2의 time elapsed 는 105.2901이다.
 따라서 precision reduction 으로 parameter 가 용량이 적어져 cache miss 가 적어진 것과 parameter data transfer latency 거 적어진 것으로 볼 수 있다. (혹시 아니면 메일을 주면 감사합니다.)
-이후 layer fusion 을 통해 time elapsed 가 줄어들었다. 이떄는 cache miss 가 높게 줄어들지 않았으므로 단순히 graph reduction 에 따른 성능향상으로 볼 수 있을 것이다.
-instruction per cycle 에서 봤을 떄도 낮은 연산떄문에 instruction per cycle 이 높아졌다. 그리고 context switching 도 줄어들었다.
+이후 layer fusion 을 통해 time elapsed 가 줄어들었다. 이때는 cache miss 가 높게 줄어들지 않았으므로 단순히 graph reduction 에 따른 성능향상으로 볼 수 있을 것이다.
+instruction per cycle 에서 봤을 때도 낮은 연산때문에 instruction per cycle 이 높아졌다. 그리고 context switching 도 줄어들었다.
 
 <center>
 $$ \frac 1 n \sum (x_i - \bar x)(y_i - \bar y) $$

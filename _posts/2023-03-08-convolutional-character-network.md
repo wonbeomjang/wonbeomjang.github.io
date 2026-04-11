@@ -11,7 +11,7 @@ related_posts: true
 
 > [논문 링크](https://arxiv.org/abs/1910.07954)
 
-# Intorduction
+# Introduction
 
 대부분 Scene Text Detection은 Text Detection과 Text Recognization으로 나누어져 있다.
 하지만 이러한 방법은 representation을 제대로 학습하지 못해 성능이 하락한다.
