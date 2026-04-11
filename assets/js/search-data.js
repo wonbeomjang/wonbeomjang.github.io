@@ -122,7 +122,7 @@ ninja.data = [{
         
           title: "2024년 회고",
         
-        description: "신입사원 끝",
+        description: "입사 1년차 신입사원의 2024년 회고와 성장 기록",
         section: "Posts",
         handler: () => {
           
@@ -386,7 +386,7 @@ ninja.data = [{
         
           title: "Simple Baselines for Image Restoration",
         
-        description: "NAFNet",
+        description: "NAFNet 기반 이미지 복원의 Simple Baseline 논문 리뷰",
         section: "Posts",
         handler: () => {
           
