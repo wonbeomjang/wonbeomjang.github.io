@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <filter id="d">
+      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/>
+    </filter>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    </marker>
+    <marker id="arGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#27ae60"/>
+    </marker>
+  </defs>
+
+  <text x="400" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">Triton 커널 실행 흐름</text>
+
+  <!-- CPU side -->
+  <rect x="30" y="50" width="320" height="530" rx="12" fill="#ebf5fb" stroke="#5dade2" stroke-width="2" filter="url(#d)"/>
+  <text x="190" y="78" text-anchor="middle" font-size="16" font-weight="bold" fill="#2471a3">CPU (Python)</text>
+
+  <!-- GPU side -->
+  <rect x="420" y="50" width="350" height="530" rx="12" fill="#eafaf1" stroke="#27ae60" stroke-width="2" filter="url(#d)"/>
+  <text x="595" y="78" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e8449">GPU</text>
+
+  <!-- Step 1: Python Call -->
+  <rect x="55" y="100" width="270" height="55" rx="8" fill="white" stroke="#3498db" stroke-width="1.5" filter="url(#d)"/>
+  <circle cx="75" cy="127" r="14" fill="#3498db"/>
+  <text x="75" y="132" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <text x="95" y="120" font-size="12" fill="#2c3e50" font-weight="bold">Python 코드 호출</text>
+  <text x="95" y="142" font-size="10" fill="#7f8c8d" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">kernel[grid](x, y, out, N)</text>
+
+  <!-- Arrow down -->
+  <line x1="190" y1="155" x2="190" y2="180" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- Step 2: JIT Compile -->
+  <rect x="55" y="185" width="270" height="70" rx="8" fill="white" stroke="#e67e22" stroke-width="1.5" filter="url(#d)"/>
+  <circle cx="75" cy="215" r="14" fill="#e67e22"/>
+  <text x="75" y="220" text-anchor="middle" font-size="13" fill="white" font-weight="bold">2</text>
+  <text x="95" y="208" font-size="12" fill="#2c3e50" font-weight="bold">JIT 컴파일 (첫 호출만)</text>
+  <text x="95" y="225" font-size="10" fill="#7f8c8d">Python → Triton IR → LLVM IR</text>
+  <text x="95" y="242" font-size="10" fill="#7f8c8d">→ PTX → GPU 기계어 (캐시됨)</text>
+
+  <!-- Arrow down -->
+  <line x1="190" y1="255" x2="190" y2="280" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- Step 3: Kernel Launch -->
+  <rect x="55" y="285" width="270" height="55" rx="8" fill="white" stroke="#8e44ad" stroke-width="1.5" filter="url(#d)"/>
+  <circle cx="75" cy="312" r="14" fill="#8e44ad"/>
+  <text x="75" y="317" text-anchor="middle" font-size="13" fill="white" font-weight="bold">3</text>
+  <text x="95" y="305" font-size="12" fill="#2c3e50" font-weight="bold">커널 런치 (거의 즉시)</text>
+  <text x="95" y="325" font-size="10" fill="#7f8c8d">GPU에 "실행해" 명령만 전송</text>
+
+  <!-- Arrow to GPU -->
+  <line x1="325" y1="312" x2="418" y2="180" stroke="#27ae60" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arGreen)"/>
+
+  <!-- GPU: Program Instances -->
+  <rect x="445" y="100" width="300" height="200" rx="8" fill="white" stroke="#27ae60" stroke-width="1.5" filter="url(#d)"/>
+  <text x="595" y="125" text-anchor="middle" font-size="12" fill="#1e8449" font-weight="bold">GPU가 프로그램 인스턴스 생성</text>
+
+  <!-- SM boxes inside GPU -->
+  <rect x="460" y="140" width="125" height="30" rx="5" fill="#82e0aa" opacity="0.7"/>
+  <text x="522" y="160" text-anchor="middle" font-size="10" fill="#1e8449">SM 0: Prog 0, 1</text>
+
+  <rect x="460" y="175" width="125" height="30" rx="5" fill="#82e0aa" opacity="0.7"/>
+  <text x="522" y="195" text-anchor="middle" font-size="10" fill="#1e8449">SM 1: Prog 2, 3</text>
+
+  <rect x="460" y="210" width="125" height="30" rx="5" fill="#82e0aa" opacity="0.7"/>
+  <text x="522" y="230" text-anchor="middle" font-size="10" fill="#1e8449">SM 2: Prog 4, 5</text>
+
+  <rect x="460" y="245" width="125" height="30" rx="5" fill="#82e0aa" opacity="0.5"/>
+  <text x="522" y="265" text-anchor="middle" font-size="10" fill="#1e8449">...</text>
+
+  <rect x="600" y="140" width="135" height="30" rx="5" fill="#82e0aa" opacity="0.7"/>
+  <text x="667" y="160" text-anchor="middle" font-size="10" fill="#1e8449">SM 75: Prog 150, 151</text>
+
+  <!-- GPU processing bar -->
+  <rect x="445" y="315" width="300" height="40" rx="8" fill="#d5f5e3" stroke="#27ae60" stroke-width="1"/>
+  <text x="595" y="340" text-anchor="middle" font-size="12" fill="#1e8449" font-weight="bold">GPU 병렬 실행 중...</text>
+
+  <!-- Step 4: CPU continues (async) -->
+  <rect x="55" y="360" width="270" height="55" rx="8" fill="white" stroke="#2ecc71" stroke-width="1.5" filter="url(#d)"/>
+  <circle cx="75" cy="387" r="14" fill="#2ecc71"/>
+  <text x="75" y="392" text-anchor="middle" font-size="13" fill="white" font-weight="bold">4</text>
+  <text x="95" y="380" font-size="12" fill="#2c3e50" font-weight="bold">CPU는 다음 코드 계속 실행</text>
+  <text x="95" y="400" font-size="10" fill="#7f8c8d">비동기: GPU 완료를 기다리지 않음!</text>
+
+  <!-- Arrow down -->
+  <line x1="190" y1="415" x2="190" y2="440" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- Step 5: Synchronize -->
+  <rect x="55" y="445" width="270" height="55" rx="8" fill="white" stroke="#e74c3c" stroke-width="1.5" filter="url(#d)"/>
+  <circle cx="75" cy="472" r="14" fill="#e74c3c"/>
+  <text x="75" y="477" text-anchor="middle" font-size="13" fill="white" font-weight="bold">5</text>
+  <text x="95" y="465" font-size="12" fill="#2c3e50" font-weight="bold">동기화 (결과 사용 시)</text>
+  <text x="95" y="485" font-size="10" fill="#7f8c8d">print(output) → GPU 완료 대기</text>
+
+  <!-- Arrow from GPU result -->
+  <line x1="445" y1="395" x2="328" y2="472" stroke="#e74c3c" stroke-width="2" stroke-dasharray="6,3"/>
+
+  <!-- GPU result -->
+  <rect x="445" y="370" width="300" height="40" rx="8" fill="white" stroke="#27ae60" stroke-width="1.5" filter="url(#d)"/>
+  <text x="595" y="395" text-anchor="middle" font-size="12" fill="#1e8449" font-weight="bold">실행 완료 → 결과 반환</text>
+
+  <!-- Bottom note -->
+  <rect x="445" y="430" width="300" height="60" rx="8" fill="#fef9e7" stroke="#f7dc6f" stroke-width="1.5"/>
+  <text x="595" y="455" text-anchor="middle" font-size="11" fill="#9a7d0a" font-weight="bold">벤치마크 시 주의:</text>
+  <text x="595" y="475" text-anchor="middle" font-size="10" fill="#7d6608">torch.cuda.synchronize() 필요</text>
+  <text x="595" y="488" text-anchor="middle" font-size="10" fill="#7d6608">(triton.do_bench가 자동 처리)</text>
+</svg>

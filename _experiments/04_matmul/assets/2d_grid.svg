@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs><filter id="s"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter></defs>
+
+  <text x="300" y="25" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">2D 그리드: 출력 타일별 프로그램 할당</text>
+
+  <text x="300" y="50" text-anchor="middle" font-size="12" fill="#7f8c8d">출력 행렬 C를 BLOCK_SIZE_M × BLOCK_SIZE_N 타일로 분할</text>
+
+  <!-- Grid -->
+  <rect x="120" y="70" width="140" height="70" rx="6" fill="#3498db" filter="url(#s)"/><text x="190" y="110" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(0)</text>
+  <rect x="265" y="70" width="140" height="70" rx="6" fill="#e67e22" filter="url(#s)"/><text x="335" y="110" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(1)</text>
+  <rect x="410" y="70" width="140" height="70" rx="6" fill="#8e44ad" filter="url(#s)"/><text x="480" y="110" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(2)</text>
+
+  <rect x="120" y="145" width="140" height="70" rx="6" fill="#1abc9c" filter="url(#s)"/><text x="190" y="185" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(3)</text>
+  <rect x="265" y="145" width="140" height="70" rx="6" fill="#f1c40f" filter="url(#s)"/><text x="335" y="185" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(4)</text>
+  <rect x="410" y="145" width="140" height="70" rx="6" fill="#e74c3c" filter="url(#s)"/><text x="480" y="185" text-anchor="middle" font-size="15" fill="white" font-weight="bold">P(5)</text>
+
+  <!-- Labels -->
+  <text x="70" y="110" text-anchor="middle" font-size="11" fill="#555">BLOCK_M</text>
+  <text x="70" y="185" text-anchor="middle" font-size="11" fill="#555">BLOCK_M</text>
+  <text x="190" y="65" text-anchor="middle" font-size="11" fill="#555">BLOCK_N</text>
+
+  <text x="300" y="245" text-anchor="middle" font-size="13" fill="#555">각 프로그램 P(i)가 출력의 한 타일을 계산 — 모두 동시에 실행!</text>
+</svg>

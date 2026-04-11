@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 550" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <linearGradient id="hbmGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#c0392b;stop-opacity:0.85"/>
+    </linearGradient>
+    <linearGradient id="l2Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f39c12;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#e67e22;stop-opacity:0.85"/>
+    </linearGradient>
+    <linearGradient id="sramGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#27ae60;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#1e8449;stop-opacity:0.85"/>
+    </linearGradient>
+    <linearGradient id="regGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2980b9;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#1a5276;stop-opacity:0.85"/>
+    </linearGradient>
+    <filter id="sh">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-size="22" font-weight="bold" fill="#2c3e50">GPU 메모리 계층 (RTX 4080)</text>
+
+  <!-- Speed arrow -->
+  <line x1="50" y1="70" x2="50" y2="500" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="6,3"/>
+  <polygon points="50,65 44,80 56,80" fill="#bdc3c7"/>
+  <text x="48" y="60" text-anchor="middle" font-size="11" fill="#95a5a6" font-weight="bold">빠름</text>
+  <polygon points="50,505 44,490 56,490" fill="#bdc3c7"/>
+  <text x="48" y="520" text-anchor="middle" font-size="11" fill="#95a5a6" font-weight="bold">느림</text>
+
+  <!-- Capacity arrow -->
+  <line x1="750" y1="70" x2="750" y2="500" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="6,3"/>
+  <polygon points="750,505 744,490 756,490" fill="#bdc3c7"/>
+  <text x="752" y="60" text-anchor="middle" font-size="11" fill="#95a5a6" font-weight="bold">작음</text>
+  <polygon points="750,65 744,80 756,80" fill="#bdc3c7"/>
+  <text x="752" y="520" text-anchor="middle" font-size="11" fill="#95a5a6" font-weight="bold">큼</text>
+
+  <!-- Register -->
+  <rect x="280" y="75" width="240" height="70" rx="12" fill="url(#regGrad)" filter="url(#sh)"/>
+  <text x="400" y="103" text-anchor="middle" font-size="16" font-weight="bold" fill="white">레지스터 (Register)</text>
+  <text x="400" y="125" text-anchor="middle" font-size="12" fill="#d5e8d4">각 스레드 전용 | ~100x+ 속도 | 가장 빠름!</text>
+
+  <!-- SRAM -->
+  <rect x="200" y="170" width="400" height="80" rx="12" fill="url(#sramGrad)" filter="url(#sh)"/>
+  <text x="400" y="200" text-anchor="middle" font-size="16" font-weight="bold" fill="white">SRAM / Shared Memory</text>
+  <text x="400" y="220" text-anchor="middle" font-size="13" fill="#d5e8d4">64KB / SM | ~19 TB/s | ~26x</text>
+  <text x="400" y="238" text-anchor="middle" font-size="11" fill="#a9dfbf">같은 SM 내 스레드들이 공유 | 프로그래머가 직접 관리</text>
+
+  <!-- L2 Cache -->
+  <rect x="130" y="275" width="540" height="80" rx="12" fill="url(#l2Grad)" filter="url(#sh)"/>
+  <text x="400" y="305" text-anchor="middle" font-size="16" font-weight="bold" fill="white">L2 Cache</text>
+  <text x="400" y="325" text-anchor="middle" font-size="13" fill="#fdebd0">64MB | ~3-5 TB/s | ~5x</text>
+  <text x="400" y="343" text-anchor="middle" font-size="11" fill="#f5cba7">모든 SM이 공유 | 하드웨어가 자동 관리</text>
+
+  <!-- HBM / Global Memory -->
+  <rect x="80" y="380" width="640" height="95" rx="12" fill="url(#hbmGrad)" filter="url(#sh)"/>
+  <text x="400" y="412" text-anchor="middle" font-size="16" font-weight="bold" fill="white">HBM / Global Memory (VRAM)</text>
+  <text x="400" y="435" text-anchor="middle" font-size="13" fill="#fadbd8">16GB GDDR6X | ~717 GB/s | 1x (기준)</text>
+  <text x="400" y="458" text-anchor="middle" font-size="11" fill="#f1948a">모델 가중치, 입출력 데이터 저장 | 가장 느리지만 가장 큼</text>
+
+  <!-- Connecting arrows -->
+  <path d="M400,145 L400,170" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M400,250 L400,275" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M400,355 L400,380" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Key insight box -->
+  <rect x="130" y="490" width="540" height="40" rx="8" fill="#fef9e7" stroke="#f9e79f" stroke-width="1.5"/>
+  <text x="400" y="515" text-anchor="middle" font-size="13" fill="#7d6608" font-weight="bold">핵심: HBM 접근을 줄이고 SRAM에서 최대한 많은 연산을 하는 것이 최적화의 핵심!</text>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 280" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs><filter id="s"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter></defs>
+
+  <text x="275" y="25" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">Causal Mask (인과 마스크)</text>
+  <text x="275" y="48" text-anchor="middle" font-size="12" fill="#7f8c8d">미래 토큰을 볼 수 없게 차단 (GPT 등)</text>
+
+  <!-- Grid labels -->
+  <text x="170" y="72" font-size="11" fill="#555">pos 0</text>
+  <text x="230" y="72" font-size="11" fill="#555">pos 1</text>
+  <text x="290" y="72" font-size="11" fill="#555">pos 2</text>
+  <text x="350" y="72" font-size="11" fill="#555">pos 3</text>
+
+  <!-- Row 0 -->
+  <text x="140" y="102" text-anchor="end" font-size="11" fill="#555">pos 0</text>
+  <rect x="160" y="82" width="55" height="30" rx="4" fill="#27ae60"/><text x="187" y="102" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="220" y="82" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="247" y="102" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+  <rect x="280" y="82" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="307" y="102" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+  <rect x="340" y="82" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="367" y="102" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+
+  <!-- Row 1 -->
+  <text x="140" y="138" text-anchor="end" font-size="11" fill="#555">pos 1</text>
+  <rect x="160" y="118" width="55" height="30" rx="4" fill="#27ae60"/><text x="187" y="138" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="220" y="118" width="55" height="30" rx="4" fill="#27ae60"/><text x="247" y="138" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="280" y="118" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="307" y="138" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+  <rect x="340" y="118" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="367" y="138" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+
+  <!-- Row 2 -->
+  <text x="140" y="174" text-anchor="end" font-size="11" fill="#555">pos 2</text>
+  <rect x="160" y="154" width="55" height="30" rx="4" fill="#27ae60"/><text x="187" y="174" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="220" y="154" width="55" height="30" rx="4" fill="#27ae60"/><text x="247" y="174" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="280" y="154" width="55" height="30" rx="4" fill="#27ae60"/><text x="307" y="174" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="340" y="154" width="55" height="30" rx="4" fill="#e74c3c" opacity="0.3"/><text x="367" y="174" text-anchor="middle" font-size="13" fill="#c0392b">0</text>
+
+  <!-- Row 3 -->
+  <text x="140" y="210" text-anchor="end" font-size="11" fill="#555">pos 3</text>
+  <rect x="160" y="190" width="55" height="30" rx="4" fill="#27ae60"/><text x="187" y="210" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="220" y="190" width="55" height="30" rx="4" fill="#27ae60"/><text x="247" y="210" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="280" y="190" width="55" height="30" rx="4" fill="#27ae60"/><text x="307" y="210" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+  <rect x="340" y="190" width="55" height="30" rx="4" fill="#27ae60"/><text x="367" y="210" text-anchor="middle" font-size="13" fill="white" font-weight="bold">1</text>
+
+  <!-- Annotations -->
+  <text x="430" y="102" font-size="11" fill="#888">자기만 봄</text>
+  <text x="430" y="138" font-size="11" fill="#888">0, 1만 봄</text>
+  <text x="430" y="174" font-size="11" fill="#888">0, 1, 2 봄</text>
+  <text x="430" y="210" font-size="11" fill="#888">전부 봄</text>
+
+  <rect x="100" y="235" width="350" height="32" rx="6" fill="#fef9e7" stroke="#f7dc6f" stroke-width="1"/>
+  <text x="275" y="256" text-anchor="middle" font-size="12" fill="#7d6608">0인 위치: tl.where(mask, S, -inf) → softmax에서 0이 됨</text>
+</svg>

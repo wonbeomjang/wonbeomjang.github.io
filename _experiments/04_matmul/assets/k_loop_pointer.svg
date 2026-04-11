@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 420" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <filter id="sh">
+      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/>
+    </filter>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#e67e22"/>
+    </marker>
+  </defs>
+
+  <text x="425" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">K 차원 루프: 포인터 이동으로 슬라이싱</text>
+
+  <!-- 1회차 -->
+  <text x="220" y="65" text-anchor="middle" font-size="15" font-weight="bold" fill="#2471a3">1번째 반복 (k=0)</text>
+
+  <!-- A matrix 1회차 -->
+  <text x="110" y="90" text-anchor="middle" font-size="12" fill="#555">A (M x K)</text>
+  <rect x="30" y="100" width="80" height="90" rx="6" fill="#3498db" opacity="0.85" filter="url(#sh)"/>
+  <text x="70" y="150" text-anchor="middle" font-size="12" fill="white" font-weight="bold">A[:, 0:3]</text>
+  <rect x="115" y="100" width="80" height="90" rx="6" fill="#3498db" opacity="0.25"/>
+  <text x="155" y="150" text-anchor="middle" font-size="12" fill="#3498db">A[:, 3:6]</text>
+
+  <!-- x sign -->
+  <text x="215" y="150" text-anchor="middle" font-size="20" fill="#555" font-weight="bold">x</text>
+
+  <!-- B matrix 1회차 -->
+  <text x="320" y="90" text-anchor="middle" font-size="12" fill="#555">B (K x N)</text>
+  <rect x="240" y="100" width="160" height="45" rx="6" fill="#e67e22" opacity="0.85" filter="url(#sh)"/>
+  <text x="320" y="128" text-anchor="middle" font-size="12" fill="white" font-weight="bold">B[0:3, :]</text>
+  <rect x="240" y="150" width="160" height="40" rx="6" fill="#e67e22" opacity="0.25"/>
+  <text x="320" y="175" text-anchor="middle" font-size="12" fill="#e67e22">B[3:6, :]</text>
+
+  <!-- = sign -->
+  <text x="420" y="150" text-anchor="middle" font-size="20" fill="#555" font-weight="bold">=</text>
+
+  <!-- partial result 1 -->
+  <rect x="440" y="110" width="100" height="70" rx="6" fill="#27ae60" opacity="0.5" filter="url(#sh)"/>
+  <text x="490" y="145" text-anchor="middle" font-size="11" fill="white" font-weight="bold">acc</text>
+  <text x="490" y="162" text-anchor="middle" font-size="10" fill="white">(1번째)</text>
+
+  <!-- Arrow down -->
+  <text x="425" y="225" text-anchor="middle" font-size="13" fill="#e67e22" font-weight="bold">포인터 이동: a_ptrs += BLOCK_K * stride</text>
+  <line x1="220" y1="200" x2="220" y2="250" stroke="#e67e22" stroke-width="2" stroke-dasharray="5" marker-end="url(#ar)"/>
+
+  <!-- 2회차 -->
+  <text x="220" y="275" text-anchor="middle" font-size="15" font-weight="bold" fill="#2471a3">2번째 반복 (k=3)</text>
+
+  <!-- A matrix 2회차 -->
+  <rect x="30" y="290" width="80" height="90" rx="6" fill="#3498db" opacity="0.25"/>
+  <text x="70" y="340" text-anchor="middle" font-size="12" fill="#3498db">A[:, 0:3]</text>
+  <rect x="115" y="290" width="80" height="90" rx="6" fill="#3498db" opacity="0.85" filter="url(#sh)"/>
+  <text x="155" y="340" text-anchor="middle" font-size="12" fill="white" font-weight="bold">A[:, 3:6]</text>
+
+  <!-- x sign -->
+  <text x="215" y="340" text-anchor="middle" font-size="20" fill="#555" font-weight="bold">x</text>
+
+  <!-- B matrix 2회차 -->
+  <rect x="240" y="290" width="160" height="40" rx="6" fill="#e67e22" opacity="0.25"/>
+  <text x="320" y="315" text-anchor="middle" font-size="12" fill="#e67e22">B[0:3, :]</text>
+  <rect x="240" y="335" width="160" height="45" rx="6" fill="#e67e22" opacity="0.85" filter="url(#sh)"/>
+  <text x="320" y="363" text-anchor="middle" font-size="12" fill="white" font-weight="bold">B[3:6, :]</text>
+
+  <!-- += sign -->
+  <text x="420" y="340" text-anchor="middle" font-size="20" fill="#555" font-weight="bold">+=</text>
+
+  <!-- partial result 2 -->
+  <rect x="440" y="300" width="100" height="70" rx="6" fill="#27ae60" opacity="0.85" filter="url(#sh)"/>
+  <text x="490" y="335" text-anchor="middle" font-size="11" fill="white" font-weight="bold">acc</text>
+  <text x="490" y="352" text-anchor="middle" font-size="10" fill="white">(최종 결과)</text>
+
+  <!-- Right side explanation -->
+  <rect x="570" y="95" width="260" height="290" rx="12" fill="#fef9e7" stroke="#f7dc6f" stroke-width="1.5"/>
+  <text x="700" y="125" text-anchor="middle" font-size="14" font-weight="bold" fill="#9a7d0a">PyTorch로 비유하면</text>
+
+  <text x="590" y="155" font-size="12" fill="#888">-- 1번째 반복 --</text>
+  <text x="590" y="175" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">a = A[:, 0:3]</text>
+  <text x="590" y="195" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">b = B[0:3, :]</text>
+  <text x="590" y="215" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">acc += a @ b</text>
+
+  <text x="590" y="250" font-size="12" fill="#888">-- 2번째 반복 --</text>
+  <text x="590" y="270" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">a = A[:, 3:6]</text>
+  <text x="590" y="290" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">b = B[3:6, :]</text>
+  <text x="590" y="310" font-size="12" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">acc += a @ b</text>
+
+  <text x="590" y="350" font-size="11" fill="#7d6608">Triton에서는 인덱싱 대신</text>
+  <text x="590" y="368" font-size="11" fill="#7d6608" font-weight="bold">포인터를 이동시켜 같은 효과를 냄</text>
+</svg>

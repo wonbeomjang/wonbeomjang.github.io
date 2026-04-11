@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 480" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <linearGradient id="smBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ecf0f1"/>
+      <stop offset="100%" style="stop-color:#d5dbdb"/>
+    </linearGradient>
+    <filter id="s">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="350" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">SM (Streaming Multiprocessor) 내부 구조</text>
+  <text x="350" y="50" text-anchor="middle" font-size="13" fill="#7f8c8d">RTX 4080 — 76개 SM, 각 SM 구조</text>
+
+  <!-- SM outer box -->
+  <rect x="40" y="65" width="620" height="400" rx="16" fill="url(#smBg)" stroke="#95a5a6" stroke-width="2" filter="url(#s)"/>
+  <text x="60" y="90" font-size="15" font-weight="bold" fill="#2c3e50">SM #n</text>
+
+  <!-- CUDA Cores section -->
+  <rect x="60" y="100" width="280" height="150" rx="10" fill="#ebf5fb" stroke="#5dade2" stroke-width="1.5"/>
+  <text x="200" y="122" text-anchor="middle" font-size="14" font-weight="bold" fill="#2471a3">CUDA 코어 (128개)</text>
+  <text x="200" y="138" text-anchor="middle" font-size="11" fill="#5dade2">부동소수점 연산 (FP32/FP16)</text>
+
+  <!-- CUDA core grid -->
+  <g fill="#3498db" opacity="0.8">
+    <!-- 8x8 grid of small squares -->
+    <rect x="75" y="148" width="14" height="14" rx="2"/><rect x="93" y="148" width="14" height="14" rx="2"/>
+    <rect x="111" y="148" width="14" height="14" rx="2"/><rect x="129" y="148" width="14" height="14" rx="2"/>
+    <rect x="147" y="148" width="14" height="14" rx="2"/><rect x="165" y="148" width="14" height="14" rx="2"/>
+    <rect x="183" y="148" width="14" height="14" rx="2"/><rect x="201" y="148" width="14" height="14" rx="2"/>
+    <rect x="219" y="148" width="14" height="14" rx="2"/><rect x="237" y="148" width="14" height="14" rx="2"/>
+    <rect x="255" y="148" width="14" height="14" rx="2"/><rect x="273" y="148" width="14" height="14" rx="2"/>
+    <rect x="291" y="148" width="14" height="14" rx="2"/><rect x="309" y="148" width="14" height="14" rx="2"/>
+
+    <rect x="75" y="166" width="14" height="14" rx="2"/><rect x="93" y="166" width="14" height="14" rx="2"/>
+    <rect x="111" y="166" width="14" height="14" rx="2"/><rect x="129" y="166" width="14" height="14" rx="2"/>
+    <rect x="147" y="166" width="14" height="14" rx="2"/><rect x="165" y="166" width="14" height="14" rx="2"/>
+    <rect x="183" y="166" width="14" height="14" rx="2"/><rect x="201" y="166" width="14" height="14" rx="2"/>
+    <rect x="219" y="166" width="14" height="14" rx="2"/><rect x="237" y="166" width="14" height="14" rx="2"/>
+    <rect x="255" y="166" width="14" height="14" rx="2"/><rect x="273" y="166" width="14" height="14" rx="2"/>
+    <rect x="291" y="166" width="14" height="14" rx="2"/><rect x="309" y="166" width="14" height="14" rx="2"/>
+
+    <rect x="75" y="184" width="14" height="14" rx="2"/><rect x="93" y="184" width="14" height="14" rx="2"/>
+    <rect x="111" y="184" width="14" height="14" rx="2"/><rect x="129" y="184" width="14" height="14" rx="2"/>
+    <rect x="147" y="184" width="14" height="14" rx="2"/><rect x="165" y="184" width="14" height="14" rx="2"/>
+    <rect x="183" y="184" width="14" height="14" rx="2"/><rect x="201" y="184" width="14" height="14" rx="2"/>
+    <rect x="219" y="184" width="14" height="14" rx="2"/><rect x="237" y="184" width="14" height="14" rx="2"/>
+    <rect x="255" y="184" width="14" height="14" rx="2"/><rect x="273" y="184" width="14" height="14" rx="2"/>
+    <rect x="291" y="184" width="14" height="14" rx="2"/><rect x="309" y="184" width="14" height="14" rx="2"/>
+
+    <rect x="75" y="202" width="14" height="14" rx="2"/><rect x="93" y="202" width="14" height="14" rx="2"/>
+    <rect x="111" y="202" width="14" height="14" rx="2"/><rect x="129" y="202" width="14" height="14" rx="2"/>
+    <rect x="147" y="202" width="14" height="14" rx="2"/><rect x="165" y="202" width="14" height="14" rx="2"/>
+    <rect x="183" y="202" width="14" height="14" rx="2"/><rect x="201" y="202" width="14" height="14" rx="2"/>
+    <rect x="219" y="202" width="14" height="14" rx="2"/><rect x="237" y="202" width="14" height="14" rx="2"/>
+    <rect x="255" y="202" width="14" height="14" rx="2"/><rect x="273" y="202" width="14" height="14" rx="2"/>
+    <rect x="291" y="202" width="14" height="14" rx="2"/><rect x="309" y="202" width="14" height="14" rx="2"/>
+  </g>
+  <text x="200" y="238" text-anchor="middle" font-size="10" fill="#7f8c8d">... 128개</text>
+
+  <!-- Tensor Cores -->
+  <rect x="360" y="100" width="280" height="150" rx="10" fill="#fef9e7" stroke="#f7dc6f" stroke-width="1.5"/>
+  <text x="500" y="122" text-anchor="middle" font-size="14" font-weight="bold" fill="#9a7d0a">텐서 코어 (4개)</text>
+  <text x="500" y="138" text-anchor="middle" font-size="11" fill="#d4ac0d">행렬 곱셈 전용 하드웨어</text>
+
+  <g>
+    <rect x="390" y="155" width="50" height="50" rx="8" fill="#f1c40f" filter="url(#s)"/>
+    <text x="415" y="178" text-anchor="middle" font-size="11" font-weight="bold" fill="#7d6608">TC</text>
+    <text x="415" y="195" text-anchor="middle" font-size="9" fill="#9a7d0a">4x4x4</text>
+
+    <rect x="450" y="155" width="50" height="50" rx="8" fill="#f1c40f" filter="url(#s)"/>
+    <text x="475" y="178" text-anchor="middle" font-size="11" font-weight="bold" fill="#7d6608">TC</text>
+    <text x="475" y="195" text-anchor="middle" font-size="9" fill="#9a7d0a">4x4x4</text>
+
+    <rect x="510" y="155" width="50" height="50" rx="8" fill="#f1c40f" filter="url(#s)"/>
+    <text x="535" y="178" text-anchor="middle" font-size="11" font-weight="bold" fill="#7d6608">TC</text>
+    <text x="535" y="195" text-anchor="middle" font-size="9" fill="#9a7d0a">4x4x4</text>
+
+    <rect x="570" y="155" width="50" height="50" rx="8" fill="#f1c40f" filter="url(#s)"/>
+    <text x="595" y="178" text-anchor="middle" font-size="11" font-weight="bold" fill="#7d6608">TC</text>
+    <text x="595" y="195" text-anchor="middle" font-size="9" fill="#9a7d0a">4x4x4</text>
+  </g>
+
+  <text x="500" y="232" text-anchor="middle" font-size="11" fill="#9a7d0a">한 클럭에 64 FMA 연산!</text>
+
+  <!-- SRAM -->
+  <rect x="60" y="265" width="280" height="80" rx="10" fill="#eafaf1" stroke="#27ae60" stroke-width="1.5"/>
+  <text x="200" y="295" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e8449">SRAM / Shared Memory</text>
+  <text x="200" y="315" text-anchor="middle" font-size="12" fill="#27ae60">64KB | ~19 TB/s</text>
+  <text x="200" y="333" text-anchor="middle" font-size="11" fill="#82e0aa">프로그래머가 직접 관리하는 초고속 메모리</text>
+
+  <!-- Register File -->
+  <rect x="360" y="265" width="280" height="80" rx="10" fill="#ebf5fb" stroke="#2980b9" stroke-width="1.5"/>
+  <text x="500" y="295" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a5276">레지스터 파일</text>
+  <text x="500" y="315" text-anchor="middle" font-size="12" fill="#2980b9">64K x 32bit | 가장 빠름</text>
+  <text x="500" y="333" text-anchor="middle" font-size="11" fill="#85c1e9">각 스레드의 로컬 변수 저장</text>
+
+  <!-- Warp Scheduler -->
+  <rect x="60" y="360" width="580" height="55" rx="10" fill="#f4ecf7" stroke="#8e44ad" stroke-width="1.5"/>
+  <text x="350" y="390" text-anchor="middle" font-size="14" font-weight="bold" fill="#6c3483">Warp 스케줄러</text>
+  <text x="350" y="407" text-anchor="middle" font-size="11" fill="#af7ac5">32개 스레드 묶음(Warp)을 관리 | 메모리 대기 시 다른 Warp로 전환 (Latency Hiding)</text>
+
+  <!-- Bottom note -->
+  <rect x="60" y="430" width="580" height="30" rx="6" fill="#fdf2e9" stroke="#f0b27a" stroke-width="1"/>
+  <text x="350" y="450" text-anchor="middle" font-size="12" fill="#a04000" font-weight="bold">Triton에서는 이 모든 것을 컴파일러가 자동 관리 — BLOCK_SIZE만 지정하면 OK!</text>
+</svg>

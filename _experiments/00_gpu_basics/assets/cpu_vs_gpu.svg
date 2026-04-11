@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <linearGradient id="cpuGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gpuGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#76B947;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5A9A30;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- CPU Section -->
+  <rect x="20" y="20" width="400" height="360" rx="16" fill="#f0f4f8" stroke="#d0d8e0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="220" y="55" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">CPU</text>
+  <text x="220" y="75" text-anchor="middle" font-size="12" fill="#7f8c8d">Central Processing Unit</text>
+
+  <!-- CPU Cores (4 big ones) -->
+  <g>
+    <rect x="45" y="95" width="85" height="70" rx="10" fill="url(#cpuGrad)" filter="url(#shadow)"/>
+    <text x="87" y="127" text-anchor="middle" font-size="13" fill="white" font-weight="bold">Core 1</text>
+    <text x="87" y="147" text-anchor="middle" font-size="9" fill="#d4e6f9">ALU / FPU</text>
+
+    <rect x="140" y="95" width="85" height="70" rx="10" fill="url(#cpuGrad)" filter="url(#shadow)"/>
+    <text x="182" y="127" text-anchor="middle" font-size="13" fill="white" font-weight="bold">Core 2</text>
+    <text x="182" y="147" text-anchor="middle" font-size="9" fill="#d4e6f9">ALU / FPU</text>
+
+    <rect x="235" y="95" width="85" height="70" rx="10" fill="url(#cpuGrad)" filter="url(#shadow)"/>
+    <text x="277" y="127" text-anchor="middle" font-size="13" fill="white" font-weight="bold">Core 3</text>
+    <text x="277" y="147" text-anchor="middle" font-size="9" fill="#d4e6f9">ALU / FPU</text>
+
+    <rect x="330" y="95" width="85" height="70" rx="10" fill="url(#cpuGrad)" filter="url(#shadow)"/>
+    <text x="372" y="127" text-anchor="middle" font-size="13" fill="white" font-weight="bold">Core 4</text>
+    <text x="372" y="147" text-anchor="middle" font-size="9" fill="#d4e6f9">ALU / FPU</text>
+  </g>
+
+  <!-- CPU Cache -->
+  <rect x="50" y="195" width="365" height="50" rx="8" fill="#E8D44D" opacity="0.9" filter="url(#shadow)"/>
+  <text x="232" y="225" text-anchor="middle" font-size="14" font-weight="bold" fill="#5D4E0E">L3 Cache (큰 캐시)</text>
+
+  <!-- CPU description -->
+  <text x="220" y="280" text-anchor="middle" font-size="13" fill="#555">4~16개의 <tspan font-weight="bold" fill="#2c3e50">강력한</tspan> 코어</text>
+  <text x="220" y="300" text-anchor="middle" font-size="13" fill="#555">복잡한 작업을 빠르게 순차 처리</text>
+  <text x="220" y="330" text-anchor="middle" font-size="14" fill="#4A90D9" font-weight="bold">비유: 박사 4명이</text>
+  <text x="220" y="350" text-anchor="middle" font-size="14" fill="#4A90D9" font-weight="bold">어려운 문제를 하나씩</text>
+
+  <!-- GPU Section -->
+  <rect x="460" y="20" width="420" height="360" rx="16" fill="#f0f8f0" stroke="#c0d8c0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="670" y="55" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">GPU</text>
+  <text x="670" y="75" text-anchor="middle" font-size="12" fill="#7f8c8d">Graphics Processing Unit</text>
+
+  <!-- GPU Cores (many small ones) -->
+  <g>
+    <!-- Row 1 -->
+    <rect x="480" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="506" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="532" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="558" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="584" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="610" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="636" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="662" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="688" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="714" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="740" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="766" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="792" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="818" y="95" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <!-- Row 2 -->
+    <rect x="480" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="506" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="532" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="558" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="584" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="610" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="636" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="662" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="688" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="714" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="740" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="766" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="792" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="818" y="121" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <!-- Row 3 -->
+    <rect x="480" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="506" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="532" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="558" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="584" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="610" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="636" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="662" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="688" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="714" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="740" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="766" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="792" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="818" y="147" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <!-- Row 4 -->
+    <rect x="480" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="506" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="532" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="558" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="584" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="610" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="636" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="662" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="688" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="714" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="740" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="766" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="792" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+    <rect x="818" y="173" width="22" height="22" rx="3" fill="url(#gpuGrad)"/>
+  </g>
+
+  <!-- dots -->
+  <text x="850" y="150" font-size="20" fill="#5A9A30" font-weight="bold">...</text>
+
+  <!-- GPU small cache -->
+  <rect x="480" y="210" width="100" height="35" rx="6" fill="#E8D44D" opacity="0.7"/>
+  <text x="530" y="232" text-anchor="middle" font-size="11" font-weight="bold" fill="#5D4E0E">작은 캐시</text>
+
+  <!-- GPU description -->
+  <text x="670" y="280" text-anchor="middle" font-size="13" fill="#555">수천 개의 <tspan font-weight="bold" fill="#2c3e50">작은</tspan> 코어</text>
+  <text x="670" y="300" text-anchor="middle" font-size="13" fill="#555">단순한 작업을 대량으로 동시 처리</text>
+  <text x="670" y="330" text-anchor="middle" font-size="14" fill="#5A9A30" font-weight="bold">비유: 고등학생 10,000명이</text>
+  <text x="670" y="350" text-anchor="middle" font-size="14" fill="#5A9A30" font-weight="bold">쉬운 문제를 동시에</text>
+</svg>

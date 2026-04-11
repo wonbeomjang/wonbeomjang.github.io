@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 280" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <filter id="s"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="375" y="28" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">CPU 순차 처리 vs GPU 병렬 처리</text>
+
+  <!-- CPU Section -->
+  <rect x="20" y="50" width="710" height="90" rx="10" fill="#ebf5fb" stroke="#5dade2" stroke-width="1.5" filter="url(#s)"/>
+  <text x="40" y="78" font-size="15" font-weight="bold" fill="#2471a3">CPU (순차)</text>
+
+  <!-- CPU sequential boxes with arrows -->
+  <rect x="40" y="90" width="50" height="35" rx="6" fill="#3498db"/><text x="65" y="113" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[1]</text>
+  <text x="100" y="112" text-anchor="middle" font-size="16" fill="#555">→</text>
+  <rect x="110" y="90" width="50" height="35" rx="6" fill="#3498db"/><text x="135" y="113" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[2]</text>
+  <text x="170" y="112" text-anchor="middle" font-size="16" fill="#555">→</text>
+  <rect x="180" y="90" width="50" height="35" rx="6" fill="#3498db"/><text x="205" y="113" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[3]</text>
+  <text x="240" y="112" text-anchor="middle" font-size="16" fill="#555">→</text>
+  <rect x="250" y="90" width="50" height="35" rx="6" fill="#3498db"/><text x="275" y="113" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[4]</text>
+  <text x="310" y="112" text-anchor="middle" font-size="16" fill="#555">→</text>
+  <text x="340" y="112" text-anchor="middle" font-size="14" fill="#888">...</text>
+  <text x="370" y="112" text-anchor="middle" font-size="16" fill="#555">→</text>
+  <rect x="390" y="90" width="70" height="35" rx="6" fill="#3498db"/><text x="425" y="113" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[1000]</text>
+
+  <!-- Time arrow for CPU -->
+  <text x="520" y="112" font-size="12" fill="#e74c3c" font-weight="bold">시간: ━━━━━━━━━━━━━→ 오래 걸림</text>
+
+  <!-- GPU Section -->
+  <rect x="20" y="155" width="710" height="110" rx="10" fill="#eafaf1" stroke="#27ae60" stroke-width="1.5" filter="url(#s)"/>
+  <text x="40" y="183" font-size="15" font-weight="bold" fill="#1e8449">GPU (병렬)</text>
+
+  <!-- GPU parallel boxes -->
+  <rect x="40" y="195" width="50" height="35" rx="6" fill="#27ae60"/><text x="65" y="218" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[1]</text>
+  <rect x="95" y="195" width="50" height="35" rx="6" fill="#27ae60"/><text x="120" y="218" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[2]</text>
+  <rect x="150" y="195" width="50" height="35" rx="6" fill="#27ae60"/><text x="175" y="218" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[3]</text>
+  <rect x="205" y="195" width="50" height="35" rx="6" fill="#27ae60"/><text x="230" y="218" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[4]</text>
+  <text x="275" y="218" text-anchor="middle" font-size="14" fill="#888">...</text>
+  <rect x="300" y="195" width="70" height="35" rx="6" fill="#27ae60"/><text x="335" y="218" text-anchor="middle" font-size="12" fill="white" font-weight="bold">[1000]</text>
+
+  <!-- Down arrows -->
+  <line x1="65" y1="230" x2="65" y2="248" stroke="#1e8449" stroke-width="2"/>
+  <line x1="120" y1="230" x2="120" y2="248" stroke="#1e8449" stroke-width="2"/>
+  <line x1="175" y1="230" x2="175" y2="248" stroke="#1e8449" stroke-width="2"/>
+  <line x1="230" y1="230" x2="230" y2="248" stroke="#1e8449" stroke-width="2"/>
+  <line x1="335" y1="230" x2="335" y2="248" stroke="#1e8449" stroke-width="2"/>
+  <text x="200" y="265" text-anchor="middle" font-size="13" fill="#1e8449" font-weight="bold">동시에 처리 완료!</text>
+
+  <!-- Time arrow for GPU -->
+  <text x="520" y="218" font-size="12" fill="#27ae60" font-weight="bold">시간: ━→ 빠름!</text>
+</svg>

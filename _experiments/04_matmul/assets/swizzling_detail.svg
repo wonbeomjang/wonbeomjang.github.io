@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 880" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs>
+    <filter id="sh"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter>
+  </defs>
+
+  <text x="450" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">Swizzling 동작 원리 (구체적 예시)</text>
+  <text x="450" y="52" text-anchor="middle" font-size="13" fill="#7f8c8d">M=4타일, N=3타일, GROUP_SIZE_M=2</text>
+
+  <!-- Step 1: Without swizzling -->
+  <text x="220" y="85" text-anchor="middle" font-size="16" font-weight="bold" fill="#c0392b">Swizzling 없이 (순차)</text>
+
+  <text x="40" y="110" font-size="11" fill="#888">pid:</text>
+  <!-- Grid without swizzling -->
+  <g transform="translate(40, 115)">
+    <text x="30" y="-5" text-anchor="middle" font-size="10" fill="#888">N=0</text>
+    <text x="90" y="-5" text-anchor="middle" font-size="10" fill="#888">N=1</text>
+    <text x="150" y="-5" text-anchor="middle" font-size="10" fill="#888">N=2</text>
+    <text x="-15" y="25" text-anchor="end" font-size="10" fill="#888">M=0</text>
+    <text x="-15" y="70" text-anchor="end" font-size="10" fill="#888">M=1</text>
+    <text x="-15" y="115" text-anchor="end" font-size="10" fill="#888">M=2</text>
+    <text x="-15" y="160" text-anchor="end" font-size="10" fill="#888">M=3</text>
+
+    <rect x="5" y="5" width="50" height="40" rx="4" fill="#e74c3c" opacity="0.9"/><text x="30" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">0</text>
+    <rect x="65" y="5" width="50" height="40" rx="4" fill="#e74c3c" opacity="0.8"/><text x="90" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">1</text>
+    <rect x="125" y="5" width="50" height="40" rx="4" fill="#e74c3c" opacity="0.7"/><text x="150" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">2</text>
+
+    <rect x="5" y="50" width="50" height="40" rx="4" fill="#e67e22" opacity="0.9"/><text x="30" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">3</text>
+    <rect x="65" y="50" width="50" height="40" rx="4" fill="#e67e22" opacity="0.8"/><text x="90" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">4</text>
+    <rect x="125" y="50" width="50" height="40" rx="4" fill="#e67e22" opacity="0.7"/><text x="150" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">5</text>
+
+    <rect x="5" y="95" width="50" height="40" rx="4" fill="#8e44ad" opacity="0.9"/><text x="30" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">6</text>
+    <rect x="65" y="95" width="50" height="40" rx="4" fill="#8e44ad" opacity="0.8"/><text x="90" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">7</text>
+    <rect x="125" y="95" width="50" height="40" rx="4" fill="#8e44ad" opacity="0.7"/><text x="150" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">8</text>
+
+    <rect x="5" y="140" width="50" height="40" rx="4" fill="#2c3e50" opacity="0.9"/><text x="30" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">9</text>
+    <rect x="65" y="140" width="50" height="40" rx="4" fill="#2c3e50" opacity="0.8"/><text x="90" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">10</text>
+    <rect x="125" y="140" width="50" height="40" rx="4" fill="#2c3e50" opacity="0.7"/><text x="150" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">11</text>
+  </g>
+
+  <!-- Execution order without swizzling -->
+  <g transform="translate(260, 120)">
+    <text x="0" y="0" font-size="12" fill="#c0392b" font-weight="bold">실행 순서:</text>
+    <text x="0" y="22" font-size="11" fill="#555">pid 0: C(0,0) - A행0, B열0</text>
+    <text x="0" y="40" font-size="11" fill="#555">pid 1: C(0,1) - A행0, B열1</text>
+    <text x="0" y="58" font-size="11" fill="#555">pid 2: C(0,2) - A행0, B열2</text>
+    <text x="0" y="76" font-size="11" fill="#e74c3c" font-weight="bold">pid 3: C(1,0) - A행1, B열0</text>
+    <text x="0" y="94" font-size="11" fill="#e74c3c">  B열0을 다시 로드! (캐시에서 밀려남)</text>
+    <text x="0" y="112" font-size="11" fill="#555">pid 4: C(1,1) - A행1, B열1</text>
+    <text x="0" y="130" font-size="11" fill="#555">...</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="20" y1="315" x2="880" y2="315" stroke="#ddd" stroke-width="2"/>
+
+  <!-- Step 2: With swizzling -->
+  <text x="220" y="345" text-anchor="middle" font-size="16" font-weight="bold" fill="#27ae60">Swizzling 적용 (GROUP_SIZE_M=2)</text>
+
+  <!-- Grid with swizzling -->
+  <g transform="translate(80, 370)">
+    <text x="30" y="-5" text-anchor="middle" font-size="10" fill="#888">N=0</text>
+    <text x="90" y="-5" text-anchor="middle" font-size="10" fill="#888">N=1</text>
+    <text x="150" y="-5" text-anchor="middle" font-size="10" fill="#888">N=2</text>
+    <text x="-55" y="25" text-anchor="end" font-size="10" fill="#888">M=0</text>
+    <text x="-55" y="70" text-anchor="end" font-size="10" fill="#888">M=1</text>
+    <text x="-55" y="115" text-anchor="end" font-size="10" fill="#888">M=2</text>
+    <text x="-55" y="160" text-anchor="end" font-size="10" fill="#888">M=3</text>
+
+    <!-- Group 0: M=0,1 -->
+    <rect x="5" y="5" width="50" height="40" rx="4" fill="#27ae60" opacity="0.9" stroke="#1e8449" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">0</text>
+    <rect x="5" y="50" width="50" height="40" rx="4" fill="#27ae60" opacity="0.8" stroke="#1e8449" stroke-width="2"/><text x="30" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">1</text>
+    <rect x="65" y="5" width="50" height="40" rx="4" fill="#27ae60" opacity="0.7" stroke="#1e8449" stroke-width="2"/><text x="90" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">2</text>
+    <rect x="65" y="50" width="50" height="40" rx="4" fill="#27ae60" opacity="0.6" stroke="#1e8449" stroke-width="2"/><text x="90" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">3</text>
+    <rect x="125" y="5" width="50" height="40" rx="4" fill="#27ae60" opacity="0.5" stroke="#1e8449" stroke-width="2"/><text x="150" y="30" text-anchor="middle" font-size="14" fill="white" font-weight="bold">4</text>
+    <rect x="125" y="50" width="50" height="40" rx="4" fill="#27ae60" opacity="0.4" stroke="#1e8449" stroke-width="2"/><text x="150" y="75" text-anchor="middle" font-size="14" fill="white" font-weight="bold">5</text>
+
+    <!-- Group 1: M=2,3 -->
+    <rect x="5" y="95" width="50" height="40" rx="4" fill="#3498db" opacity="0.9" stroke="#2471a3" stroke-width="2"/><text x="30" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">6</text>
+    <rect x="5" y="140" width="50" height="40" rx="4" fill="#3498db" opacity="0.8" stroke="#2471a3" stroke-width="2"/><text x="30" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">7</text>
+    <rect x="65" y="95" width="50" height="40" rx="4" fill="#3498db" opacity="0.7" stroke="#2471a3" stroke-width="2"/><text x="90" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">8</text>
+    <rect x="65" y="140" width="50" height="40" rx="4" fill="#3498db" opacity="0.6" stroke="#2471a3" stroke-width="2"/><text x="90" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">9</text>
+    <rect x="125" y="95" width="50" height="40" rx="4" fill="#3498db" opacity="0.5" stroke="#2471a3" stroke-width="2"/><text x="150" y="120" text-anchor="middle" font-size="14" fill="white" font-weight="bold">10</text>
+    <rect x="125" y="140" width="50" height="40" rx="4" fill="#3498db" opacity="0.4" stroke="#2471a3" stroke-width="2"/><text x="150" y="165" text-anchor="middle" font-size="14" fill="white" font-weight="bold">11</text>
+
+    <!-- Group brackets -->
+    <rect x="0" y="0" width="180" height="95" rx="6" fill="none" stroke="#27ae60" stroke-width="2" stroke-dasharray="5"/>
+    <text x="-5" y="50" text-anchor="end" font-size="10" fill="#27ae60" font-weight="bold">Group</text>
+    <text x="-5" y="62" text-anchor="end" font-size="10" fill="#27ae60" font-weight="bold">0</text>
+    <rect x="0" y="90" width="180" height="95" rx="6" fill="none" stroke="#3498db" stroke-width="2" stroke-dasharray="5"/>
+    <text x="-5" y="140" text-anchor="end" font-size="10" fill="#3498db" font-weight="bold">Group</text>
+    <text x="-5" y="152" text-anchor="end" font-size="10" fill="#3498db" font-weight="bold">1</text>
+  </g>
+
+  <!-- Execution order with swizzling -->
+  <g transform="translate(300, 375)">
+    <text x="0" y="0" font-size="12" fill="#27ae60" font-weight="bold">실행 순서:</text>
+    <text x="0" y="22" font-size="11" fill="#555">pid 0: C(0,0) - A행0, B열0</text>
+    <text x="0" y="40" font-size="11" fill="#27ae60" font-weight="bold">pid 1: C(1,0) - A행1, B열0  (B열0 캐시 재활용!)</text>
+    <text x="0" y="58" font-size="11" fill="#555">pid 2: C(0,1) - A행0, B열1</text>
+    <text x="0" y="76" font-size="11" fill="#27ae60" font-weight="bold">pid 3: C(1,1) - A행1, B열1  (B열1 캐시 재활용!)</text>
+    <text x="0" y="94" font-size="11" fill="#555">pid 4: C(0,2) - A행0, B열2</text>
+    <text x="0" y="112" font-size="11" fill="#27ae60" font-weight="bold">pid 5: C(1,2) - A행1, B열2  (B열2 캐시 재활용!)</text>
+    <text x="0" y="140" font-size="11" fill="#555">pid 6: C(2,0) - A행2, B열0  (Group 1 시작)</text>
+    <text x="0" y="158" font-size="11" fill="#3498db" font-weight="bold">pid 7: C(3,0) - A행3, B열0  (B열0 캐시 재활용!)</text>
+  </g>
+
+  <!-- Code mapping -->
+  <rect x="20" y="575" width="860" height="285" rx="10" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1.5"/>
+  <text x="450" y="600" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50">코드가 하는 일 (pid=3일 때)</text>
+  <text x="450" y="618" text-anchor="middle" font-size="11" fill="#888">GROUP_SIZE_M=2, num_pid_m=4, num_pid_n=3</text>
+
+  <!-- Step 1: Variable formula -->
+  <text x="40" y="645" font-size="12" fill="#2471a3" font-weight="bold">1단계: 변수 공식</text>
+  <text x="40" y="665" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">num_pid_in_group = GROUP_SIZE_M * num_pid_n</text>
+  <text x="40" y="683" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">group_id         = pid // num_pid_in_group</text>
+  <text x="40" y="701" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">first_pid_m      = group_id * GROUP_SIZE_M</text>
+  <text x="40" y="719" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">pid_m = first_pid_m + ((pid % num_pid_in_group) % group_size_m)</text>
+  <text x="40" y="737" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">pid_n = (pid % num_pid_in_group) // group_size_m</text>
+
+  <!-- Step 2: Substitute numbers -->
+  <text x="40" y="767" font-size="12" fill="#e67e22" font-weight="bold">2단계: 숫자 대입 (pid=3)</text>
+  <text x="40" y="787" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">num_pid_in_group = 2 * 3 = 6</text>
+  <text x="500" y="787" font-size="11" fill="#888">그룹당 프로그램 수</text>
+  <text x="40" y="805" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">group_id         = 3 // 6 = 0</text>
+  <text x="500" y="805" font-size="11" fill="#888">0번 그룹에 속함</text>
+  <text x="40" y="823" font-size="11" fill="#555" font-family="'Noto Sans Mono CJK KR', monospace">first_pid_m      = 0 * 2 = 0</text>
+  <text x="500" y="823" font-size="11" fill="#888">이 그룹의 첫 M 인덱스</text>
+  <text x="40" y="841" font-size="11" fill="#27ae60" font-weight="bold" font-family="'Noto Sans Mono CJK KR', monospace">pid_m = 0 + ((3 % 6) % 2) = 0 + 1 = 1</text>
+  <text x="500" y="841" font-size="11" fill="#27ae60" font-weight="bold">M 방향: 1번 타일</text>
+  <text x="40" y="859" font-size="11" fill="#27ae60" font-weight="bold" font-family="'Noto Sans Mono CJK KR', monospace">pid_n = (3 % 6) // 2 = 1</text>
+  <text x="500" y="859" font-size="11" fill="#27ae60" font-weight="bold">N 방향: 1번 타일 -> C(1,1)</text>
+</svg>

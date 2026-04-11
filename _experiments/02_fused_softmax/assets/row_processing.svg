@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 220" font-family="'Noto Sans CJK KR', 'Noto Sans', sans-serif">
+  <defs><filter id="s"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.1"/></filter></defs>
+
+  <text x="350" y="25" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">행(Row) 단위 처리: 각 프로그램이 한 행 담당</text>
+
+  <!-- Input matrix -->
+  <text x="60" y="58" text-anchor="middle" font-size="12" fill="#7f8c8d">입력 (M x N)</text>
+
+  <rect x="20" y="68" width="260" height="32" rx="4" fill="#3498db"/><text x="150" y="89" text-anchor="middle" font-size="11" fill="white">x[0,0], x[0,1], x[0,2], ..., x[0,N]</text>
+  <rect x="20" y="104" width="260" height="32" rx="4" fill="#e67e22"/><text x="150" y="125" text-anchor="middle" font-size="11" fill="white">x[1,0], x[1,1], x[1,2], ..., x[1,N]</text>
+  <rect x="20" y="140" width="260" height="32" rx="4" fill="#8e44ad"/><text x="150" y="161" text-anchor="middle" font-size="11" fill="white">x[M,0], x[M,1], x[M,2], ..., x[M,N]</text>
+
+  <!-- Program labels -->
+  <text x="300" y="89" font-size="12" fill="#3498db" font-weight="bold">Program 0</text>
+  <text x="300" y="125" font-size="12" fill="#e67e22" font-weight="bold">Program 1</text>
+  <text x="300" y="161" font-size="12" fill="#8e44ad" font-weight="bold">Program M</text>
+
+  <!-- Arrow -->
+  <text x="430" y="125" font-size="20" fill="#555">-></text>
+  <text x="460" y="115" font-size="12" fill="#555">softmax</text>
+  <text x="460" y="135" font-size="12" fill="#555">각 행별</text>
+
+  <!-- Output matrix -->
+  <text x="600" y="58" text-anchor="middle" font-size="12" fill="#7f8c8d">출력 (M x N)</text>
+
+  <rect x="500" y="68" width="180" height="32" rx="4" fill="#3498db" opacity="0.6"/><text x="590" y="89" text-anchor="middle" font-size="11" fill="white">y[0,0], y[0,1], ..., y[0,N]</text>
+  <rect x="500" y="104" width="180" height="32" rx="4" fill="#e67e22" opacity="0.6"/><text x="590" y="125" text-anchor="middle" font-size="11" fill="white">y[1,0], y[1,1], ..., y[1,N]</text>
+  <rect x="500" y="140" width="180" height="32" rx="4" fill="#8e44ad" opacity="0.6"/><text x="590" y="161" text-anchor="middle" font-size="11" fill="white">y[M,0], y[M,1], ..., y[M,N]</text>
+
+  <text x="350" y="205" text-anchor="middle" font-size="12" fill="#7f8c8d">각 행은 독립적 -> 완벽한 병렬화 가능</text>
+</svg>
