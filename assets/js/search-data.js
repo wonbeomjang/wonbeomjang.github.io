@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-llm-엔지니어가-알아야-할-gpu-아키텍처-ampere-hopper-blackwell",
+        },{id: "post-telbench-a-benchmark-for-evaluating-telco-specific-large-language-models",
+        
+          title: "TelBench: A Benchmark for Evaluating Telco-Specific Large Language Models",
+        
+        description: "TelBench 논문 리뷰 — 통신 도메인 특화 LLM 벤치마크의 설계, 구축, 평가",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/telbench/";
+          
+        },
+      },{id: "post-llm-엔지니어가-알아야-할-gpu-아키텍처-ampere-hopper-blackwell",
         
           title: "LLM 엔지니어가 알아야 할 GPU 아키텍처: Ampere → Hopper → Blackwell",
         
