@@ -41,6 +41,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/telbench/";
           
         },
+      },{id: "post-telagentbench-a-multi-faceted-benchmark-for-evaluating-llm-based-agents-in-telecommunications",
+        
+          title: "TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications",
+        
+        description: "TelAgentBench 논문 리뷰 - 통신 도메인 LLM 에이전트의 5가지 핵심 역량 평가 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/telagentbench/";
+          
+        },
       },{id: "post-llm-엔지니어가-알아야-할-gpu-아키텍처-ampere-hopper-blackwell",
         
           title: "LLM 엔지니어가 알아야 할 GPU 아키텍처: Ampere → Hopper → Blackwell",
