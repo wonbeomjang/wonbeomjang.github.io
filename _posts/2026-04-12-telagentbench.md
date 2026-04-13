@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications"
-date: 2026-04-12 00:00:00 +0900
+date: 2026-04-12 12:00:00 +0900
 description: "TelAgentBench 논문 리뷰 - 통신 도메인 LLM 에이전트의 5가지 핵심 역량 평가 벤치마크"
 categories: [nlp]
 tags: [llm, benchmark, evaluation, telco, agent, paper]
