@@ -3,7 +3,7 @@ layout: post
 title: "META-REWARDING LANGUAGE MODELS: Self-Improving Alignment with LLM-as-a-Meta-Judge 설명"
 date: 2024-09-20 00:00:00 +0900
 description: "Meta-Rewarding 논문 리뷰 — Actor, Judge, Meta-Judge 3역할 자기 개선 학습"
-categories: [llm]
+categories: [paper]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true

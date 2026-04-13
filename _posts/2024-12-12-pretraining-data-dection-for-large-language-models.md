@@ -3,7 +3,7 @@ layout: post
 title: "Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method 설명"
 date: 2024-12-12 00:00:00 +0900
 description: "LLM 사전학습 데이터 탐지 논문 리뷰 — Divergence 기반 Calibration으로 학습 데이터 포함 여부 판별"
-categories: [llm]
+categories: [paper]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true

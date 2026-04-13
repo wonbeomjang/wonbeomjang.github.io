@@ -32,6 +32,19 @@
 6. **논문 링크는 제목으로**: `> [Full Paper Title](arxiv_url)` 형식으로 첫 줄에 배치
 7. **시리즈 글은 상호 링크**: 관련 포스트를 마지막에 인용구로 안내
 
+## 카테고리 규칙 (5개만 사용)
+
+| 카테고리  | 용도                                        | 예시                                           |
+| --------- | ------------------------------------------- | ---------------------------------------------- |
+| `paper`   | 모든 논문 리뷰 (CV, LLM, optimization 무관) | FlashAttention, LoRA, TelBench, SENet          |
+| `dev`     | 개발 가이드, 기술 설명, 트러블슈팅          | GPU 아키텍처, Quantization 적용, Keras, Jetson |
+| `triton`  | Triton GPU 프로그래밍 시리즈                | Triton 00~05                                   |
+| `review`  | 회고, 후기                                  | 연말 회고, 인턴 후기                           |
+| `project` | 프로젝트 기록                               | OSAM, 약학정보 서비스                          |
+
+- 논문 리뷰는 주제(LLM, CV, NLP 등)와 무관하게 **모두 `[paper]`**
+- 주제 구분은 카테고리가 아닌 **tags**로 한다
+
 ## Front Matter 템플릿
 
 ```yaml
@@ -40,7 +53,7 @@ layout: post
 title: "논문 제목"
 date: YYYY-MM-DD HH:MM:SS +0900
 description: "한국어 한줄 설명 — 핵심 키워드"
-categories: [category]
+categories: [paper]
 tags: [tag1, tag2, paper]
 giscus_comments: true
 related_posts: true

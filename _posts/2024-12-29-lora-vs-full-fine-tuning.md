@@ -3,7 +3,7 @@ layout: post
 title: "LoRA vs Full Fine-tuning: An Illusion of Equivalence"
 date: 2024-12-29 00:00:00 +0900
 description: "LoRA vs Full Fine-tuning 논문 리뷰 — Intruder Dimensions과 Spectral 분석을 통한 차이점 분석"
-categories: [llm]
+categories: [paper]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true

@@ -3,7 +3,7 @@ layout: post
 title: "FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling"
 date: 2026-04-11 12:00:00 +0900
 description: "FlashAttention-4 논문 리뷰 — Blackwell GPU의 비대칭 스케일링에 맞춘 파이프라인 재설계와 소프트웨어 지수함수"
-categories: [optimization]
+categories: [paper]
 tags: [attention, hardware-optimization, paper, flash-attention]
 giscus_comments: true
 related_posts: true

@@ -3,7 +3,7 @@ layout: post
 title: "Quantization과 inference speed"
 date: 2022-07-13 18:50:11 +0900
 description: Quantization 성능분석
-categories: [optimization]
+categories: [dev]
 tags: [quantization, tensorrt, optimization]
 giscus_comments: true
 related_posts: true

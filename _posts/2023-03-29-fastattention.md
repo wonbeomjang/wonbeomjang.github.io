@@ -3,7 +3,7 @@ layout: post
 title: "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness"
 date: 2023-03-29 00:00:00 +0900
 description: FlashAttention 논문 리뷰 — GPU 메모리 계층을 고려한 IO-aware Attention 최적화
-categories: [optimization]
+categories: [paper]
 tags: [paper, attention, efficient-transformer]
 giscus_comments: true
 related_posts: true
