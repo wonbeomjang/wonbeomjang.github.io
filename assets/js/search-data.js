@@ -96,6 +96,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/k8s-01-intro/";
           
         },
+      },{id: "post-a-x-k1-technical-report",
+        
+          title: "A.X K1 Technical Report",
+        
+        description: "A.X K1 논문 리뷰 — 519B MoE 모델의 아키텍처, 데이터 파이프라인, Think-Fusion 학습 전략",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/ax-k1-technical-report/";
+          
+        },
       },{id: "post-telagentbench-a-multi-faceted-benchmark-for-evaluating-llm-based-agents-in-telecommunications",
         
           title: "TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications",
