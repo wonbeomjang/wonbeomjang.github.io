@@ -32,12 +32,13 @@
 6. **논문 링크는 제목으로**: `> [Full Paper Title](arxiv_url)` 형식으로 첫 줄에 배치
 7. **시리즈 글은 상호 링크**: 관련 포스트를 마지막에 인용구로 안내
 
-## 카테고리 규칙 (5개만 사용)
+## 카테고리 규칙 (6개만 사용)
 
 | 카테고리  | 용도                                        | 예시                                           |
 | --------- | ------------------------------------------- | ---------------------------------------------- |
 | `paper`   | 모든 논문 리뷰 (CV, LLM, optimization 무관) | FlashAttention, LoRA, TelBench, SENet          |
 | `dev`     | 개발 가이드, 기술 설명, 트러블슈팅          | GPU 아키텍처, Quantization 적용, Keras, Jetson |
+| `infra`   | 인프라, DevOps, 클라우드 관련 가이드        | EKS, ECR, Kubernetes, Docker, CI/CD            |
 | `triton`  | Triton GPU 프로그래밍 시리즈                | Triton 00~05                                   |
 | `review`  | 회고, 후기                                  | 연말 회고, 인턴 후기                           |
 | `project` | 프로젝트 기록                               | OSAM, 약학정보 서비스                          |

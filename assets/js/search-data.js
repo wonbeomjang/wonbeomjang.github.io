@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-telagentbench-a-multi-faceted-benchmark-for-evaluating-llm-based-agents-in-telecommunications",
+        },{id: "post-amazon-eks-가이드-관리형-kubernetes의-구조부터-운영까지",
+        
+          title: "Amazon EKS 가이드: 관리형 Kubernetes의 구조부터 운영까지",
+        
+        description: "EKS 아키텍처, Worker Node 옵션, VPC CNI, Pod Identity, Auto Mode, 비용 구조, 업그레이드 전략 — 실무 중심 정리",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/amazon-eks-guide/";
+          
+        },
+      },{id: "post-telagentbench-a-multi-faceted-benchmark-for-evaluating-llm-based-agents-in-telecommunications",
         
           title: "TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications",
         
