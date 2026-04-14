@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-k8s-시리즈-05-amazon-eks-아키텍처와-worker-node",
+        },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
+        
+          title: "K8s 시리즈 06: EKS 네트워킹·보안·비용·운영",
+        
+        description: "VPC CNI, Pod Identity vs IRSA, EKS 비용 구조와 숨은 비용, GKE/AKS 비교, 업그레이드 전략, Troubleshooting",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-06-eks-operations/";
+          
+        },
+      },{id: "post-k8s-시리즈-05-amazon-eks-아키텍처와-worker-node",
         
           title: "K8s 시리즈 05: Amazon EKS — 아키텍처와 Worker Node",
         
@@ -39,6 +50,28 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2026/amazon-eks-guide/";
+          
+        },
+      },{id: "post-k8s-시리즈-04-configmap-secret-storage-설정과-데이터-관리",
+        
+          title: "K8s 시리즈 04: ConfigMap, Secret, Storage — 설정과 데이터 관리",
+        
+        description: "ConfigMap/Secret 주입, PV/PVC/StorageClass, EFS vs EBS, Namespace/Label, Helm 패키지 관리",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-04-config-storage/";
+          
+        },
+      },{id: "post-k8s-시리즈-03-service-ingress-트래픽-라우팅과-외부-접근",
+        
+          title: "K8s 시리즈 03: Service, Ingress — 트래픽 라우팅과 외부 접근",
+        
+        description: "ClusterIP, NodePort, LoadBalancer, Ingress 도메인 라우팅, HPA 오토스케일링, Taint/Toleration GPU 노드 배치",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-03-networking/";
           
         },
       },{id: "post-k8s-시리즈-02-pod-deployment-job-cronjob-k8s-워크로드-총정리",
