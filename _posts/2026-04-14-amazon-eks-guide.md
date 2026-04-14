@@ -13,10 +13,10 @@ related_posts: true
 >
 > - [01: Kubernetes란? 컨테이너부터 클러스터까지](/blog/2026/k8s-01-intro/)
 > - [02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리](/blog/2026/k8s-02-workloads/)
-> - 03: Service, Ingress — 트래픽 라우팅과 외부 접근 (예정)
-> - 04: ConfigMap, Secret, Storage — 설정과 데이터 관리 (예정)
+> - [03: Service, Ingress — 트래픽 라우팅과 외부 접근](/blog/2026/k8s-03-networking/)
+> - [04: ConfigMap, Secret, Storage — 설정과 데이터 관리](/blog/2026/k8s-04-config-storage/)
 > - **05: Amazon EKS — 아키텍처와 Worker Node** ← 현재 글
-> - 06: EKS 네트워킹·보안·비용·운영 (예정)
+> - [06: EKS 네트워킹·보안·비용·운영](/blog/2026/k8s-06-eks-operations/)
 
 직접 Kubernetes를 구축하면 Control Plane 설치, etcd 백업, 인증서 갱신, 버전 업그레이드 등 클러스터 관리에만 상당한 운영 부담이 생긴다. **AWS EKS**(Elastic Kubernetes Service)는 Control Plane 관리를 AWS에 위임하고, **Rancher** 같은 GUI 관리 도구를 함께 사용하면 kubectl 명령어를 몰라도 Pod 배포, 로그 확인, 스케일링 등 대부분의 작업을 웹 브라우저에서 수행할 수 있다. 즉 **EKS가 인프라 운영을, Rancher가 일상 운영을 덜어주는** 조합이다.
 
