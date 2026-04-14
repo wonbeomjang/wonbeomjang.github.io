@@ -15,7 +15,7 @@ related_posts: true
 > - [02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리](/blog/2026/k8s-02-workloads/)
 > - [03: Service, Ingress — 트래픽 라우팅과 외부 접근](/blog/2026/k8s-03-networking/)
 > - **04: ConfigMap, Secret, Storage — 설정과 데이터 관리** ← 현재 글
-> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/amazon-eks-guide/)
+> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/k8s-05-amazon-eks/)
 > - [06: EKS 네트워킹·보안·비용·운영](/blog/2026/k8s-06-eks-operations/)
 
 앱이 실행되려면 코드만으로는 부족하다. DB 주소, API Key, 모델 체크포인트 경로 같은 **설정**과 **데이터**가 필요하다. 이번 글에서는 설정을 주입하는 ConfigMap/Secret, 데이터를 영구 저장하는 PV/PVC, 그리고 리소스를 정리하는 Namespace/Label을 다룬다.

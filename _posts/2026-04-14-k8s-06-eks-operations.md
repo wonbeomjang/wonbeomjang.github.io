@@ -15,7 +15,7 @@ related_posts: true
 > - [02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리](/blog/2026/k8s-02-workloads/)
 > - [03: Service, Ingress — 트래픽 라우팅과 외부 접근](/blog/2026/k8s-03-networking/)
 > - [04: ConfigMap, Secret, Storage — 설정과 데이터 관리](/blog/2026/k8s-04-config-storage/)
-> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/amazon-eks-guide/)
+> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/k8s-05-amazon-eks/)
 > - **06: EKS 네트워킹·보안·비용·운영** ← 현재 글
 
 이전 글에서 EKS 아키텍처와 Worker Node 옵션을 다뤘다. 이번 글에서는 EKS 운영의 실전 — **VPC CNI 네트워킹, 보안(Pod Identity), 비용 구조, 업그레이드 전략, 자주 만나는 에러**를 정리한다.
@@ -220,7 +220,7 @@ Pod이 정상 동작하지 않음
 | [02 워크로드](/blog/2026/k8s-02-workloads/)           | Pod, Deployment, Job, CronJob, Resource, Probe           |
 | [03 네트워킹](/blog/2026/k8s-03-networking/)          | Service, Ingress, HPA, Node Scheduling                   |
 | [04 설정·스토리지](/blog/2026/k8s-04-config-storage/) | ConfigMap, Secret, PV/PVC, Namespace, Helm               |
-| [05 EKS 아키텍처](/blog/2026/amazon-eks-guide/)       | EKS 구조, Worker Node 옵션, Auto Mode, ECR               |
+| [05 EKS 아키텍처](/blog/2026/k8s-05-amazon-eks/)       | EKS 구조, Worker Node 옵션, Auto Mode, ECR               |
 | **06 EKS 운영**                                       | VPC CNI, Pod Identity, 비용, 업그레이드, Troubleshooting |
 
 ---

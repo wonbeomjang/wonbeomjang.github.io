@@ -15,7 +15,7 @@ related_posts: true
 > - [02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리](/blog/2026/k8s-02-workloads/)
 > - **03: Service, Ingress — 트래픽 라우팅과 외부 접근** ← 현재 글
 > - [04: ConfigMap, Secret, Storage — 설정과 데이터 관리](/blog/2026/k8s-04-config-storage/)
-> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/amazon-eks-guide/)
+> - [05: Amazon EKS — 아키텍처와 Worker Node](/blog/2026/k8s-05-amazon-eks/)
 > - [06: EKS 네트워킹·보안·비용·운영](/blog/2026/k8s-06-eks-operations/)
 
 이전 글에서 Pod과 Deployment로 앱을 실행하는 법을 배웠다. 하지만 Pod의 IP는 재시작할 때마다 바뀐다. 이번 글에서는 **안정적으로 접근하는 방법** — Service와 Ingress, 그리고 트래픽에 따른 **자동 스케일링(HPA)**과 **GPU 노드 배치** 전략을 다룬다.
