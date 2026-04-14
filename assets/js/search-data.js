@@ -41,6 +41,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/amazon-eks-guide/";
           
         },
+      },{id: "post-k8s-시리즈-02-pod-deployment-job-cronjob-k8s-워크로드-총정리",
+        
+          title: "K8s 시리즈 02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리",
+        
+        description: "Pod 생명주기, Deployment 롤링 업데이트, Resource Requests/Limits, Health Check, Job/CronJob 배치 처리 — LLM 엔지니어를 위한 워크로드 가이드",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-02-workloads/";
+          
+        },
       },{id: "post-k8s-시리즈-01-kubernetes란-컨테이너부터-클러스터까지",
         
           title: "K8s 시리즈 01: Kubernetes란? 컨테이너부터 클러스터까지",
