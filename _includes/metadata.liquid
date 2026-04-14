@@ -228,20 +228,44 @@
 
   <script type="application/ld+json">
     {
+        "@context": "https://schema.org",
+        "@type": "{% if is_blog_post %}BlogPosting{% else %}WebSite{% endif %}",
+        "headline": "{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}",
+        "description": "{% if page.description %}{{ page.description }}{% else if site.description %}{{ site.description }}{% endif %}",
+        "url": "{{ page.url | prepend: site.baseurl | prepend: site.url }}",
         "author":
         {
             "@type": "Person",
             "name": "{{ author_name }}"
         },
-        "url": "{{ page.url | prepend: site.baseurl | prepend: site.url }}",
-        "@type": "{% if is_blog_post %}BlogPosting{% else %}WebSite{% endif %}",
-        "description": "{% if page.description %}{{ page.description }}{% else if site.description %}{{ site.description }}{% endif %}",
-        "headline": "{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}",
+        {% if is_blog_post %}
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "{{ page.url | prepend: site.baseurl | prepend: site.url }}"
+        },
+        {% if page.date %}
+        "datePublished": "{{ page.date | date_to_xmlschema }}",
+        {% endif %}
+        {% if page.last_modified_at %}
+        "dateModified": "{{ page.last_modified_at | date_to_xmlschema }}",
+        {% elsif page.date %}
+        "dateModified": "{{ page.date | date_to_xmlschema }}",
+        {% endif %}
+        {% if page.tags.size > 0 %}
+        "keywords": {{ page.tags | jsonify }},
+        {% elsif site.keywords %}
+        "keywords": "{{ site.keywords }}",
+        {% endif %}
+        {% if page.og_image %}
+        "image": "{{ page.og_image | prepend: site.baseurl | prepend: site.url }}",
+        {% elsif site.og_image %}
+        "image": "{{ site.og_image | prepend: site.baseurl | prepend: site.url }}",
+        {% endif %}
+        {% endif %}
         {% if sameaslinks != blank %}
         "sameAs": {{ sameaslinks | jsonify }},
         {% endif %}
-        "name": "{{ author_name }}",
-        "@context": "https://schema.org"
+        "name": "{{ author_name }}"
     }
   </script>
 {% endif %}

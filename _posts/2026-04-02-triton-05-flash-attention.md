@@ -90,7 +90,7 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 ## 커널 동작 원리
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/flash_attention_flow.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/flash_attention_flow.png" class="img-fluid rounded z-depth-1" alt="FlashAttention 타일링 및 연산 흐름" %}
 
 ### 단계별 의사코드
 
@@ -102,7 +102,7 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/causal_mask.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/causal_mask.png" class="img-fluid rounded z-depth-1" alt="Causal 마스크 적용 예시" %}
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet03_Causal_Masking.py"></script>
 
@@ -161,7 +161,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ## 벤치마크 결과
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/benchmark.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/benchmark.png" class="img-fluid rounded z-depth-1" alt="FlashAttention 성능 벤치마크 결과" %}
 
 - **정확도**: PyTorch standard attention과 거의 동일한 결과
 - **속도**: 시퀀스 길이가 길수록 (1024+) 큰 속도 향상

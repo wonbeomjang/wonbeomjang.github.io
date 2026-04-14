@@ -29,7 +29,7 @@ softmax(x_i) = exp(x_i - max(x)) / Σ exp(x_j - max(x))
 
 ### 왜 커널 퓨전인가?
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/kernel_fusion.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/kernel_fusion.png" class="img-fluid rounded z-depth-1" alt="커널 퓨전 개념 비교 다이어그램" %}
 
 ### Reduction 연산
 
@@ -47,7 +47,7 @@ Triton에서는 `tl.max(x, axis=0)`, `tl.sum(x, axis=0)` 으로 간단하게 수
 
 입력 행렬의 각 **행(row)** 을 하나의 프로그램이 처리합니다.
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/row_processing.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/row_processing.png" class="img-fluid rounded z-depth-1" alt="행 단위 Softmax 처리 과정" %}
 
 ---
 
@@ -79,7 +79,7 @@ PyTorch는 이 4단계를 각각 별도 커널로 실행하므로 매번 Global 
 
 ## 벤치마크 결과
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/benchmark.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/02_fused_softmax/benchmark.png" class="img-fluid rounded z-depth-1" alt="Fused Softmax 성능 벤치마크 결과" %}
 
 커널 퓨전 덕분에 메모리 대역폭을 절약하여,
 특히 열(column) 수가 클수록 PyTorch 대비 성능 향상이 눈에 띕니다.

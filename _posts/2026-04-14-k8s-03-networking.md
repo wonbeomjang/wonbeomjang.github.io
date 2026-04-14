@@ -40,7 +40,7 @@ Service 있으면:
 
 ## 1.2 Service 타입
 
-{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-networking/service-types.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-networking/service-types.png" class="img-fluid rounded z-depth-1" alt="Kubernetes Service 타입: ClusterIP, NodePort, LoadBalancer" %}
 
 | Type                 | 접근 범위                | 용도                        | 비유      |
 | -------------------- | ------------------------ | --------------------------- | --------- |
@@ -94,7 +94,7 @@ https://my-app.example.com/admin      → admin Service
 
 ## 2.2 전체 트래픽 흐름
 
-{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-networking/traffic-flow.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-networking/traffic-flow.png" class="img-fluid rounded z-depth-1" alt="Ingress 트래픽 라우팅 흐름" %}
 
 1. 사용자가 `https://my-app.example.com` 접속
 2. **DNS(Route53)**가 Load Balancer IP 반환

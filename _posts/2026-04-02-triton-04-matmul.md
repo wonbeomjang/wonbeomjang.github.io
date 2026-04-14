@@ -32,7 +32,7 @@ related_posts: true
 
 **타일링**: 행렬을 작은 블록으로 나누어 SRAM에 올리고, 블록 단위로 계산
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/tiling.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/tiling.png" class="img-fluid rounded z-depth-1" alt="행렬 곱셈 타일링 전략 도식" %}
 
 ---
 
@@ -42,7 +42,7 @@ related_posts: true
 
 이전 튜토리얼은 1D 그리드(행 단위)였지만, MatMul은 2D 그리드를 사용합니다:
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/2d_grid.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/2d_grid.png" class="img-fluid rounded z-depth-1" alt="행렬 곱셈용 2D 그리드 매핑" %}
 
 ### K 차원 루프
 
@@ -51,17 +51,17 @@ related_posts: true
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=04_matmul_snippet01_K_%EC%B0%A8%EC%9B%90_%EB%A3%A8%ED%94%84.py"></script>
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/k_loop_pointer.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/k_loop_pointer.png" class="img-fluid rounded z-depth-1" alt="K 차원 루프에서 포인터 이동 과정" %}
 
 ### L2 캐시 최적화 (Swizzling)
 
 **Swizzling = "같은 B 블록을 쓰는 프로그램들을 묶어서 실행"**
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/group_concept.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/group_concept.png" class="img-fluid rounded z-depth-1" alt="프로그램 그룹 순서 개념도" %}
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/swizzling_detail.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/swizzling_detail.png" class="img-fluid rounded z-depth-1" alt="Swizzling 상세 동작 다이어그램" %}
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/swizzling.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/swizzling.png" class="img-fluid rounded z-depth-1" alt="L2 캐시 Swizzling 패턴" %}
 
 ### `triton.autotune` 이란?
 
@@ -91,7 +91,7 @@ related_posts: true
 
 ## 벤치마크 결과
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/benchmark.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/04_matmul/benchmark.png" class="img-fluid rounded z-depth-1" alt="행렬 곱셈 성능 벤치마크 결과" %}
 
 cuBLAS(`torch.matmul`)는 수십 년간 최적화된 라이브러리입니다.
 Triton으로 cuBLAS의 **80~90%** 성능에 도달하는 것이 목표입니다.

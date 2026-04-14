@@ -24,7 +24,7 @@ related_posts: true
 
 # 1. ConfigMap과 Secret
 
-{% include figure.liquid loading="lazy" path="assets/post/image/k8s-04-config-storage/config-inject.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-04-config-storage/config-inject.png" class="img-fluid rounded z-depth-1" alt="ConfigMap과 Secret을 Pod에 주입하는 방식" %}
 
 ## 1.1 ConfigMap — 일반 설정
 

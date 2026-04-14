@@ -44,7 +44,7 @@ RMSNorm이 LLM에서 선호되는 이유:
 
 ## 커널 동작 원리
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/03_rmsnorm/rmsnorm_flow.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/03_rmsnorm/rmsnorm_flow.png" class="img-fluid rounded z-depth-1" alt="RMSNorm 연산 흐름도" %}
 
 ---
 
@@ -78,7 +78,7 @@ RMSNorm이 LLM에서 선호되는 이유:
 
 ## 벤치마크 결과
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/03_rmsnorm/benchmark.png" class="img-fluid rounded z-depth-1" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/03_rmsnorm/benchmark.png" class="img-fluid rounded z-depth-1" alt="RMSNorm 성능 벤치마크 결과" %}
 
 PyTorch의 수동 RMSNorm 구현 대비 커널 퓨전으로 인한 성능 향상이 나타납니다.
 hidden_size가 클수록(2048, 4096 등) 차이가 명확합니다.
