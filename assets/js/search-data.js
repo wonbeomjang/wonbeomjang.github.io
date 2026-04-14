@@ -49,7 +49,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2026/amazon-eks-guide/";
+            window.location.href = "/blog/2026/k8s-05-amazon-eks/";
           
         },
       },{id: "post-k8s-시리즈-04-configmap-secret-storage-설정과-데이터-관리",
