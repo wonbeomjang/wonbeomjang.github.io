@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Amazon EKS 가이드: 관리형 Kubernetes의 구조부터 운영까지"
-date: 2026-04-14 12:00:00 +0900
+title: "K8s 시리즈 05: Amazon EKS — 아키텍처와 Worker Node"
+date: 2026-04-14 14:00:00 +0900
 description: "EKS 아키텍처, Worker Node 옵션, VPC CNI, Pod Identity, Auto Mode, 비용 구조, 업그레이드 전략 — 실무 중심 정리"
 categories: [infra]
 tags: [kubernetes, eks, aws, devops, container]
@@ -9,26 +9,16 @@ giscus_comments: true
 related_posts: true
 ---
 
-# 왜 LLM 엔지니어가 Kubernetes를 알아야 하는가
+> 이 글은 **K8s 시리즈**의 다섯 번째 글이다. Kubernetes 기초 개념(Pod, Deployment, Service 등)은 이전 글을 참고하자.
+>
+> - [01: Kubernetes란? 컨테이너부터 클러스터까지](/blog/2026/k8s-01-intro/)
+> - [02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리](/blog/2026/k8s-02-workloads/)
+> - 03: Service, Ingress — 트래픽 라우팅과 외부 접근 (예정)
+> - 04: ConfigMap, Secret, Storage — 설정과 데이터 관리 (예정)
+> - **05: Amazon EKS — 아키텍처와 Worker Node** ← 현재 글
+> - 06: EKS 네트워킹·보안·비용·운영 (예정)
 
-LLM 엔지니어에게 Kubernetes는 "인프라팀이 알아서 해주는 것" 이상의 의미를 가진다. 모델을 학습하고 나면 결국 **서빙, 스케일링, 비용 최적화** 문제가 남고, 이 모든 것이 Kubernetes 위에서 돌아가기 때문이다.
-
-- "vLLM 서빙 서버를 3대에서 10대로 늘리고 싶다" → **Deployment replica, HPA**
-- "A100 노드에만 학습 Pod을 배치하고 싶다" → **Node Selector, Taint/Toleration**
-- "모델 체크포인트를 여러 Pod에서 공유해야 한다" → **EFS PVC (RWX)**
-- "추론 서버가 죽으면 자동으로 살아나야 한다" → **Pod 자동 복구, Health Check**
-- "GPU 노드 비용이 너무 많이 나온다" → **Spot Instance, Auto Mode, 스케일링 전략**
-
-모델 개발만이 아니다. 데이터와 평가 파이프라인에서도 Kubernetes가 핵심이다.
-
-- "Annotation 툴, 데이터 공유 플랫폼 등 여러 내부 서비스를 운영해야 한다" → **Deployment + Service + Ingress**
-- "매일 새로운 데이터를 전처리하고 정제해야 한다" → **CronJob (주기적 배치)**
-- "벤치마크를 여러 모델에 대해 병렬로 돌리고 싶다" → **Job (일회성 실행, 수평 확장)**
-- "평가 서버를 필요할 때만 띄우고 끝나면 내리고 싶다" → **Job + Fargate (서버리스)**
-
-결국 LLM 엔지니어가 하는 일의 상당 부분 — 학습, 서빙, 데이터 처리, 평가 — 이 Kubernetes 위에서 돌아간다. 인프라를 "모르겠고 알아서 해줘"로 넘기면 **병목이 어디인지, 비용이 왜 나오는지, 왜 Pod이 안 뜨는지** 파악할 수 없다.
-
-직접 Kubernetes를 구축하면 Control Plane 설치, etcd 백업, 인증서 갱신, 버전 업그레이드 등 클러스터 관리에만 상당한 운영 부담이 생긴다. **AWS EKS**(Elastic Kubernetes Service)는 Control Plane 관리를 AWS에 위임하고, **Rancher** 같은 GUI 관리 도구를 함께 사용하면 kubectl 명령어를 몰라도 Pod 배포, 로그 확인, 스케일링 등 대부분의 작업을 웹 브라우저에서 수행할 수 있다. 즉 **EKS가 인프라 운영을, Rancher가 일상 운영을 덜어주는** 조합이다. LLM 엔지니어는 모델과 데이터에만 집중하면 된다.
+직접 Kubernetes를 구축하면 Control Plane 설치, etcd 백업, 인증서 갱신, 버전 업그레이드 등 클러스터 관리에만 상당한 운영 부담이 생긴다. **AWS EKS**(Elastic Kubernetes Service)는 Control Plane 관리를 AWS에 위임하고, **Rancher** 같은 GUI 관리 도구를 함께 사용하면 kubectl 명령어를 몰라도 Pod 배포, 로그 확인, 스케일링 등 대부분의 작업을 웹 브라우저에서 수행할 수 있다. 즉 **EKS가 인프라 운영을, Rancher가 일상 운영을 덜어주는** 조합이다.
 
 이 글에서는 EKS의 아키텍처부터 네트워킹, 보안, 최신 기능(Auto Mode, Pod Identity), 비용, 업그레이드 전략까지 실무에서 필요한 핵심을 정리한다.
 
