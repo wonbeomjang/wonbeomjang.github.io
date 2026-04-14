@@ -30,15 +30,26 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-amazon-eks-가이드-관리형-kubernetes의-구조부터-운영까지",
+        },{id: "post-k8s-시리즈-05-amazon-eks-아키텍처와-worker-node",
         
-          title: "Amazon EKS 가이드: 관리형 Kubernetes의 구조부터 운영까지",
+          title: "K8s 시리즈 05: Amazon EKS — 아키텍처와 Worker Node",
         
         description: "EKS 아키텍처, Worker Node 옵션, VPC CNI, Pod Identity, Auto Mode, 비용 구조, 업그레이드 전략 — 실무 중심 정리",
         section: "Posts",
         handler: () => {
           
             window.location.href = "/blog/2026/amazon-eks-guide/";
+          
+        },
+      },{id: "post-k8s-시리즈-01-kubernetes란-컨테이너부터-클러스터까지",
+        
+          title: "K8s 시리즈 01: Kubernetes란? 컨테이너부터 클러스터까지",
+        
+        description: "VM vs 컨테이너, Kubernetes가 해결하는 문제, 클러스터 구조, 컨테이너 이미지와 Dockerfile — LLM 엔지니어를 위한 K8s 입문",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-01-intro/";
           
         },
       },{id: "post-telagentbench-a-multi-faceted-benchmark-for-evaluating-llm-based-agents-in-telecommunications",
