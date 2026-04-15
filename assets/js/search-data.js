@@ -162,6 +162,39 @@ ninja.data = [{
             window.location.href = "/blog/2026/flashattention-3/";
           
         },
+      },{id: "post-dsdm-model-aware-dataset-selection-with-datamodels",
+        
+          title: "DsDm: Model-Aware Dataset Selection with Datamodels",
+        
+        description: "DsDm 논문 리뷰 — Datamodel 기반 학습 알고리즘 인식 데이터 선택으로 2배 compute 효율 달성",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/dsdm/";
+          
+        },
+      },{id: "post-qurating-selecting-high-quality-data-for-training-language-models",
+        
+          title: "QuRating: Selecting High-Quality Data for Training Language Models",
+        
+        description: "QuRating 논문 리뷰 — LLM pairwise 비교와 Bradley-Terry 모델로 학습 데이터 품질 평가",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/qurating/";
+          
+        },
+      },{id: "post-data-selection-for-language-models-via-importance-resampling",
+        
+          title: "Data Selection for Language Models via Importance Resampling",
+        
+        description: "DSIR 논문 리뷰 — hashed n-gram 기반 importance resampling으로 효율적인 학습 데이터 선택",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/dsir/";
+          
+        },
       },{id: "post-triton-05-flash-attention-종합-프로젝트",
         
           title: "Triton 05: Flash Attention — 종합 프로젝트",
