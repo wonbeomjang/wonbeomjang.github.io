@@ -35,24 +35,41 @@
   >
 {% endif %}
 
-<!-- Fonts & Icons -->
-<link defer rel="stylesheet" href="{{ '/assets/css/academicons.min.css' | relative_url | bust_file_cache }}">
-<link defer rel="stylesheet" href="{{ '/assets/css/scholar-icons.css' | relative_url | bust_file_cache }}">
+<!-- Fonts & Icons (non-blocking) -->
 <link
-  defer
+  rel="stylesheet"
+  href="{{ '/assets/css/academicons.min.css' | relative_url | bust_file_cache }}"
+  media="print"
+  onload="this.onload=null;this.media='all'"
+>
+<noscript><link rel="stylesheet" href="{{ '/assets/css/academicons.min.css' | relative_url | bust_file_cache }}"></noscript>
+<link
+  rel="stylesheet"
+  href="{{ '/assets/css/scholar-icons.css' | relative_url | bust_file_cache }}"
+  media="print"
+  onload="this.onload=null;this.media='all'"
+>
+<noscript><link rel="stylesheet" href="{{ '/assets/css/scholar-icons.css' | relative_url | bust_file_cache }}"></noscript>
+<link
   rel="stylesheet"
   type="text/css"
   href="{{ site.third_party_libraries.google_fonts.url.fonts }}"
+  media="print"
+  onload="this.onload=null;this.media='all'"
 >
+<noscript><link rel="stylesheet" type="text/css" href="{{ site.third_party_libraries.google_fonts.url.fonts }}"></noscript>
 
-<!-- Code Syntax Highlighting -->
+<!-- Code Syntax Highlighting (non-blocking, restores theme-aware media on load) -->
 <link
-  defer
   rel="stylesheet"
   href="{{ '/assets/css/jekyll-pygments-themes-github.css' | relative_url | bust_file_cache }}"
-  media=""
+  media="print"
   id="highlight_theme_light"
+  onload="this.onload=null;this.media=(document.documentElement.getAttribute('data-theme')==='dark'?'none':'')"
 >
+<noscript
+  ><link rel="stylesheet" href="{{ '/assets/css/jekyll-pygments-themes-github.css' | relative_url | bust_file_cache }}" id="highlight_theme_light"
+></noscript>
 
 {% if page.toc and page.toc.sidebar %}
   <!-- Sidebar Table of Contents -->
@@ -87,12 +104,19 @@
   <!-- Dark Mode -->
   <script src="{{ '/assets/js/theme.js' | relative_url | bust_file_cache }}"></script>
   <link
-    defer
     rel="stylesheet"
     href="{{ '/assets/css/jekyll-pygments-themes-native.css' | relative_url | bust_file_cache }}"
-    media="none"
+    media="print"
     id="highlight_theme_dark"
+    onload="this.onload=null;this.media=(document.documentElement.getAttribute('data-theme')==='dark'?'':'none')"
   >
+  <noscript
+    ><link
+      rel="stylesheet"
+      href="{{ '/assets/css/jekyll-pygments-themes-native.css' | relative_url | bust_file_cache }}"
+      media="none"
+      id="highlight_theme_dark"
+  ></noscript>
   <script>
     initTheme();
   </script>
