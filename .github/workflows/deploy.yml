@@ -98,25 +98,6 @@ jobs:
         run: |
           npm install -g purgecss
           purgecss -c purgecss.config.js
-      - name: Inline Critical CSS ⚡
-        run: |
-          npm install -g critical
-          # Homepage
-          critical _site/index.html \
-            --base _site/ \
-            --inline \
-            --width 1300 \
-            --height 900 \
-            --target _site/index.html
-          # Blog listing page
-          if [ -f _site/blog/index.html ]; then
-            critical _site/blog/index.html \
-              --base _site/ \
-              --inline \
-              --width 1300 \
-              --height 900 \
-              --target _site/blog/index.html
-          fi
       - name: Deploy 🚀
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4
