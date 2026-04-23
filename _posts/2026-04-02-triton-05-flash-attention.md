@@ -172,3 +172,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 ## 전체 코드
 
 <script src="https://gist.github.com/wonbeomjang/0f4970e5dbed9af5037d796fa395727f.js?file=flash_attention.py"></script>
+
+---
+
+> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Blackwell GPU 최적화가 궁금하다면 [FlashAttention-4 논문 리뷰](/blog/2026/flashattention-4/)를 참고하자.
