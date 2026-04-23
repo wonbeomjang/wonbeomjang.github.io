@@ -220,7 +220,7 @@ Pod이 정상 동작하지 않음
 | [02 워크로드](/blog/2026/k8s-02-workloads/)           | Pod, Deployment, Job, CronJob, Resource, Probe           |
 | [03 네트워킹](/blog/2026/k8s-03-networking/)          | Service, Ingress, HPA, Node Scheduling                   |
 | [04 설정·스토리지](/blog/2026/k8s-04-config-storage/) | ConfigMap, Secret, PV/PVC, Namespace, Helm               |
-| [05 EKS 아키텍처](/blog/2026/k8s-05-amazon-eks/)       | EKS 구조, Worker Node 옵션, Auto Mode, ECR               |
+| [05 EKS 아키텍처](/blog/2026/k8s-05-amazon-eks/)      | EKS 구조, Worker Node 옵션, Auto Mode, ECR               |
 | **06 EKS 운영**                                       | VPC CNI, Pod Identity, 비용, 업그레이드, Troubleshooting |
 
 ---
