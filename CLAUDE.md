@@ -67,8 +67,8 @@ related_posts: true
 2. **논문 그림 다운로드**: arxiv HTML 버전(`arxiv.org/html/`)에서 이미지 URL을 추출하여 다운로드
 3. **참고 문헌 섹션 필수**: 포스트 마지막에 `# 참고 문헌` 섹션을 추가하고, 참조한 모든 링크를 나열
 
-## 커밋 전 체크리스트
+## 커밋/푸시 전 체크리스트
 
-- `npx prettier . --write` 실행하여 포맷 검사 통과
+- **`npx prettier . --write` 실행 필수**: GitHub Actions CI에서 prettier 검사가 실행되며, 통과하지 못하면 빌드가 실패함
 - description에 콜론(`:`)이 포함되면 따옴표로 감싸기
 - 이미지는 `/assets/post/image/{post-slug}/` 디렉토리에 저장
