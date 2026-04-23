@@ -368,6 +368,7 @@ imagemagick:
     - 1400
   input_directories:
     - assets/img/
+    - assets/post/
   input_formats:
     - ".jpg"
     - ".jpeg"
