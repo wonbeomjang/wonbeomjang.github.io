@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Triton 09: Flash Attention 2 — FA1 대비 5가지 최적화"
+title: "Triton 06: Flash Attention 2 — FA1 대비 5가지 최적화"
 date: 2026-04-02 01:00:00 +0900
 description: "Flash Attention 2를 Triton으로 구현한다 — un-scaled 누적, exp2 트릭, Causal 2-stage, tl.dot accumulator, autotune"
 categories: [triton]
@@ -170,7 +170,7 @@ Backward:
 
 RTX 4080 기준 FA1 vs FA2 vs PyTorch 비교:
 
-{% include figure.liquid loading="lazy" path="assets/img/triton/09_flash_attention_v2/benchmark.png" class="img-fluid rounded z-depth-1" alt="FA1 vs FA2 vs PyTorch 성능 비교" %}
+{% include figure.liquid loading="lazy" path="assets/img/triton/06_flash_attention_v2/benchmark.png" class="img-fluid rounded z-depth-1" alt="FA1 vs FA2 vs PyTorch 성능 비교" %}
 
 - **non-causal**: FA2가 FA1 대비 ~1.2–1.4× 빠름 (un-scaled 누적 + exp2 + accumulator 효과)
 - **causal**: FA2가 FA1 대비 ~1.7–1.8× 빠름 (2-stage 마스크 제거 효과 추가)
