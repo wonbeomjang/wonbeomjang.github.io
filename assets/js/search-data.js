@@ -195,11 +195,22 @@ ninja.data = [{
             window.location.href = "/blog/2026/dsir/";
           
         },
+      },{id: "post-triton-09-flash-attention-2-fa1-대비-5가지-최적화",
+        
+          title: "Triton 09: Flash Attention 2 — FA1 대비 5가지 최적화",
+        
+        description: "Flash Attention 2를 Triton으로 구현한다 — un-scaled 누적, exp2 트릭, Causal 2-stage, tl.dot accumulator, autotune",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/triton-09-flash-attention-v2/";
+          
+        },
       },{id: "post-triton-05-flash-attention-종합-프로젝트",
         
           title: "Triton 05: Flash Attention — 종합 프로젝트",
         
-        description: "지금까지 배운 모든 기법을 종합하여 Flash Attention을 Triton으로 구현합니다.",
+        description: "Flash Attention을 Triton으로 구현한다 — Forward/Backward 전체 구현과 RTX 4080·A100·H100·B200 아키텍처별 최적화 포인트",
         section: "Posts",
         handler: () => {
           
