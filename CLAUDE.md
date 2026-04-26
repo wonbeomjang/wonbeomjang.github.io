@@ -67,8 +67,36 @@ related_posts: true
 2. **논문 그림 다운로드**: arxiv HTML 버전(`arxiv.org/html/`)에서 이미지 URL을 추출하여 다운로드
 3. **참고 문헌 섹션 필수**: 포스트 마지막에 `# 참고 문헌` 섹션을 추가하고, 참조한 모든 링크를 나열
 
+## 코드 삽입 규칙 (Triton / 구현 포스트)
+
+포스트에 코드를 삽입할 때는 인라인 코드 블록 대신 **반드시 GitHub Gist 임베드**를 사용한다.
+
+### Gist 업로드 절차
+
+1. [gist.github.com](https://gist.github.com) 에서 새 gist 생성 (또는 기존 gist에 파일 추가)
+2. 파일명 규칙: `{포스트번호}_{포스트슬러그}_snippet{번호}_{내용설명}.py`
+   - 예: `09_flash_attention_v2_snippet01_un_scaled_accumulation.py`
+3. 포스트에 임베드할 때 `<script>` 태그 사용:
+
+```html
+<script src="https://gist.github.com/{username}/{gist_id}.js?file={filename}"></script>
+```
+
+### 현재 사용 중인 Gist
+
+| Gist ID                            | 용도                                                                |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| `42cd2b629a46d83e348bc15c5aa83a17` | Triton 05 (FA1) 스니펫 모음                                         |
+| `5880faa2b9aa8d0ab1bd1dd0ad31baa9` | Triton 09 (FA2) 스니펫 모음                                         |
+| `0f4970e5dbed9af5037d796fa395727f` | Triton 전체 코드 (`flash_attention.py`, `flash_attention_v2.py` 등) |
+
+### 주의사항
+
+- gh CLI가 인증된 경우 AI가 직접 `gh gist create` / `gh gist edit --add`로 Gist를 생성·수정할 수 있다
+- gh CLI가 없거나 미인증 시에는 코드 초안을 인라인으로 작성하고, Gist URL을 알게 된 후 `<script>` 태그로 교체한다
+- 이미지는 Triton 시리즈는 `/assets/img/triton/{포스트번호}_{슬러그}/`, 논문 리뷰는 `/assets/post/image/{post-slug}/` 에 저장
+
 ## 커밋/푸시 전 체크리스트
 
 - **`npx prettier . --write` 실행 필수**: GitHub Actions CI에서 prettier 검사가 실행되며, 통과하지 못하면 빌드가 실패함
 - description에 콜론(`:`)이 포함되면 따옴표로 감싸기
-- 이미지는 `/assets/post/image/{post-slug}/` 디렉토리에 저장
