@@ -758,27 +758,7 @@ ninja.data = [{
           section: "News",},{id: "news-a-x-k1-publicly-released-a-519b-parameter-moe-language-model-by-sk-telecom",
           title: 'A.X K1 publicly released — a 519B-parameter MoE language model by SK Telecom....',
           description: "",
-          section: "News",},{id: "projects-카나리아",
-          title: '카나리아',
-          description: "모두를 위한 군사보안 경보 시스템",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/canary/";
-            },},{id: "projects-gripp",
-          title: 'Gripp',
-          description: "딥러닝 영상 분석을 활용한 클라이밍 경쟁 서비스",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/gripp/";
-            },},{id: "projects-염색프로그램",
-          title: '염색프로그램',
-          description: "HairMatteNet + Quantization 구현",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/hairmattenet/";
-            },},{id: "projects-집약",
-          title: '집약',
-          description: "시각장애인을 위한 약학정보제공서비스",
-          section: "Projects",handler: () => {
-              window.location.href = "/projects/zipyak/";
-            },},{id: "teachings-data-science-fundamentals",
+          section: "News",},{id: "teachings-data-science-fundamentals",
           title: 'Data Science Fundamentals',
           description: "This course covers the foundational aspects of data science, including data collection, cleaning, analysis, and visualization. Students will learn practical skills for working with real-world datasets.",
           section: "Teachings",handler: () => {
