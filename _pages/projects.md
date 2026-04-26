@@ -5,6 +5,7 @@ permalink: /projects/
 description: 그 동안 수행했던 토이프로젝트입니다.
 nav: false
 nav_order: 2
+sitemap: false
 display_categories: [toy-project]
 horizontal: false
 ---
