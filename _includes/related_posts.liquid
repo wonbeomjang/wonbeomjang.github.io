@@ -1,5 +1,31 @@
 {% assign have_related_posts = false %}
-{% for post in site.related_posts | limit: site.related_blog_posts.max_related %}
+{% assign max_related = site.related_blog_posts.max_related | default: 5 %}
+
+{% comment %}태그가 하나라도 일치하는 포스트를 수집 (site.posts는 날짜 내림차순){% endcomment %}
+{% assign tag_related = '' | split: '' %}
+{% for post in site.posts %}
+  {% unless post.url == page.url %}
+    {% for tag in page.tags %}
+      {% if post.tags contains tag %}
+        {% assign tag_related = tag_related | push: post %}
+        {% break %}
+      {% endif %}
+    {% endfor %}
+  {% endunless %}
+{% endfor %}
+
+{% comment %}태그 일치 포스트가 없으면 같은 카테고리로 대체{% endcomment %}
+{% if tag_related.size == 0 %}
+  {% for post in site.posts %}
+    {% unless post.url == page.url %}
+      {% if post.categories contains page.categories[0] %}
+        {% assign tag_related = tag_related | push: post %}
+      {% endif %}
+    {% endunless %}
+  {% endfor %}
+{% endif %}
+
+{% for post in tag_related limit: max_related %}
   {% unless have_related_posts %}
     {% assign have_related_posts = true %}
     {% if page.layout == 'post' %}

@@ -354,7 +354,7 @@ FA1이 "IO를 줄이자", FA2가 "non-matmul을 줄이자", FA3가 "GEMM과 soft
 
 ---
 
-> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Triton으로 직접 구현하고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을 참고하자.
+> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Triton FA1으로 구현하고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을, Triton FA2로 구현하고 싶다면 [Triton 09: Flash Attention 2](/blog/2026/triton-09-flash-attention-v2/)를 참고하자.
 
 ---
 

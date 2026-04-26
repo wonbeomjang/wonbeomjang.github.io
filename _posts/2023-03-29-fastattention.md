@@ -326,7 +326,7 @@ Standard Attention은 메모리 사용량이 $$O(N^2)$$이고, FlashAttention은
 
 FlashAttention은 CUDA kernel을 사용해야 하므로 상당한 엔지니어링이 필요하다. 새로운 attention variant(multi-query attention 등)를 지원하려면 커널을 새로 작성해야 한다. 그리고 GPU 아키텍처마다 최적의 블록 크기와 구현이 달라 이식성에 문제가 있다. 또한 현재는 single GPU를 기준으로 만들어졌으므로, multi-GPU에서의 attention 분산 처리는 별도의 알고리즘이 필요하다.
 
-> FlashAttention-2의 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU에서의 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Triton으로 직접 구현해보고 싶다면 [Triton 05: Flash Attention — 종합 프로젝트](/blog/2026/triton-05-flash-attention/)를 참고하자.
+> FlashAttention-2의 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU에서의 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Triton FA1으로 구현해보고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을, Triton FA2로 구현해보고 싶다면 [Triton 09: Flash Attention 2](/blog/2026/triton-09-flash-attention-v2/)를 참고하자.
 
 ---
 

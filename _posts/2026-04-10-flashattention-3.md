@@ -488,7 +488,7 @@ FlashAttention-3와 관련된 연구 방향들도 간략히 정리한다.
 
 ---
 
-> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Blackwell GPU에서의 최적화가 궁금하다면 [FlashAttention-4 논문 리뷰](/blog/2026/flashattention-4/)를, Triton으로 직접 구현하고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을 참고하자.
+> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Blackwell GPU에서의 최적화가 궁금하다면 [FlashAttention-4 논문 리뷰](/blog/2026/flashattention-4/)를, Triton FA1으로 구현하고 싶다면 [Triton 05: Flash Attention](/blog/2026/triton-05-flash-attention/)을, Triton FA2로 구현하고 싶다면 [Triton 09: Flash Attention 2](/blog/2026/triton-09-flash-attention-v2/)를 참고하자.
 
 ---
 

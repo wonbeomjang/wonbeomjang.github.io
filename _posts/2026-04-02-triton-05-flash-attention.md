@@ -2,9 +2,9 @@
 layout: post
 title: "Triton 05: Flash Attention — 종합 프로젝트"
 date: 2026-04-02 00:00:00 +0900
-description: 지금까지 배운 모든 기법을 종합하여 Flash Attention을 Triton으로 구현합니다.
+description: Flash Attention을 Triton으로 구현한다 — Forward/Backward 전체 구현과 RTX 4080·A100·H100·B200 아키텍처별 최적화 포인트
 categories: [triton]
-tags: [triton, gpu, flash-attention, llm, attention]
+tags: [triton, gpu, flash-attention, llm, attention, optimization]
 giscus_comments: true
 related_posts: true
 featured: true
@@ -108,7 +108,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ---
 
-## 코드 라인별 설명
+## 코드 라인별 설명 (Forward)
 
 ### Online Softmax 변수 초기화
 
@@ -146,6 +146,194 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ---
 
+## Backward 구현
+
+Forward만으로는 학습이 불가능하다. Backward에서 $$dQ, dK, dV$$를 계산해야 하는데, Standard attention의 backward는 $$S = QK^T$$와 $$P = \text{softmax}(S)$$를 필요로 한다. 이를 저장하면 $$O(N^2)$$ 메모리가 필요하다.
+
+Flash Attention은 **forward에서 $$S, P$$를 저장하지 않고 logsumexp(LSE)만 저장**한 뒤, backward에서 $$P$$를 재계산한다.
+
+### LSE로 P 재계산 (Recomputation)
+
+Forward에서 저장하는 값:
+
+$$L_i = m_i + \log(\ell_i) \in \mathbb{R}^N$$
+
+Backward에서 $$P$$ 복원:
+
+$$P_{ij} = \exp\!\left(\frac{Q_i K_j^T}{\sqrt{d}} - L_i\right)$$
+
+$$L_i$$는 $$O(N)$$만 차지한다. $$S_{ij}$$를 다시 계산하는 FLOPs는 늘지만, $$O(N^2)$$ HBM 접근이 사라지므로 실제 속도는 더 빠르다.
+
+### Softmax Gradient
+
+Chain rule로 softmax의 gradient를 정리하면:
+
+$$dS_{ij} = P_{ij}\!\left(dP_{ij} - D_i\right) \cdot \text{scale}$$
+
+여기서 $$D_i = \text{rowsum}(dO_i \odot O_i) \in \mathbb{R}^N$$이다. $$D_i$$를 미리 계산해두면 모든 $$j$$ 반복에서 재사용할 수 있다.
+
+### 3단계 커널 구조
+
+Backward는 세 개의 독립 커널로 나뉜다.
+
+```
+[1단계] Preprocess 커널
+  입력:  O, dO          (각 (bh, N, d))
+  출력:  Δ ∈ ℝ^(bh×N)  (Δ_i = rowsum(dO_i ⊙ O_i))
+
+[2단계] dKV 커널  (외부 루프 = K/V 블록 j, 내부 루프 = Q 블록 i)
+  입력:  Q, K, V, dO, LSE, Δ
+  출력:  dK, dV
+  → K_j, V_j를 SRAM에 고정하고 모든 Q_i를 순회
+
+[3단계] dQ 커널   (외부 루프 = Q 블록 i, 내부 루프 = K/V 블록 j)
+  입력:  Q, K, V, dO, LSE, Δ
+  출력:  dQ
+  → Q_i를 SRAM에 고정하고 모든 K_j, V_j를 순회
+```
+
+2·3단계를 분리하는 이유: dKV 커널은 j 인덱스로 grid를 잡아 각 thread block이 `dK_j, dV_j`를 독립적으로 누적하고, dQ 커널은 i 인덱스로 grid를 잡아 `dQ_i`를 독립적으로 누적한다. **atomic 연산 없이** 올바른 결과를 얻을 수 있다.
+
+#### dKV 커널 수식 (j 고정, i 순회)
+
+$$S_{ij} = Q_i K_j^T, \quad P_{ij} = \exp(S_{ij} \cdot \text{scale} - L_i)$$
+
+$$dV_j \mathrel{+}= P_{ij}^T \cdot dO_i \quad \text{(matmul 1)}$$
+
+$$dP_{ij} = dO_i \cdot V_j^T \quad \text{(matmul 2)}$$
+
+$$dS_{ij} = P_{ij} \odot (dP_{ij} - \Delta_i) \cdot \text{scale} \quad \text{(softmax gradient)}$$
+
+$$dK_j \mathrel{+}= dS_{ij}^T \cdot Q_i \quad \text{(matmul 3)}$$
+
+#### dQ 커널 수식 (i 고정, j 순회)
+
+$$dQ_i \mathrel{+}= dS_{ij} \cdot K_j \quad \text{(matmul 4)}$$
+
+### torch.autograd.Function 래핑
+
+`torch.autograd.Function`으로 래핑하면 PyTorch `.backward()` API를 그대로 쓸 수 있다.
+
+```python
+class FlashAttentionV1Function(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, q, k, v, causal):
+        o, lse = flash_attention(q, k, v, causal, return_lse=True)
+        ctx.save_for_backward(q, k, v, o, lse)
+        ctx.causal = causal
+        ctx.sm_scale = q.shape[-1] ** -0.5
+        return o
+
+    @staticmethod
+    def backward(ctx, do):
+        q, k, v, o, lse = ctx.saved_tensors
+        dq, dk, dv = _fa1_backward(
+            do, q, k, v, o, lse, ctx.causal, ctx.sm_scale
+        )
+        return dq, dk, dv, None  # causal에 대한 gradient 없음
+```
+
+`ctx`에는 $$Q, K, V, O, L$$만 저장된다 — 모두 $$O(Nd)$$ 또는 $$O(N)$$ 크기다. $$S, P \in O(N^2)$$는 저장하지 않는다.
+
+---
+
+## GPU 아키텍처별 최적화
+
+이 구현은 **RTX 4080 (Ada Lovelace)** 기준으로 작성됐다. 다른 GPU에서도 동작하지만 최적 성능을 내려면 아키텍처별 특성에 맞게 파라미터를 조정해야 한다.
+
+### 아키텍처별 특성 비교
+
+| GPU           | 아키텍처     | SM당 SRAM | 권장 BLOCK_M | 권장 BLOCK_N | 주요 하드웨어 기능     |
+| ------------- | ------------ | --------- | ------------ | ------------ | ---------------------- |
+| RTX 4080/4090 | Ada Lovelace | ~100 KB   | 64           | 64           | 현재 구현 기준         |
+| A100          | Ampere       | 192 KB    | 128          | 64           | HBM2e, 더 큰 블록 가능 |
+| H100          | Hopper       | 228 KB    | 128          | 64–128       | TMA, wgmma             |
+| B200          | Blackwell    | 232 KB+   | 192+         | 128+         | FP4/FP8 matmul         |
+
+### 1. BLOCK_M, BLOCK_N 튜닝
+
+Block 크기는 SRAM 용량에 직접 제약된다. SRAM에 동시에 올려야 하는 데이터 (fp16, head_dim=64 기준):
+
+$$\text{SRAM 사용량} \approx \underbrace{(\text{BLOCK\_M} + 2 \times \text{BLOCK\_N}) \times d \times 2}_{\text{Q, K, V 블록 (fp16)}} + \underbrace{\text{BLOCK\_M} \times d \times 4}_{\text{acc (fp32)}} \text{ bytes}$$
+
+| GPU                | BLOCK_M | BLOCK_N | SRAM 사용량 | SM당 동시 thread block |
+| ------------------ | ------- | ------- | ----------- | ---------------------- |
+| RTX 4080 (~100 KB) | 64      | 64      | ~40 KB      | 2                      |
+| A100 (192 KB)      | 128     | 64      | ~80 KB      | 2                      |
+| H100 (228 KB)      | 128     | 128     | ~128 KB     | 1                      |
+
+블록이 클수록 HBM 접근 횟수가 줄어든다. **A100에서 BLOCK_M을 64→128로 바꾸는 것만으로 ~15–20% 향상**이 기대된다.
+
+### 2. `exp` → `exp2` 트릭
+
+현재 구현은 `tl.exp`를 사용한다:
+
+```python
+p = tl.exp(s - m_new[:, None])
+alpha = tl.exp(m_i - m_new)
+```
+
+A100/Ada/Hopper는 `exp2`(밑이 2인 지수)를 하드웨어 명령어로 직접 지원하지만, `exp`는 내부적으로 `exp2(x × log₂e)`로 변환되어 곱셈이 1회 추가된다. `qk_scale`에 `log₂e = 1.4427`을 미리 곱해두면 이 오버헤드를 제거할 수 있다:
+
+```python
+LOG2E: tl.constexpr = 1.4426950408889634
+qk_scale = scale * LOG2E            # 커널 진입 전 1회만 계산
+
+p = tl.math.exp2(s - m_new[:, None])   # 하드웨어 명령어 직접 사용
+alpha = tl.math.exp2(m_i - m_new)
+```
+
+단, LSE도 base-2 형태(`m + log₂ℓ`)로 저장해야 backward와 일관성이 유지된다. 이 최적화는 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)의 구현에 적용되어 있다.
+
+### 3. Autotune으로 자동 최적화
+
+현재 구현은 BLOCK_M=64, BLOCK_N=64로 고정되어 있다. `@triton.autotune`을 사용하면 GPU마다 최적 설정을 자동으로 탐색한다:
+
+```python
+@triton.autotune(
+    configs=[
+        triton.Config({"BLOCK_M": 64,  "BLOCK_N": 64}, num_stages=3, num_warps=4),
+        triton.Config({"BLOCK_M": 128, "BLOCK_N": 64}, num_stages=3, num_warps=4),
+        triton.Config({"BLOCK_M": 128, "BLOCK_N": 32}, num_stages=4, num_warps=4),
+        triton.Config({"BLOCK_M": 64,  "BLOCK_N": 32}, num_stages=4, num_warps=4),
+        triton.Config({"BLOCK_M": 128, "BLOCK_N": 64}, num_stages=4, num_warps=8),
+        triton.Config({"BLOCK_M": 64,  "BLOCK_N": 64}, num_stages=4, num_warps=8),
+    ],
+    key=["seq_len", "HEAD_DIM", "IS_CAUSAL"],
+)
+@triton.jit
+def flash_attention_kernel(...):
+    ...
+```
+
+첫 실행 시 모든 config를 프로파일링하고 결과를 캐싱한다. `seq_len`, `HEAD_DIM`, `IS_CAUSAL` 조합마다 별도로 최적화된다. 이 방식이 FA2 Triton 구현의 표준이 됐다.
+
+### 4. H100, B200에서의 추가 기법
+
+H100(Hopper)부터는 Triton만으로 활용하기 어려운 전용 하드웨어 기능이 추가됐다.
+
+**TMA (Tensor Memory Accelerator)**
+비동기 메모리 복사 전용 유닛. 행렬 곱 연산과 데이터 로딩을 겹쳐 메모리 레이턴시를 숨긴다. Flash Attention 3의 핵심 최적화 중 하나다.
+
+**wgmma (Warpgroup Matrix Multiply-Accumulate)**
+기존 `mma` 대비 더 큰 타일(최대 64×256)을 한 명령에 처리한다. 레지스터 사용량이 줄고 SM 점유율(occupancy)이 높아진다.
+
+**GEMM–softmax 파이프라이닝**
+GEMM(matmul)과 softmax(non-matmul)를 비동기로 겹쳐 실행한다. FA2까지는 두 연산이 순차적이었지만, FA3에서 비로소 겹쳐진다. A100에서 non-matmul이 matmul 대비 16배 느린 것을 이 파이프라이닝으로 상당 부분 숨길 수 있다.
+
+| 최적화 기법       | Triton 적용 가능 여부    | 해당 FA 버전 |
+| ----------------- | ------------------------ | ------------ |
+| BLOCK 크기 튜닝   | ✓ (`@autotune`)          | FA1, FA2     |
+| exp → exp2        | ✓ (`tl.math.exp2`)       | FA2          |
+| Pipeline prefetch | △ (`num_stages` 로 근사) | FA2          |
+| TMA (비동기 복사) | △ (Triton 3.x 실험적)    | FA3          |
+| wgmma             | ✗ (CUDA 전용)            | FA3          |
+| FP8 matmul        | ✗ (CUDA 전용)            | FA4          |
+
+Triton은 이식성이 높지만 하드웨어 특화 최적화에는 한계가 있다. 프로덕션 수준의 Flash Attention은 CUDA로 작성된 FA3/FA4가 더 적합하다. **Triton 구현은 알고리즘 이해와 프로토타이핑에 최적**이다.
+
+---
+
 ## 전체 튜토리얼과의 연결
 
 | 개념                | 어디서 배웠나 | Flash Attention에서의 역할      |
@@ -156,6 +344,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 | `tl.dot`, 2D 타일링 | 04 MatMul     | S = Q@K^T, O += P@V             |
 | K 차원 루프         | 04 MatMul     | K/V 블록 순회 (내부 루프)       |
 | **Online Softmax**  | **신규**      | SRAM 제한 극복의 핵심           |
+| **Backward 커널**   | **신규**      | LSE 재사용으로 O(N) backward    |
 
 ---
 
@@ -167,6 +356,8 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 - **속도**: 시퀀스 길이가 길수록 (1024+) 큰 속도 향상
 - **메모리**: O(N²) → O(N)으로 극적인 메모리 절약
 
+> 이 벤치마크는 RTX 4080 기준이다. A100에서는 BLOCK_M=128 + exp2 트릭 + autotune을 적용하면 추가 향상을 기대할 수 있다.
+
 ---
 
 ## 전체 코드
@@ -175,4 +366,13 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ---
 
-> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Blackwell GPU 최적화가 궁금하다면 [FlashAttention-4 논문 리뷰](/blog/2026/flashattention-4/)를 참고하자.
+> FlashAttention의 원리가 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를, 개선점이 궁금하다면 [FlashAttention-2 논문 리뷰](/blog/2023/flashattention-2/)를, Hopper GPU 최적화가 궁금하다면 [FlashAttention-3 논문 리뷰](/blog/2026/flashattention-3/)를, Blackwell GPU 최적화가 궁금하다면 [FlashAttention-4 논문 리뷰](/blog/2026/flashattention-4/)를, FA2 알고리즘을 Triton으로 구현하고 싶다면 [Triton 09: Flash Attention 2](/blog/2026/triton-09-flash-attention-v2/)를 참고하자.
+
+# 참고 문헌
+
+- [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
+- [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691)
+- [Triton: An Intermediate Language and Compiler for Tiled Neural Network Computations](https://triton-lang.org/main/index.html)
+- [NVIDIA A100 Tensor Core GPU Architecture Whitepaper](https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf)
+- [NVIDIA Hopper Architecture In-Depth](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
+- [Making Deep Learning Go Brrrr From First Principles](https://horace.io/brrr_intro.html)
