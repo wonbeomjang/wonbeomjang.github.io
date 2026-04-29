@@ -98,5 +98,32 @@ related_posts: true
 
 ## 커밋/푸시 전 체크리스트
 
-- **`npx prettier . --write` 실행 필수**: GitHub Actions CI에서 prettier 검사가 실행되며, 통과하지 못하면 빌드가 실패함
-- description에 콜론(`:`)이 포함되면 따옴표로 감싸기
+### prettier (CI 차단 요소 — 매번 필수)
+
+GitHub Actions 의 "Run npx prettier . --check" 가 통과하지 못하면 빌드가 실패한다. 다음 절차를 **모든 commit 전에 반드시 수행**한다.
+
+```bash
+# 1. 전체 repo 기준으로 자동 포맷 (변경한 파일만이 아니라 . 전체!)
+npx prettier --write .
+
+# 2. 검증 — 통과해야 push
+npx prettier --check .
+```
+
+**핵심 원칙**
+
+- 내가 만진 파일만 포맷하면 안 된다. CI 는 `.` 전체를 검사하므로 **항상 `npx prettier --write .`** 를 돌린다.
+- 무관한 파일이 함께 포맷되더라도 같은 commit 에 포함시켜라 — 이전 누락분의 누적 결과다.
+- prettier 가 없으면 `conda install -c conda-forge nodejs` 후 `npm install --save-dev prettier@3 @shopify/prettier-plugin-liquid`.
+- `.prettierignore` 에 빌드 산출물·실험 디렉토리·`.claude/` 가 들어 있는지 확인. 누락된 게 있으면 추가.
+
+**자주 걸리는 함정**
+
+- Markdown TOC 의 underscore: `[_config.yml](#anchor)` → `[\_config.yml](#anchor)` 로 escape 해야 한다 (prettier가 자동 escape).
+- description 에 콜론(`:`) 이 포함되면 따옴표로 감싸기.
+- 표(Table) 컬럼 너비 정렬은 prettier 가 자동으로 손본다 — 수동 정렬에 시간을 쓰지 말 것.
+
+### gh / commit / push
+
+- `gh` CLI 는 fa-triton conda env 에 설치되어 있고 인증되어 있다. gist 업로드는 `gh gist edit <id> --filename <name> <path>`.
+- commit author 가 자동 감지 안 되면 `git -c user.name="Wonbeom Jang" -c user.email="jtiger958@gmail.com" commit ...` 로 1회용 지정 (글로벌 git config 는 절대 수정하지 않는다).
