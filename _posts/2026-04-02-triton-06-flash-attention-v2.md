@@ -213,6 +213,61 @@ A100-SXM4-80GB · `num_heads=16, fp16` · 4 GPU 평균 (표준편차 < 1%) · 11
 
 > 32K seq에서 메모리는 196× 절약, 시간은 5.7× (non-causal) ~ 22× (causal) 가속. FA1과 FA2의 알고리즘적 차이는 이 두 축에서 모두 의미 있는 개선을 만든다.
 
+### 왜 50–55%에서 멈추나
+
+[FA1 분석](/blog/2026/triton-05-flash-attention/#왜-a100-peak-대비-37밖에-안-나오나)에서 FA1이 A100 peak의 ~37%였다. FA2는 어디까지 갔는지 같은 방식으로 계산해보자.
+
+| seq   | FA2 시간 | matmul FLOPs | 측정 TFLOPS | A100 peak 비율 |
+| ----- | -------- | ------------ | ----------- | -------------- |
+| 4096  | 0.500 ms | 68.7 G       | 137.4       | 44.0%          |
+| 8192  | 1.756 ms | 274.9 G      | 156.5       | 50.2%          |
+| 16384 | 6.413 ms | 1099.5 G     | 171.4       | 54.9%          |
+| 32768 | 25.54 ms | 4398.0 G     | 172.2       | 55.2%          |
+
+FA1의 37% → FA2의 55%로 **+18%p** 회수. 알고리즘 개선 5가지가 만든 이득이 그대로 보인다.
+
+다만 flash-attn 공식 CUDA 구현은 같은 A100에서 ~70%를 찍는다. **15%p 격차**가 남았다. 어디서 새는가?
+
+**남은 손실 분해**:
+
+1. **`cp.async` tight pipelining 부재** (가장 큼)
+   - A100은 global → shared memory 비동기 복사 명령(`cp.async`)을 지원한다.
+   - CUTLASS는 4-stage async pipeline으로 다음 K/V 블록을 미리 prefetch한다.
+   - Triton의 `num_stages=N`은 비슷한 효과를 노리지만 async barrier가 보수적이라 overlap률이 낮다 — Triton 컴파일러가 dependency 분석에서 안전 쪽으로 기울어 일부 async copy가 sync로 떨어진다.
+   - **추정 손실 8–10%**.
+
+2. **softmax non-matmul 시간**
+   - `tl.max`, `tl.math.exp2`, `tl.sum`, alpha 곱셈 등은 matmul이 아니다.
+   - A100에서 non-matmul throughput은 matmul 대비 ~16× 낮아서 비중이 작아도 시간을 먹는다.
+   - nsys profile 기준 ~10% 가 softmax 영역 (이 중 일부는 matmul과 겹쳐서 hidden).
+   - **추정 손실 4–6%** (이미 matmul time에 일부 흡수됨).
+
+3. **SRAM 한계로 BLOCK_M 제한**
+   - head_dim=128 + BLOCK_M=128 + BLOCK_N=64면 SRAM 사용량 ~96 KB. A100 SM당 164 KB의 60%.
+   - 이론상 BLOCK_M=192가 더 좋지만 `tl.arange` power-of-2 제약 + SRAM tight으로 못 쓴다.
+   - CUTLASS는 register tiling을 적극 활용해 회피한다.
+   - **추정 손실 2–3%**.
+
+4. **Backward의 3-kernel split overhead**
+   - Forward 단독으로는 55%까지 가지만 fwd+bwd 합치면 ~40%로 떨어진다.
+   - Preprocess + dKV + dQ가 같은 Q, K, V를 3번 읽는다 (HBM bandwidth 낭비).
+   - flash-attn은 backward도 더 fused — 2 kernel + atomic으로 처리.
+   - fwd+bwd만 보면 **추가 손실 ~10–15%**.
+
+5. **autotune 탐색 공간 한계**
+   - 6 configs만 탐색. CUTLASS auto-tuner는 수백~수천 가지.
+   - [Triton 07](/blog/2026/triton-07-flash-attention-v3/)에서 17 configs로 늘려 +3–5% 회수.
+
+| 남은 손실          | 추정 % | 회수 방법                     |
+| ------------------ | ------ | ----------------------------- |
+| cp.async 부재      | 8–10%  | △ Hopper TMA (H100 only)      |
+| softmax non-matmul | 4–6%   | △ FA3의 GEMM-softmax pingpong |
+| SRAM 한계          | 2–3%   | △ BLOCK_M=192 (Hopper 권장)   |
+| Backward 3-split   | 10–15% | ✗ CUTLASS급 fused 필요        |
+| autotune 한계      | 3–5%   | ✓ Triton 07에서 회수          |
+
+요약하면 FA2가 A100 peak의 ~55%인 이유는 **Triton 추상화의 천장**이다. 그 이상으로 가려면 CUTLASS hand-tune 또는 H100의 새 명령어(TMA, wgmma)가 필요하다. 이것이 [FA3가 H100 + CUDA로만 의미가 있는 이유](/blog/2026/triton-07-flash-attention-v3/#솔직한-한계)다.
+
 ---
 
 ## 전체 코드
