@@ -17,3 +17,6 @@ vendor
 package-lock.json
 package.json
 .env
+
+# 실험 코드 (Triton Flash Attention 재구현 — 블로그 빌드와 무관)
+triton_flash_attention/
