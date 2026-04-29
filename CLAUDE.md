@@ -87,8 +87,9 @@ related_posts: true
 | Gist ID                            | 용도                                                                |
 | ---------------------------------- | ------------------------------------------------------------------- |
 | `42cd2b629a46d83e348bc15c5aa83a17` | Triton 05 (FA1) 스니펫 모음                                         |
-| `5880faa2b9aa8d0ab1bd1dd0ad31baa9` | Triton 06 (FA2) 스니펫 모음                                         |
-| `0f4970e5dbed9af5037d796fa395727f` | Triton 전체 코드 (`flash_attention.py`, `flash_attention_v2.py` 등) |
+| `5880faa2b9aa8d0ab1bd1dd0ad31baa9` | Triton 06 (FA2) 스니펫 모음                                                           |
+| `2231bb41af1f36d52e143c60386cf7a0` | Triton 07 (FA3) 스니펫 모음                                                           |
+| `0f4970e5dbed9af5037d796fa395727f` | Triton 전체 코드 (`flash_attention.py`, `flash_attention_v2.py`, `flash_attention_v3.py`) |
 
 ### 주의사항
 
