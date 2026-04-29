@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
+        },{id: "post-triton-07-flash-attention-3-triton으로-어디까지-가능한가",
+        
+          title: "Triton 07: Flash Attention 3 — Triton으로 어디까지 가능한가",
+        
+        description: "Hopper 전용인 Flash Attention 3를 Triton으로 어디까지 따라잡을 수 있는가 — 확장 autotune·persistent kernel·실패한 실험까지",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/triton-07-flash-attention-v3/";
+          
+        },
+      },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
         
           title: "K8s 시리즈 06: EKS 네트워킹·보안·비용·운영",
         
