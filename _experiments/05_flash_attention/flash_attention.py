@@ -667,7 +667,7 @@ def main():
         triton_ms_list,
         torch_ms_list,
         title="Flash Attention vs Standard Attention",
-        save_path="05_flash_attention/benchmark.png",
+        save_path=os.path.join(os.path.dirname(__file__), "benchmark.png"),
     )
 
     # --- Backward 정확도 검증 ---

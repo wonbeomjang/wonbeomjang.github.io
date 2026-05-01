@@ -986,7 +986,8 @@ def main():
 
         fig.suptitle(f"FA2 vs PyTorch on RTX 4080 (num_heads={num_heads}, head_dim={head_dim})")
         plt.tight_layout()
-        save_path = "06_flash_attention_v2/benchmark.png"
+        # 어디서 실행해도 동작하도록 이 파일 기준 절대경로
+        save_path = os.path.join(os.path.dirname(__file__), "benchmark.png")
         plt.savefig(save_path, dpi=150)
         print(f"그래프 저장: {save_path}")
     except ImportError:
