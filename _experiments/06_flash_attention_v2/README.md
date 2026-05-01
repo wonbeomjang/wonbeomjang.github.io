@@ -11,11 +11,13 @@
 ## 왜 FA1만으로는 부족한가?
 
 A100 기준:
+
 - matmul 처리량: **312 TFLOPs/s** (FP16, Tensor Core)
 - non-matmul 처리량: **19.5 TFLOPs/s** (FP32 vector)
 - **non-matmul 1번 ≈ matmul 16번 비용**
 
 FA1은 매 inner loop마다 다음 비-matmul 연산을 수행합니다:
+
 - `1/ℓ` 곱셈 (output rescaling)
 - `exp` 계산
 - `max` 비교, `alpha = exp(m_old - m_new)` 등
@@ -95,6 +97,7 @@ p = tl.math.exp2(qk_scaled - m_ij)  # exp2만 직접 호출
 **FA1**: 매 K/V 블록마다 `if causal: apply_mask` 분기 → 분기·마스크 연산 매번 발생.
 
 **FA2 (논문 §3.1.1, 6쪽)**:
+
 ```
 Q 블록 i에 대해 K/V 블록 j를 순회할 때:
   - j*BLOCK_N < i*BLOCK_M               → STAGE 1 (행 > 열, 마스크 불필요)
@@ -121,18 +124,21 @@ else:
 ### ④ Sequence 차원 병렬화 + tl.dot accumulator
 
 **병렬화 (논문 §3.2)**:
+
 - FA1 원본 (논문): `grid = (batch, num_heads)` — 시퀀스가 길고 batch가 작으면 SM 점유율 ↓
 - FA2 (Phil Tillet의 Triton 구현 채택): `grid = (seq_len/BLOCK_M, batch*num_heads)` — Q 블록을 시퀀스 차원으로도 병렬화
 
 본 프로젝트의 [05/flash_attention.py](../05_flash_attention/flash_attention.py)도 이미 Q-outer 그리드라 동일.
 
 **Warp partitioning (논문 §3.3)**:
+
 - FA1 split-K: K, V를 4 warp에 분할 → 각 warp이 부분합 후 SRAM 통신 → sync → 합산
 - FA2 split-Q: Q를 4 warp에 분할 → 자기 V와 곱하면 끝, **warp간 통신 없음**
 
 Triton에서는 `num_warps`로 자동 처리되지만, **Q-outer / KV-inner 루프 구조**가 split-Q를 자연스럽게 유도.
 
 **accumulator API**:
+
 ```python
 # FA1
 acc += tl.dot(p, v)
@@ -256,11 +262,11 @@ $D_i$가 미리 있으면 위 식은 **블록 단위로 완벽히 분해**됩니
 
 ## 3-커널 구조 (atomic 없음)
 
-| 커널 | grid | 역할 |
-|---|---|---|
-| `_fa2_bwd_preprocess_kernel` | (Q블록, batch×head) | $D_i = \text{rowsum}(dO_i \circ O_i)$ |
-| `_fa2_bwd_dkdv_kernel` | (KV블록, batch×head) | outer=$K_j,V_j$ 고정, inner=$Q_i$ 순회 → $dK_j, dV_j$ |
-| `_fa2_bwd_dq_kernel` | (Q블록, batch×head) | outer=$Q_i$ 고정, inner=$K_j,V_j$ 순회 → $dQ_i$ |
+| 커널                         | grid                 | 역할                                                  |
+| ---------------------------- | -------------------- | ----------------------------------------------------- |
+| `_fa2_bwd_preprocess_kernel` | (Q블록, batch×head)  | $D_i = \text{rowsum}(dO_i \circ O_i)$                 |
+| `_fa2_bwd_dkdv_kernel`       | (KV블록, batch×head) | outer=$K_j,V_j$ 고정, inner=$Q_i$ 순회 → $dK_j, dV_j$ |
+| `_fa2_bwd_dq_kernel`         | (Q블록, batch×head)  | outer=$Q_i$ 고정, inner=$K_j,V_j$ 순회 → $dQ_i$       |
 
 **왜 두 커널로 분리했나?** 한 커널에서 $dQ, dK, dV$를 동시에 누적하면 $dK_j$가 여러 $i$ 블록에서 동시에 쓰여 **race condition** 발생. atomic add로 막을 수 있지만 느림. **outer 루프 변수를 바꿔 두 번 traverse**하면 각 블록이 자기 출력만 갖게 되어 atomic 불필요.
 
@@ -294,50 +300,53 @@ class FlashAttentionV2Function(torch.autograd.Function):
 ## 측정 결과 (RTX 4080, num_heads=16, head_dim=64)
 
 ### 정확도
+
 모든 케이스 통과 (3D/4D 입력, head_dim=64/128, causal/non-causal, forward/backward).
+
 - forward max diff ≤ 2e-3 (fp16 기준)
 - backward dQ/dK/dV max diff ≤ 4e-3
 - LSE max diff: 9.5e-7
 
 ### Forward 성능: non-causal
 
-| Seq | FA1 (ms) | FA2 (ms) | PyTorch (ms) | FA2/FA1 | FA2/PyTorch |
-|-----|---------:|---------:|-------------:|--------:|------------:|
-|  256 | 0.0109 | 0.0105 | 0.0277 | 1.04× | 2.65× |
-|  512 | 0.0216 | 0.0209 | 0.0749 | 1.03× | 3.58× |
-| 1024 | 0.0640 | 0.0619 | 0.2703 | 1.03× | 4.37× |
-| 2048 | 0.2005 | 0.1933 | 1.6453 | 1.04× | 8.51× |
-| 4096 | 0.7645 | 0.7211 | 5.3694 | 1.06× | **7.45×** |
+| Seq  | FA1 (ms) | FA2 (ms) | PyTorch (ms) | FA2/FA1 | FA2/PyTorch |
+| ---- | -------: | -------: | -----------: | ------: | ----------: |
+| 256  |   0.0109 |   0.0105 |       0.0277 |   1.04× |       2.65× |
+| 512  |   0.0216 |   0.0209 |       0.0749 |   1.03× |       3.58× |
+| 1024 |   0.0640 |   0.0619 |       0.2703 |   1.03× |       4.37× |
+| 2048 |   0.2005 |   0.1933 |       1.6453 |   1.04× |       8.51× |
+| 4096 |   0.7645 |   0.7211 |       5.3694 |   1.06× |   **7.45×** |
 
 ### Forward 성능: causal (FA2의 STAGE 분할 효과가 두드러짐)
 
-| Seq | FA1 (ms) | FA2 (ms) | PyTorch (ms) | FA2/FA1 | FA2/PyTorch |
-|-----|---------:|---------:|-------------:|--------:|------------:|
-|  256 | 0.0117 | 0.0118 | 0.0382 | 0.99× | 3.24× |
-|  512 | 0.0201 | 0.0190 | 0.0887 | 1.06× | 4.68× |
-| 1024 | 0.0514 | 0.0460 | 0.3563 | 1.12× | 7.75× |
-| 2048 | 0.1451 | 0.1232 | 2.7907 | **1.18×** | 22.65× |
-| 4096 | 0.4833 | 0.4088 | 9.2923 | **1.18×** | **22.73×** |
+| Seq  | FA1 (ms) | FA2 (ms) | PyTorch (ms) |   FA2/FA1 | FA2/PyTorch |
+| ---- | -------: | -------: | -----------: | --------: | ----------: |
+| 256  |   0.0117 |   0.0118 |       0.0382 |     0.99× |       3.24× |
+| 512  |   0.0201 |   0.0190 |       0.0887 |     1.06× |       4.68× |
+| 1024 |   0.0514 |   0.0460 |       0.3563 |     1.12× |       7.75× |
+| 2048 |   0.1451 |   0.1232 |       2.7907 | **1.18×** |      22.65× |
+| 4096 |   0.4833 |   0.4088 |       9.2923 | **1.18×** |  **22.73×** |
 
 → **causal에서 FA2 효과가 더 큼**. STAGE 1(마스크 X) 블록의 분기 제거 + 위쪽 절반 블록 SKIP 덕분.
 
 ### Forward + Backward 성능: causal (학습 시나리오)
 
-| Seq | FA2 fwd+bwd (ms) | PyTorch fwd+bwd (ms) | Speedup |
-|-----|-----------------:|---------------------:|--------:|
-|  256 | 0.0696 |  0.0723 |  1.04× |
-|  512 | 0.0667 |  0.1735 |  2.60× |
-| 1024 | 0.1814 |  0.9230 |  5.09× |
-| 2048 | 0.5337 |  6.3340 | 11.87× |
-| 4096 | 1.8010 | 23.2206 | **12.89×** |
+| Seq  | FA2 fwd+bwd (ms) | PyTorch fwd+bwd (ms) |    Speedup |
+| ---- | ---------------: | -------------------: | ---------: |
+| 256  |           0.0696 |               0.0723 |      1.04× |
+| 512  |           0.0667 |               0.1735 |      2.60× |
+| 1024 |           0.1814 |               0.9230 |      5.09× |
+| 2048 |           0.5337 |               6.3340 |     11.87× |
+| 4096 |           1.8010 |              23.2206 | **12.89×** |
 
 #### 분석: 왜 forward 22.7× → fwd+bwd 12.9×로 격차가 줄어드는가?
 
 **Forward → fwd+bwd 시간 증가 비율 (실측, seq=4096 기준)**:
+
 - FA2: 0.41 → 1.80 ms = **4.4×**
 - PyTorch: 9.29 → 23.22 ms = **2.5×**
 
-→ FA2가 backward 추가 비용을 *상대적으로* 더 많이 부담. 격차 좁힘 비율: 4.4 / 2.5 = **1.76×**.
+→ FA2가 backward 추가 비용을 _상대적으로_ 더 많이 부담. 격차 좁힘 비율: 4.4 / 2.5 = **1.76×**.
 실제로 forward 격차 22.7× ÷ 1.76 = **12.9×** ← 실측과 정확히 일치.
 
 **왜 FA2가 backward에 상대적으로 더 비싼가?**
@@ -358,6 +367,7 @@ class FlashAttentionV2Function(torch.autograd.Function):
    - 짧은 seq에서 overhead 비율 ↑
 
 **seq별 fwd+bwd 격차 (seq=256은 1.04× 거의 동등)**:
+
 - seq=256: PyTorch도 짧은 시퀀스에선 어차피 빠름 → FA2의 3-kernel overhead가 누적되어 격차 사라짐
 - seq≥1024: 메모리 IO 절약 효과가 본격화되어 5×~13×로 벌어짐
 - → **FA2의 진가는 긴 시퀀스에서 메모리 절약과 함께 발휘됨**
@@ -367,12 +377,12 @@ class FlashAttentionV2Function(torch.autograd.Function):
 
 ### 메모리
 
-| Seq | Standard | FA2 | 절약 |
-|-----|---------:|----:|-----:|
-| 1024 |  99.3 MB |  37.3 MB |  2.7× |
-| 2048 | 301.3 MB |  47.3 MB |  6.4× |
+| Seq  |  Standard |      FA2 |      절약 |
+| ---- | --------: | -------: | --------: |
+| 1024 |   99.3 MB |  37.3 MB |      2.7× |
+| 2048 |  301.3 MB |  47.3 MB |      6.4× |
 | 4096 | 1087.3 MB |  67.3 MB | **16.2×** |
-| 8192 | 4195.3 MB | 363.3 MB | 11.5× |
+| 8192 | 4195.3 MB | 363.3 MB |     11.5× |
 
 표준 attention의 O(N²) 중간 행렬 `S`, `P`가 사라짐. backward에서도 LSE 한 줄(O(N))만 저장.
 
@@ -386,17 +396,17 @@ class FlashAttentionV2Function(torch.autograd.Function):
 
 ## FA1 → FA2 코드 차이 한눈에
 
-| 항목 | FA1 ([05](../05_flash_attention/flash_attention.py)) | FA2 (현재) |
-|------|------|------|
-| Output 누적 | `acc * alpha + p @ v` | `tl.dot(p, v, acc * alpha)` (3-arg dot) |
-| 정규화 시점 | 루프 종료 후 (이미 FA2 식) | 동일 |
-| `exp` 함수 | `tl.exp` | `tl.math.exp2` + `qk_scale *= log2(e)` |
-| Causal 분기 | 매 iteration `if IS_CAUSAL: where(...)` | STAGE 1/2로 함수 분리, STAGE 1은 분기 X |
-| 위쪽 블록 | `k_range = pid_m * BLOCK_M + BLOCK_M`로 일부 cut | 동일하게 SKIP |
-| 블록 크기 | 고정 `BLOCK_M=BLOCK_N=64` | `triton.autotune`으로 자동 |
-| LSE 저장 | X | `return_lse=True`로 옵션 |
-| 4D 입력 | reshape | reshape (동일) |
-| 입력 dtype | fp16만 | fp16/bf16 모두 |
+| 항목        | FA1 ([05](../05_flash_attention/flash_attention.py)) | FA2 (현재)                              |
+| ----------- | ---------------------------------------------------- | --------------------------------------- |
+| Output 누적 | `acc * alpha + p @ v`                                | `tl.dot(p, v, acc * alpha)` (3-arg dot) |
+| 정규화 시점 | 루프 종료 후 (이미 FA2 식)                           | 동일                                    |
+| `exp` 함수  | `tl.exp`                                             | `tl.math.exp2` + `qk_scale *= log2(e)`  |
+| Causal 분기 | 매 iteration `if IS_CAUSAL: where(...)`              | STAGE 1/2로 함수 분리, STAGE 1은 분기 X |
+| 위쪽 블록   | `k_range = pid_m * BLOCK_M + BLOCK_M`로 일부 cut     | 동일하게 SKIP                           |
+| 블록 크기   | 고정 `BLOCK_M=BLOCK_N=64`                            | `triton.autotune`으로 자동              |
+| LSE 저장    | X                                                    | `return_lse=True`로 옵션                |
+| 4D 입력     | reshape                                              | reshape (동일)                          |
+| 입력 dtype  | fp16만                                               | fp16/bf16 모두                          |
 
 ---
 
@@ -404,11 +414,11 @@ class FlashAttentionV2Function(torch.autograd.Function):
 
 [05_flash_attention/flash_attention.py](../05_flash_attention/flash_attention.py)에 같은 알고리즘으로 backward를 구현해 두었습니다 (자연로그 LSE 버전). 차이점:
 
-| 항목 | FA1 backward | FA2 backward (본 구현) |
-|---|---|---|
-| LSE 형식 | 자연로그 `m + log(ℓ)` | base-2 `m + log2(ℓ)` |
+| 항목           | FA1 backward                  | FA2 backward (본 구현)              |
+| -------------- | ----------------------------- | ----------------------------------- |
+| LSE 형식       | 자연로그 `m + log(ℓ)`         | base-2 `m + log2(ℓ)`                |
 | Softmax 재계산 | `tl.exp(qk * sm_scale - L_i)` | `tl.math.exp2(qk * qk_scale - L_i)` |
-| 알고리즘 구조 | 동일 (Algorithm 2) | 동일 |
+| 알고리즘 구조  | 동일 (Algorithm 2)            | 동일                                |
 
 forward와의 일관성 (FA1=exp, FA2=exp2) 유지를 위해 LSE 형식을 분리. **두 코드를 비교하면 base-2 트릭이 backward에서도 그대로 쓰임을 확인할 수 있음**.
 

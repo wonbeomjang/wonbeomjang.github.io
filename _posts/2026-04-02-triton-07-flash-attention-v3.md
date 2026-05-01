@@ -150,6 +150,46 @@ Triton의 1D grid는 SM 스케줄러가 동적으로 분배하는 반면, persis
 - fwd+bwd는 backward를 FA2 그대로 재사용했으므로 거의 동일 (FA3의 backward 개선은 H100 wgmma 와만 결합)
 - GPU 0~3 측정값 표준편차는 평균의 1% 미만 — Triton autotune이 4개 프로세스에서 각각 동일한 best config로 수렴
 
+**`tl.range(warp_specialize=True)` 시도 — A100에서는 효과 없음**
+
+FA3 논문의 producer-consumer warp specialization을 흉내내려고 `tl.range(..., warp_specialize=True)` 를 inner loop에 적용해봤다 (`flash_attention_v3_warpspec`). Hopper warpspec pass가 cc 8/9 양쪽에서 동작하므로 A100에서도 컴파일은 통과한다.
+
+A100 측정 결과 (causal head_dim=64, 4 GPU 평균):
+
+| seq   | FA3    | FA3-WS | FA3/FA3-WS |
+| ----- | ------ | ------ | ---------- |
+| 4096  | 0.351  | 0.352  | 1.00×      |
+| 8192  | 0.995  | 0.998  | 1.00×      |
+| 16384 | 3.439  | 3.532  | 0.97×      |
+| 32768 | 12.934 | 13.430 | 0.96×      |
+
+긴 seq에서 오히려 4% 손해를 본다. **이유**: A100에는 TMA·MBARRIER가 없어 컴파일러가 partition을 만들어도 실제 latency 가림 효과가 거의 없다. partition 분할 비용만 남아 손해. H100에서 본격 효과를 기대해야 한다.
+
+이 코드 자체는 H100 검증을 위해 보존했다 — `flash_attention_v3_warpspec()` / `flash_attention_v3_warpspec_autograd()` 로 활성화 가능.
+
+---
+
+## 동일 코드로 다른 GPU 비교하기
+
+본 시리즈는 학습 코드를 [`_experiments/05_flash_attention/`](https://github.com/wonbeomjang/wonbeomjang.github.io/tree/master/_experiments/05_flash_attention) ~ [`_experiments/07_flash_attention_v3/`](https://github.com/wonbeomjang/wonbeomjang.github.io/tree/master/_experiments/07_flash_attention_v3) 에 단일 source로 둔다. 같은 파일을 RTX 4080·A100·H100에서 그대로 돌려 apples-to-apples 비교가 가능하다.
+
+```bash
+cd _experiments/07_flash_attention_v3
+python flash_attention_v3.py
+# main() 안에서 정확도 검증 + FA1/FA2/FA3/FA3-WS 비교 + Backward 검증을 한 번에 출력
+```
+
+**RTX 4080 vs A100 비교** (causal forward, head_dim=64, fp16):
+
+| seq   | RTX 4080 FA3 (ms) | A100 FA3 (ms) | A100/4080 |
+| ----- | ----------------- | ------------- | --------- |
+| 1024  | _측정 예정_       | 0.108         | —         |
+| 4096  | _측정 예정_       | 0.350         | —         |
+| 8192  | _측정 예정_       | 0.992         | —         |
+| 16384 | _측정 예정_       | 3.391         | —         |
+
+> A100은 2.5× 메모리 대역폭과 1.7× FP16 TFLOPS가 있으므로 long-seq에서 ~2× 가속이 예상된다. RTX 4080 측정값이 들어오면 본 표를 채운다.
+
 ---
 
 ## 솔직한 한계
