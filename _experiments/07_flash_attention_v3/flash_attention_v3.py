@@ -39,6 +39,7 @@ A100-SXM4-80GB · num_heads=16, head_dim=64, causal, fp16 측정값:
 알고리즘 자체는 거의 한계에 도달했다. 그 이상은 H100 + CUDA의 영역이다.
 """
 
+import inspect
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -51,6 +52,15 @@ from common.benchmark_utils import (
     compare_results,
     benchmark_fn,
 )
+
+
+# `tl.range(..., warp_specialize=...)` 는 Triton 3.5+ 에서만 허용된다.
+# 구버전(예: 3.2.x)에서는 키워드 자체를 거부하므로 커널 소스에서 빼야 한다.
+# 모듈 로드 시점에 검출해서 _fa3_inner 정의를 분기한다.
+try:
+    _HAS_WARP_SPECIALIZE = "warp_specialize" in inspect.signature(tl.range).parameters
+except (TypeError, ValueError):
+    _HAS_WARP_SPECIALIZE = False
 
 
 # ============================================================
@@ -129,85 +139,147 @@ def _fa3_prune_configs(configs, named_args, **kwargs):
 
 # ============================================================
 # 내부 함수: K/V 블록 순회 (FA2와 동일, out_dtype만 명시)
+#
+# `tl.range(..., warp_specialize=...)` 키워드 지원이 Triton 버전마다 다르므로
+# 단일 K/V step 의 본문은 _fa3_step 헬퍼에 모으고, _fa3_inner 만 두 가지로
+# 분기 정의한다 (for-루프 한 줄만 다름).
 # ============================================================
 
 @triton.jit
-def _fa3_inner(
+def _fa3_step(
     acc, l_i, m_i, q,
     k_base, v_base,
     stride_kn, stride_kd, stride_vn, stride_vd,
-    start_m, qk_scale, seq_len,
+    start_n, qk_scale, seq_len,
     offs_m, offs_d,
-    BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
-    BLOCK_D: tl.constexpr,
     HEAD_DIM: tl.constexpr,
     STAGE: tl.constexpr,
-    WARP_SPECIALIZE: tl.constexpr = False,
 ):
-    """
-    K/V 블록을 순회하며 online softmax 통계와 출력 누적기 업데이트.
-    FA2의 _fa2_inner와 알고리즘 동일. 차이는 tl.dot에 out_dtype=tl.float32 명시.
+    """단일 K/V 블록 처리 — _fa3_inner 의 for-loop body."""
+    offs_n = start_n + tl.arange(0, BLOCK_N)
 
-    STAGE 1 (causal, 대각선 이전): 마스크 X
-    STAGE 2 (causal, 대각선 블록): 마스크 적용
-    STAGE 3 (non-causal): 전체 K/V 순회
+    # K 로드
+    k_mask = (offs_n[:, None] < seq_len) & (offs_d[None, :] < HEAD_DIM)
+    k = tl.load(
+        k_base + offs_n[:, None] * stride_kn + offs_d[None, :] * stride_kd,
+        mask=k_mask, other=0.0,
+    )
 
-    WARP_SPECIALIZE=True 면 Hopper warpspec pass가 K/V 로드와 matmul/softmax를
-    별도 warp partition으로 분할한다 (cc 8/9 = A100/Ada/H100에서 동작).
-    """
-    if STAGE == 1:
-        lo, hi = 0, start_m * BLOCK_M
-    elif STAGE == 2:
-        lo = start_m * BLOCK_M
-        hi = tl.minimum((start_m + 1) * BLOCK_M, seq_len)
-    else:  # STAGE == 3 (non-causal)
-        lo, hi = 0, seq_len
+    # FA3: 명시적 fp32 누적 — H100 wgmma도 동일 명령으로 매핑됨
+    qk = tl.dot(q, tl.trans(k), out_dtype=tl.float32)
 
-    for start_n in tl.range(lo, hi, BLOCK_N, warp_specialize=WARP_SPECIALIZE):
-        start_n = tl.multiple_of(start_n, BLOCK_N)
-        offs_n = start_n + tl.arange(0, BLOCK_N)
+    if STAGE == 2:
+        valid = (offs_m[:, None] >= offs_n[None, :]) & (offs_n[None, :] < seq_len)
+        qk = qk * qk_scale + tl.where(valid, 0.0, -1.0e6)
+    elif STAGE == 3:
+        valid = offs_n[None, :] < seq_len
+        qk = qk * qk_scale + tl.where(valid, 0.0, -1.0e6)
+    else:
+        qk = qk * qk_scale
 
-        # K 로드
-        k_mask = (offs_n[:, None] < seq_len) & (offs_d[None, :] < HEAD_DIM)
-        k = tl.load(
-            k_base + offs_n[:, None] * stride_kn + offs_d[None, :] * stride_kd,
-            mask=k_mask, other=0.0,
-        )
+    m_ij = tl.maximum(m_i, tl.max(qk, 1))
+    qk = qk - m_ij[:, None]
+    p = tl.math.exp2(qk)
+    l_ij = tl.sum(p, 1)
 
-        # FA3: 명시적 fp32 누적 — H100 wgmma도 동일 명령으로 매핑됨
-        qk = tl.dot(q, tl.trans(k), out_dtype=tl.float32)
+    alpha = tl.math.exp2(m_i - m_ij)
+    l_i = l_i * alpha + l_ij
+    acc = acc * alpha[:, None]
 
-        if STAGE == 2:
-            valid = (offs_m[:, None] >= offs_n[None, :]) & (offs_n[None, :] < seq_len)
-            qk = qk * qk_scale + tl.where(valid, 0.0, -1.0e6)
-        elif STAGE == 3:
-            valid = offs_n[None, :] < seq_len
-            qk = qk * qk_scale + tl.where(valid, 0.0, -1.0e6)
-        else:
-            qk = qk * qk_scale
+    # V 로드
+    v_mask = (offs_n[:, None] < seq_len) & (offs_d[None, :] < HEAD_DIM)
+    v = tl.load(
+        v_base + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vd,
+        mask=v_mask, other=0.0,
+    )
+    # P @ V 누적 (fp32 acc 명시)
+    acc = tl.dot(p.to(v.dtype), v, acc, out_dtype=tl.float32)
 
-        m_ij = tl.maximum(m_i, tl.max(qk, 1))
-        qk = qk - m_ij[:, None]
-        p = tl.math.exp2(qk)
-        l_ij = tl.sum(p, 1)
-
-        alpha = tl.math.exp2(m_i - m_ij)
-        l_i = l_i * alpha + l_ij
-        acc = acc * alpha[:, None]
-
-        # V 로드
-        v_mask = (offs_n[:, None] < seq_len) & (offs_d[None, :] < HEAD_DIM)
-        v = tl.load(
-            v_base + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vd,
-            mask=v_mask, other=0.0,
-        )
-        # P @ V 누적 (fp32 acc 명시)
-        acc = tl.dot(p.to(v.dtype), v, acc, out_dtype=tl.float32)
-
-        m_i = m_ij
-
+    m_i = m_ij
     return acc, l_i, m_i
+
+
+# Triton 버전에 따라 _fa3_inner 의 for-loop 만 다르게 정의.
+# 두 분기의 시그니처·반환값·로직은 동일하다.
+if _HAS_WARP_SPECIALIZE:
+
+    @triton.jit
+    def _fa3_inner(
+        acc, l_i, m_i, q,
+        k_base, v_base,
+        stride_kn, stride_kd, stride_vn, stride_vd,
+        start_m, qk_scale, seq_len,
+        offs_m, offs_d,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+        HEAD_DIM: tl.constexpr,
+        STAGE: tl.constexpr,
+        WARP_SPECIALIZE: tl.constexpr = False,
+    ):
+        """K/V 블록 순회 + online softmax 업데이트 (Triton ≥ 3.5: warpspec 지원).
+
+        WARP_SPECIALIZE=True 면 Hopper warpspec pass 가 K/V 로드와
+        matmul/softmax 를 별도 warp partition 으로 분할한다 (cc 8/9 동작).
+        """
+        if STAGE == 1:
+            lo, hi = 0, start_m * BLOCK_M
+        elif STAGE == 2:
+            lo = start_m * BLOCK_M
+            hi = tl.minimum((start_m + 1) * BLOCK_M, seq_len)
+        else:  # STAGE == 3 (non-causal)
+            lo, hi = 0, seq_len
+
+        for start_n in tl.range(lo, hi, BLOCK_N, warp_specialize=WARP_SPECIALIZE):
+            start_n = tl.multiple_of(start_n, BLOCK_N)
+            acc, l_i, m_i = _fa3_step(
+                acc, l_i, m_i, q, k_base, v_base,
+                stride_kn, stride_kd, stride_vn, stride_vd,
+                start_n, qk_scale, seq_len, offs_m, offs_d,
+                BLOCK_N, HEAD_DIM, STAGE,
+            )
+        return acc, l_i, m_i
+
+else:
+
+    @triton.jit
+    def _fa3_inner(
+        acc, l_i, m_i, q,
+        k_base, v_base,
+        stride_kn, stride_kd, stride_vn, stride_vd,
+        start_m, qk_scale, seq_len,
+        offs_m, offs_d,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+        HEAD_DIM: tl.constexpr,
+        STAGE: tl.constexpr,
+        WARP_SPECIALIZE: tl.constexpr = False,
+    ):
+        """K/V 블록 순회 + online softmax 업데이트 (Triton < 3.5 호환).
+
+        이 분기에서는 tl.range 가 warp_specialize 키워드를 거부하므로 무시한다.
+        WARP_SPECIALIZE 인자는 호출 호환성을 위해 시그니처에만 남긴다 — kernel 의
+        autotune key 와 dispatch 로직은 그대로 두고, 실제 동작은 WS=False 와 동일.
+        """
+        if STAGE == 1:
+            lo, hi = 0, start_m * BLOCK_M
+        elif STAGE == 2:
+            lo = start_m * BLOCK_M
+            hi = tl.minimum((start_m + 1) * BLOCK_M, seq_len)
+        else:  # STAGE == 3 (non-causal)
+            lo, hi = 0, seq_len
+
+        for start_n in tl.range(lo, hi, BLOCK_N):
+            start_n = tl.multiple_of(start_n, BLOCK_N)
+            acc, l_i, m_i = _fa3_step(
+                acc, l_i, m_i, q, k_base, v_base,
+                stride_kn, stride_kd, stride_vn, stride_vd,
+                start_n, qk_scale, seq_len, offs_m, offs_d,
+                BLOCK_N, HEAD_DIM, STAGE,
+            )
+        return acc, l_i, m_i
 
 
 # ============================================================
