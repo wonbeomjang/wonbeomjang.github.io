@@ -30,7 +30,40 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
+        },{id: "post-codeattack-code-based-adversarial-attacks-for-pre-trained-programming-language-models",
+        
+          title: "CodeAttack: Code-based Adversarial Attacks for Pre-trained Programming Language Models",
+        
+        description: "CodeAttack 논문 리뷰 — 코드의 자연 채널을 노려 PL 모델을 무력화하는 블랙박스 적대 공격",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/codeattack/";
+          
+        },
+      },{id: "post-jailbreaking-black-box-large-language-models-in-twenty-queries",
+        
+          title: "Jailbreaking Black Box Large Language Models in Twenty Queries",
+        
+        description: "PAIR 논문 리뷰 — LLM으로 LLM을 공격하는 자동 반복 정제 jailbreak 알고리즘",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/pair-attack/";
+          
+        },
+      },{id: "post-universal-and-transferable-adversarial-attacks-on-aligned-language-models",
+        
+          title: "Universal and Transferable Adversarial Attacks on Aligned Language Models",
+        
+        description: "GCG 논문 리뷰 — Greedy Coordinate Gradient로 정렬된 LLM을 자동 공격하는 방법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/gcg-attack/";
+          
+        },
+      },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
         
           title: "K8s 시리즈 06: EKS 네트워킹·보안·비용·운영",
         
