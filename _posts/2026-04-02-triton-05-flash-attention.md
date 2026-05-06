@@ -12,8 +12,8 @@ featured: true
 
 ## 개요
 
-지금까지 배운 모든 기법을 종합하여 Flash Attention을 구현합니다.
-LLM 추론/학습에서 가장 중요한 최적화 기법 중 하나입니다.
+지금까지 배운 모든 기법을 종합하여 Flash Attention을 구현한다.
+LLM 추론/학습에서 가장 중요한 최적화 기법 중 하나다.
 
 > Flash Attention의 원리와 논문 내용이 궁금하다면 [FlashAttention 논문 리뷰](/blog/2023/fastattention/)를 먼저 읽어보는 것을 추천한다.
 
@@ -42,12 +42,12 @@ $$O = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d}}\right) \cdot V$$
 
 **S 행렬을 전체 생성하지 않는다!**
 
-타일 단위로 Q, K, V를 처리하면서 결과를 점진적으로 누적합니다.
-이를 위해 **Online Softmax** 알고리즘이 필요합니다.
+타일 단위로 Q, K, V를 처리하면서 결과를 점진적으로 누적한다.
+이를 위해 **Online Softmax** 알고리즘이 필요하다.
 
 ### Online Softmax
 
-데이터를 청크(블록) 단위로 받으면서 **점진적으로 업데이트**합니다.
+데이터를 청크(블록) 단위로 받으면서 **점진적으로 업데이트**한다.
 
 **청크 1 처리 후** ($$S_1$$ = 첫 번째 K 블록과의 attention score):
 
@@ -100,7 +100,7 @@ max가 바뀌면 이전에 계산한 `exp` 값들이 틀어집니다:
 
 ## Causal Masking
 
-Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
+Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없다:
 
 {% include figure.liquid loading="lazy" path="assets/img/triton/05_flash_attention/causal_mask.png" class="img-fluid rounded z-depth-1" alt="Causal 마스크 적용 예시" %}
 
@@ -121,7 +121,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 
 ### 내부 루프 — Online Softmax 업데이트 (핵심!)
 
-각 K/V 블록에 대해 다음을 수행합니다:
+각 K/V 블록에 대해 다음을 수행한다:
 
 1. **K 블록 로드** → `S = Q @ K^T * scale` 계산 (attention score 타일)
 2. **Causal mask 적용** → 미래 토큰 차단 (`-inf`로 마스킹)
@@ -133,7 +133,7 @@ Autoregressive 모델(GPT 등)에서는 미래 토큰을 볼 수 없습니다:
 4. **V 블록 로드** → `acc += P @ V` 누적
 5. `p.to(v.dtype)`: FP32 → FP16 변환 (`tl.dot`은 같은 타입 필요)
 
-매 반복마다 `acc`에 결과가 누적되므로 **S 전체를 저장할 필요가 없습니다.**
+매 반복마다 `acc`에 결과가 누적되므로 **S 전체를 저장할 필요가 없다.**
 
 <script src="https://gist.github.com/wonbeomjang/42cd2b629a46d83e348bc15c5aa83a17.js?file=05_flash_attention_snippet05_%EB%82%B4%EB%B6%80_%EB%A3%A8%ED%94%84___Online_Softmax_%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8__%ED%95%B5.py"></script>
 
