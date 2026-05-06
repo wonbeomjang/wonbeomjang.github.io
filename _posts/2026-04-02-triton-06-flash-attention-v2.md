@@ -177,6 +177,110 @@ RTX 4080 기준 FA1 vs FA2 vs PyTorch 비교:
 - **seq_len이 길수록**: FA2 우위가 커짐 — STAGE 1 비율이 높아져 마스크 분기 비용이 희석됨
 - **head_dim=128 (Llama/Qwen 표준)**: autotune이 더 큰 BLOCK_M을 선택하므로 FA2가 더 유리
 
+### A100 80GB 측정값 — FA1 vs FA2 vs PyTorch
+
+A100-SXM4-80GB · `num_heads=16, fp16` · 4 GPU 평균 (표준편차 < 1%) · 11회 측정 중 첫 회 폐기.
+
+**head_dim=64, causal forward** (ms):
+
+| seq   | FA1    | FA2    | PyTorch | FA2/FA1 | FA2/PT     |
+| ----- | ------ | ------ | ------- | ------- | ---------- |
+| 4096  | 0.571  | 0.361  | 5.243   | 1.58×   | 14.97×     |
+| 8192  | 1.721  | 1.033  | 21.807  | 1.67×   | **21.98×** |
+| 16384 | 5.972  | 3.556  | 70.856  | 1.68×   | 20.90×     |
+| 32768 | 22.247 | 13.426 | OOM     | 1.66×   | —          |
+
+**head_dim=128, causal forward** (ms):
+
+| seq   | FA1    | FA2    | PyTorch | FA2/FA1   | FA2/PT |
+| ----- | ------ | ------ | ------- | --------- | ------ |
+| 2048  | 0.374  | 0.257  | 1.305   | 1.46×     | 5.32×  |
+| 4096  | 1.113  | 0.587  | 5.430   | 1.90×     | 9.38×  |
+| 8192  | 3.905  | 1.824  | 22.188  | 2.14×     | 12.59× |
+| 32768 | 57.620 | 24.670 | OOM     | **2.34×** | —      |
+
+- 블로그에서 예측한 ~1.7-1.8× causal FA2/FA1 비율이 실측에서 정확히 재현됐다
+- head_dim=128에서는 FA2/FA1이 2.34×까지 상승 — autotune이 BLOCK_M=128 + num_warps=8을 선택해 SRAM 점유율이 좋아진 결과다
+- causal seq=8192에서 FA2/PT = **21.98×** 피크 — STAGE 1 마스크 제거 효과가 long-seq에서 정점
+
+**메모리 절감** (non-causal, head_dim=64):
+
+| seq   | Standard     | FA2        | 절약                 |
+| ----- | ------------ | ---------- | -------------------- |
+| 8192  | 4184 MB      | 96 MB      | 4088 MB              |
+| 16384 | 16544 MB     | 176 MB     | 16368 MB             |
+| 32768 | **65840 MB** | **336 MB** | **65504 MB (≈195×)** |
+
+> 32K seq에서 메모리는 196× 절약, 시간은 5.7× (non-causal) ~ 22× (causal) 가속. FA1과 FA2의 알고리즘적 차이는 이 두 축에서 모두 의미 있는 개선을 만든다.
+
+### RTX 4080 vs A100 — 동일 코드, 다른 GPU
+
+`_experiments/06_flash_attention_v2/main()` 을 두 GPU 에서 그대로 실행한 결과 (causal, num_heads=16, head_dim=64, fp16):
+
+| Seq  | 4080 FA2 (ms) | A100 FA2 (ms) | 4080 FA2/PT | A100 FA2/PT | A100/4080         |
+| ---- | ------------- | ------------- | ----------- | ----------- | ----------------- |
+| 256  | 0.048         | 0.104         | 0.92×       | 1.69×       | 0.46× _4080 우세_ |
+| 512  | 0.051         | 0.103         | 1.33×       | 1.73×       | 0.50× _4080 우세_ |
+| 1024 | 0.078         | 0.105         | **3.93×**   | 3.68×       | 0.74×             |
+| 2048 | 0.157         | 0.162         | **17.42×**  | 8.34×       | 0.97×             |
+| 4096 | 0.443         | 0.358         | **20.84×**  | **14.64×**  | 1.24×             |
+
+- **짧은 seq (≤2048) 까지는 4080 이 더 빠르거나 비슷** — Ada Lovelace SM 클럭 2505 MHz vs A100 1410 MHz, kernel launch overhead 가 작은 영향
+- **seq=4096 부터 A100 이 우세** — HBM2e 1.5 TB/s vs GDDR6X 717 GB/s 메모리 대역폭 차이가 작동
+- **PyTorch 대비 가속비는 4080 이 더 큼 (causal seq=4096 에서 20.84× vs 14.64×)** — 주의: 4080 의 cuBLAS 베이스라인이 상대적으로 느려서 가속비가 부풀어 보이는 것이지, 절대 시간은 4080 PT 9.23 ms vs A100 PT 5.24 ms 로 A100 PT 가 1.76× 빠름. 가속비 = 알고리즘적 이득 + 베이스라인 약화가 합쳐진 수치
+
+원본 데이터: [`_experiments/06_flash_attention_v2/results_a100.md`](https://github.com/wonbeomjang/wonbeomjang.github.io/blob/master/_experiments/06_flash_attention_v2/results_a100.md), [`results_4080.md`](https://github.com/wonbeomjang/wonbeomjang.github.io/blob/master/_experiments/06_flash_attention_v2/results_4080.md).
+
+### 왜 이론 peak 의 50–55% 에서 멈추나
+
+[FA1 분석](/blog/2026/triton-05-flash-attention/#왜-이론-peak-대비-일정--에서-멈추나) 에서 FA1 이 A100 peak 의 ~37% (4080 ~40%) 였다. FA2 는 어디까지 갔나.
+
+**A100** (FP16 Tensor Core peak 312 TFLOP/s, 4-GPU long-seq 측정):
+
+| seq   | FA2 시간 | matmul FLOPs | 측정 TFLOPS | A100 peak 비율 |
+| ----- | -------- | ------------ | ----------- | -------------- |
+| 4096  | 0.500 ms | 68.7 G       | 137.4       | 44.0%          |
+| 8192  | 1.756 ms | 274.9 G      | 156.5       | 50.2%          |
+| 16384 | 6.413 ms | 1099.5 G     | 171.4       | 54.9%          |
+| 32768 | 25.54 ms | 4398.0 G     | 172.2       | **55.2%**      |
+
+**RTX 4080** (FP16 Tensor Core peak 195 TFLOP/s, `_experiments/` main 측정):
+
+| seq  | FA2 시간 | matmul FLOPs | 측정 TFLOPS | 4080 peak 비율 |
+| ---- | -------- | ------------ | ----------- | -------------- |
+| 1024 | 0.101 ms | 4.3 G        | 42.5        | 21.8%          |
+| 2048 | 0.228 ms | 17.2 G       | 75.4        | 38.7%          |
+| 4096 | 0.751 ms | 68.7 G       | 91.5        | **46.9%**      |
+
+**관찰**:
+
+- A100 long-seq 점근선 ~55%, 4080 4096-seq 점근선 ~47%
+- FA1 → FA2 의 회수: A100 +18%p (37% → 55%), 4080 +7%p (40% → 47%) — 4080 의 작은 SRAM 이 FA2 의 더 큰 BLOCK_M 을 못 받쳐줌
+- FlashAttention 공식 CUDA 구현은 A100 에서 ~70% 를 찍는다. **15%p 격차**가 남는데 어디서 새는가?
+
+**남은 손실 분해 (두 GPU 공통)**:
+
+1. **`cp.async` tight pipelining 부재 (가장 큼)** — A100/4080 모두 `cp.async` 지원하지만 Triton 의 `num_stages=N` 은 보수적 dependency 분석으로 일부 async copy 가 sync 로 떨어짐. CUTLASS 의 4-stage async pipeline 만큼 overlap 못 함. **추정 손실 8–10%**
+2. **softmax non-matmul 시간** — `tl.max`, `exp2`, `tl.sum`, alpha 곱셈 등. A100 에서 non-matmul throughput 은 matmul 대비 ~16× 낮음. nsys profile 기준 ~10% 가 softmax. **추정 손실 4–6%**
+3. **SRAM 한계로 BLOCK_M 제한** — A100 164 KB / 4080 100 KB. head_dim=128 + BLOCK_M=128 + BLOCK_N=64 면 ~96 KB 사용. 4080 은 더 빡빡함. **추정 손실 A100 2–3%, 4080 5–8%**
+4. **Backward 의 3-kernel split overhead** — Preprocess + dKV + dQ 가 같은 Q,K,V 를 3번 읽음 (HBM 낭비). flash-attn 은 backward 도 fused. fwd+bwd 만 보면 **추가 손실 10–15%**
+5. **autotune 탐색 공간 한계** — 6 configs 만 탐색. CUTLASS auto-tuner 는 수백 가지. [Triton 07](/blog/2026/triton-07-flash-attention-v3/) 에서 17 configs 로 늘려 **+3–5% 회수**
+
+**4080 특수 패턴**:
+
+- **causal 가속비 부풀려짐** (4080 20.84× vs A100 14.64× at seq=4096) — 원인은 4080 의 PyTorch 베이스라인이 상대적으로 약하기 때문. 해석 시 절대 ms 도 같이 봐야 한다
+- **SRAM 100 KB 한계로 BLOCK_M=128 + BLOCK_N=128 같은 큰 config 가 안 들어감** — autotune 이 작은 config 로 떨어져 long-seq 에서 추가 5–8% 손해
+
+| 남은 손실          | 추정 % (A100) | 추정 % (4080) | 회수 방법                   |
+| ------------------ | ------------- | ------------- | --------------------------- |
+| cp.async 부재      | 8–10%         | 8–10%         | △ Hopper TMA (H100 only)    |
+| softmax non-matmul | 4–6%          | 4–6%          | △ FA3 GEMM-softmax pingpong |
+| SRAM 한계          | 2–3%          | 5–8%          | △ BLOCK_M=192 (Hopper 권장) |
+| Backward 3-split   | 10–15%        | 10–15%        | ✗ CUTLASS 급 fused 필요     |
+| autotune 한계      | 3–5%          | 3–5%          | ✓ Triton 07 에서 회수       |
+
+요약하면 FA2 가 peak 의 ~55% (A100) / ~47% (4080) 에서 멈추는 이유는 **Triton 추상화의 천장**이다. 그 이상은 CUTLASS hand-tune 또는 H100 의 새 명령어 (TMA, wgmma) 가 필요하다. 이것이 [FA3 가 H100 + CUDA 로만 의미가 있는 이유](/blog/2026/triton-07-flash-attention-v3/#솔직한-한계) 다.
+
 ---
 
 ## 전체 코드

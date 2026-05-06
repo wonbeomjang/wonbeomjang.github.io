@@ -43,6 +43,14 @@ jobs:
           done
           rm gh-md-toc
 
+      # gh-md-toc는 markdown 헤더 anchor에서 underscore를 escape하지 않아
+      # prettier CI를 깨뜨린다. TOC 갱신 직후 prettier --write로 정규화.
+      - name: Run prettier on changed markdown files
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          npm install --no-save prettier@3 @shopify/prettier-plugin-liquid
+          npx prettier --write ${{ steps.changed-files.outputs.all_changed_files }}
+
       - name: Commit changes
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
