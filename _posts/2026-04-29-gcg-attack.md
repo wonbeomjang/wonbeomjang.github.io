@@ -2,9 +2,9 @@
 layout: post
 title: "Universal and Transferable Adversarial Attacks on Aligned Language Models"
 date: 2026-04-29 10:00:00 +0900
-description: "GCG 논문 리뷰 — Greedy Coordinate Gradient로 정렬된 LLM을 자동 공격하는 방법"
+description: "Red-Teaming 시리즈 #3 — Greedy Coordinate Gradient로 정렬된 LLM을 자동 공격하는 화이트박스 공격 (Zou et al., CMU, 2023)"
 categories: [paper]
-tags: [llm, red-teaming, adversarial-attack, jailbreak, safety, paper]
+tags: [llm, red-teaming, safety, paper, jailbreak, adversarial-attack]
 giscus_comments: true
 related_posts: true
 ---
@@ -205,6 +205,29 @@ GCG는 세 가지 핵심 메시지를 전달한다.
 - 계산 비용: T=500 스텝, B=512 배치 → GPU 시간이 상당히 필요
 
 이 논문은 LLM 안전성 연구에서 "적대적 공격이 CV에서만의 문제가 아님"을 확인시켜준 분기점이다. 이후 SmoothLLM, Circuit Breakers, Representation Engineering 등 다양한 방어 연구가 GCG를 기준선으로 삼았다.
+
+---
+
+# Red-Teaming 시리즈
+
+이 글은 LLM Red-Teaming 시리즈의 세 번째 글이다.
+
+1. [Perez 2022](/blog/2026/perez-red-teaming/) — LM으로 LM을 공격하기 (foundation)
+2. [Ganguli 2022](/blog/2026/ganguli-red-teaming/) — Anthropic의 38K 공격 데이터셋과 scaling behavior
+3. **(현재 글)** GCG (Zou 2023) — 그래디언트 기반 universal suffix
+4. [AutoDAN (Liu 2023)](/blog/2026/autodan/) — 자연어 유지하는 GA 기반 jailbreak
+5. AttnGCG — attention manipulation으로 GCG 강화 _(추후 작성)_
+6. [PAIR (Chao 2023)](/blog/2026/pair-attack/) — 20쿼리 black-box attacker LM
+7. [TAP (Mehrotra 2023)](/blog/2026/tap-attack/) — 트리 탐색 + 이중 pruning으로 PAIR 효율화
+8. [GPTFuzz (Yu 2023)](/blog/2026/gptfuzz/) — AFL 영감의 template-level fuzzing
+9. [Crescendo (Russinovich 2024)](/blog/2026/crescendo/) — multi-turn escalation으로 single-turn 방어 무력화
+10. [Many-shot Jailbreaking (Anil 2024)](/blog/2026/many-shot-jailbreaking/) — long-context를 ICL로 weaponize
+11. [Curiosity-driven RT (Hong 2024)](/blog/2026/curiosity-redteam/) — novelty reward로 mode collapse 해결
+12. [Auto-RT (Liu 2025)](/blog/2026/auto-rt/) — strategy-level RL exploration + progressive curriculum
+13. [AgenticRed (Yuan 2026)](/blog/2026/agenticred/) — RT 시스템 자체를 진화
+14. [InjecAgent (Zhan 2024)](/blog/2026/injecagent/) — Tool-use LLM agent에 대한 IPI 벤치마크
+15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
+16. 이후 HarmBench, JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 
