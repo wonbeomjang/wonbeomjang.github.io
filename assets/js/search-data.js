@@ -30,7 +30,117 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-codeattack-code-based-adversarial-attacks-for-pre-trained-programming-language-models",
+        },{id: "post-agenticred-evolving-agentic-systems-for-red-teaming",
+        
+          title: "AgenticRed: Evolving Agentic Systems for Red-Teaming",
+        
+        description: "Red-Teaming 시리즈 #13 — 공격 정책이 아닌 공격 시스템 자체를 진화시키는 meta-level red-teaming (Yuan et al., 2026)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/agenticred/";
+          
+        },
+      },{id: "post-auto-rt-automatic-jailbreak-strategy-exploration-for-red-teaming-large-language-models",
+        
+          title: "Auto-RT: Automatic Jailbreak Strategy Exploration for Red-Teaming Large Language Models",
+        
+        description: "Red-Teaming 시리즈 #12 — RL로 jailbreak 전략 공간을 자동 탐색, early-terminated exploration + progressive reward로 효율화 (Liu et al., 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/auto-rt/";
+          
+        },
+      },{id: "post-curiosity-driven-red-teaming-for-large-language-models",
+        
+          title: "Curiosity-driven Red-teaming for Large Language Models",
+        
+        description: "Red-Teaming 시리즈 #11 — RL 기반 red-teaming의 mode collapse를 novelty reward로 해결, SelfBLEU + 코사인 유사도 (Hong et al., ICLR 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/curiosity-redteam/";
+          
+        },
+      },{id: "post-many-shot-jailbreaking",
+        
+          title: "Many-shot Jailbreaking",
+        
+        description: "Red-Teaming 시리즈 #10 — 긴 context window를 악용해 수백 개의 가짜 Q&amp;A로 모델을 무력화, in-context learning과 같은 power law를 따르는 jailbreak (Anil et al., Anthropic, NeurIPS 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/many-shot-jailbreaking/";
+          
+        },
+      },{id: "post-great-now-write-an-article-about-that-the-crescendo-multi-turn-llm-jailbreak-attack",
+        
+          title: "Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack...",
+        
+        description: "Red-Teaming 시리즈 #9 — 모델의 자기 응답을 인용해 점진적으로 escalate하는 multi-turn jailbreak (Russinovich et al., Microsoft, USENIX Security 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/crescendo/";
+          
+        },
+      },{id: "post-gptfuzzer-red-teaming-large-language-models-with-auto-generated-jailbreak-prompts",
+        
+          title: "GPTFuzzer: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts",
+        
+        description: "Red-Teaming 시리즈 #8 — AFL fuzzing의 발상을 LLM jailbreak에 옮긴 MCTS 기반 자동 템플릿 변이 (Yu et al., USENIX Security 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/gptfuzz/";
+          
+        },
+      },{id: "post-tree-of-attacks-jailbreaking-black-box-llms-automatically",
+        
+          title: "Tree of Attacks: Jailbreaking Black-Box LLMs Automatically",
+        
+        description: "Red-Teaming 시리즈 #7 — PAIR에 tree search와 이중 pruning을 추가해 더 적은 쿼리로 더 높은 ASR을 달성한 black-box jailbreak (Mehrotra et al., NeurIPS 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/tap-attack/";
+          
+        },
+      },{id: "post-autodan-generating-stealthy-jailbreak-prompts-on-aligned-large-language-models",
+        
+          title: "AutoDAN: Generating Stealthy Jailbreak Prompts on Aligned Large Language Models",
+        
+        description: "Red-Teaming 시리즈 #4 — 계층적 유전 알고리즘으로 자연스러운 jailbreak prompt를 생성, perplexity 방어를 우회 (Liu et al., ICLR 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/autodan/";
+          
+        },
+      },{id: "post-red-teaming-language-models-to-reduce-harms-methods-scaling-behaviors-and-lessons-learned",
+        
+          title: "Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned...",
+        
+        description: "Red-Teaming 시리즈 #2 — 38,961개 사람 공격 데이터셋과 RLHF 모델의 scaling behavior (Ganguli et al., Anthropic, 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/ganguli-red-teaming/";
+          
+        },
+      },{id: "post-red-teaming-language-models-with-language-models",
+        
+          title: "Red Teaming Language Models with Language Models",
+        
+        description: "Red-Teaming 시리즈 #1 — LM으로 LM을 공격하는 첫 자동화 red-teaming 논문 (Perez et al., DeepMind, EMNLP 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/perez-red-teaming/";
+          
+        },
+      },{id: "post-codeattack-code-based-adversarial-attacks-for-pre-trained-programming-language-models",
         
           title: "CodeAttack: Code-based Adversarial Attacks for Pre-trained Programming Language Models",
         
@@ -45,7 +155,7 @@ ninja.data = [{
         
           title: "Jailbreaking Black Box Large Language Models in Twenty Queries",
         
-        description: "PAIR 논문 리뷰 — LLM으로 LLM을 공격하는 자동 반복 정제 jailbreak 알고리즘",
+        description: "Red-Teaming 시리즈 #6 — LLM으로 LLM을 공격하는 자동 반복 정제 jailbreak 알고리즘, 20쿼리 (Chao et al., UPenn, 2023)",
         section: "Posts",
         handler: () => {
           
@@ -56,7 +166,7 @@ ninja.data = [{
         
           title: "Universal and Transferable Adversarial Attacks on Aligned Language Models",
         
-        description: "GCG 논문 리뷰 — Greedy Coordinate Gradient로 정렬된 LLM을 자동 공격하는 방법",
+        description: "Red-Teaming 시리즈 #3 — Greedy Coordinate Gradient로 정렬된 LLM을 자동 공격하는 화이트박스 공격 (Zou et al., CMU, 2023)",
         section: "Posts",
         handler: () => {
           
