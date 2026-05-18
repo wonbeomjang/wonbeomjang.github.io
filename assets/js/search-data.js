@@ -30,7 +30,40 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-agenticred-evolving-agentic-systems-for-red-teaming",
+        },{id: "post-harmbench-a-standardized-evaluation-framework-for-automated-red-teaming-and-robust-refusal",
+        
+          title: "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal",
+        
+        description: "Red-Teaming 시리즈 #16 — 510개 행동, 18개 공격, 33개 모델을 표준화된 평가 + R2D2 방어 학습 (Mazeika et al., CAIS, ICML 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/harmbench/";
+          
+        },
+      },{id: "post-agentvigil-generic-black-box-red-teaming-for-indirect-prompt-injection-against-llm-agents",
+        
+          title: "AgentVigil: Generic Black-Box Red-teaming for Indirect Prompt Injection against LLM Agents",
+        
+        description: "Red-Teaming 시리즈 #15 — MCTS 기반 자동 IPI 공격, o3-mini/GPT-4o agent에 71%/70% ASR (Wang et al., 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/agentvigil/";
+          
+        },
+      },{id: "post-injecagent-benchmarking-indirect-prompt-injections-in-tool-integrated-large-language-model-agents",
+        
+          title: "InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents",
+        
+        description: "Red-Teaming 시리즈 #14 — Tool 사용 LLM 에이전트에 대한 indirect prompt injection 벤치마크, 1054개 테스트케이스 (Zhan et al., ACL 2024 Findings)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/injecagent/";
+          
+        },
+      },{id: "post-agenticred-evolving-agentic-systems-for-red-teaming",
         
           title: "AgenticRed: Evolving Agentic Systems for Red-Teaming",
         
