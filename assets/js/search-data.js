@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-harmbench-a-standardized-evaluation-framework-for-automated-red-teaming-and-robust-refusal",
+        },{id: "post-jailbreakbench-an-open-robustness-benchmark-for-jailbreaking-large-language-models",
+        
+          title: "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models",
+        
+        description: "Red-Teaming 시리즈 #17 — 100 misuse + 100 benign 행동, 공격 artifact 공개, 재현성 중심 RT 벤치마크 (Chao et al., NeurIPS 2024 D&amp;B)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/jailbreakbench/";
+          
+        },
+      },{id: "post-harmbench-a-standardized-evaluation-framework-for-automated-red-teaming-and-robust-refusal",
         
           title: "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal",
         
