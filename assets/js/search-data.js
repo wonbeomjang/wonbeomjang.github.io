@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-jailbreakbench-an-open-robustness-benchmark-for-jailbreaking-large-language-models",
+        },{id: "post-constitutional-ai-harmlessness-from-ai-feedback",
+        
+          title: "Constitutional AI: Harmlessness from AI Feedback",
+        
+        description: "Red-Teaming 시리즈 #18 — 인간 라벨 없이 자연어 원칙(헌법)만으로 정렬, SL 단계의 critique-revise + RL 단계의 RLAIF (Bai et al., Anthropic, 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/constitutional-ai/";
+          
+        },
+      },{id: "post-jailbreakbench-an-open-robustness-benchmark-for-jailbreaking-large-language-models",
         
           title: "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models",
         
