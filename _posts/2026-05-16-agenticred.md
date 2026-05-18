@@ -186,7 +186,8 @@ AgenticRed는 RT 연구가 "공격 알고리즘"에서 **"공격 알고리즘을
 13. **(현재 글)** AgenticRed (Yuan 2026) — RT 시스템 자체를 진화
 14. [InjecAgent (Zhan 2024)](/blog/2026/injecagent/) — Tool-use LLM agent에 대한 IPI 벤치마크
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
-16. 이후 HarmBench, JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
+16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
+17. 이후 JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 

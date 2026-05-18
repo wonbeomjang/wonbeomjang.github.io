@@ -181,7 +181,8 @@ InjecAgent는 **target이 LLM이 아닌 agent로 옮겨가는** RT 연구의 새
 13. [AgenticRed (Yuan 2026)](/blog/2026/agenticred/) — RT 시스템 자체를 진화
 14. **(현재 글)** InjecAgent (Zhan 2024) — Tool-use LLM agent에 대한 IPI 벤치마크
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
-16. 이후 HarmBench, JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
+16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
+17. 이후 JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 
