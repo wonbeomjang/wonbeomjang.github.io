@@ -224,7 +224,8 @@ MSJ는 **"alignment의 한계가 in-context learning의 본질에 있다"**는 �
 16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
 17. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
 18. [Constitutional AI (Bai 2022)](/blog/2026/constitutional-ai/) — AI feedback으로 인간 라벨 없이 alignment
-19. 이후 Llama Guard 순으로 이어진다.
+19. [Llama Guard (Inan 2023)](/blog/2026/llama-guard/) — open-weight input/output safety classifier
+    본 시리즈는 19편으로 완결되었다.
 
 # 참고 문헌
 
