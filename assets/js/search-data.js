@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-constitutional-ai-harmlessness-from-ai-feedback",
+        },{id: "post-llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations",
+        
+          title: "Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
+        
+        description: "Red-Teaming 시리즈 #19 (마지막) — Llama-2-7B를 input/output safety classifier로 fine-tune, OpenAI Moderation API를 능가하는 공개 가드레일 (Inan et al., Meta, 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/llama-guard/";
+          
+        },
+      },{id: "post-constitutional-ai-harmlessness-from-ai-feedback",
         
           title: "Constitutional AI: Harmlessness from AI Feedback",
         
