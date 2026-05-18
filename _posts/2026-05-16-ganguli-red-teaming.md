@@ -224,7 +224,8 @@ RS와 RLHF 모두 정렬되어 있음에도, 우회 공격 시 여전히 유해 
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
 16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
 17. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
-18. 이후 Constitutional AI, Llama Guard 순으로 이어진다.
+18. [Constitutional AI (Bai 2022)](/blog/2026/constitutional-ai/) — AI feedback으로 인간 라벨 없이 alignment
+19. 이후 Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 
