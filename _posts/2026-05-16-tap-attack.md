@@ -190,7 +190,8 @@ TAP은 PAIR의 알고리즘적 확장으로서 자동 black-box 공격의 **2세
 14. [InjecAgent (Zhan 2024)](/blog/2026/injecagent/) — Tool-use LLM agent에 대한 IPI 벤치마크
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
 16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
-17. 이후 JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
+17. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
+18. 이후 Constitutional AI, Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 

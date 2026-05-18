@@ -63,7 +63,9 @@ ASR은 Harmful Strings 태스크(정확한 문자열 생성)를 기준으로 측
 
 ## 공격 목표 정식화
 
-주어진 해로운 요청 $x_{1:n}$에 대해, 모델이 목표 응답 $x^*_{n+1:n+H}$ (예: "Sure, here is how to...")를 생성할 확률을 최대화하는 접미사 토큰 시퀀스를 찾는다.
+주어진 해로운 요청 $x_{1:n}$에 대해, 모델이 목표 응답을 생성할 확률을 최대화하는 접미사 토큰 시퀀스를 찾는다. 목표 응답은 다음과 같이 표기한다 (예: "Sure, here is how to...").
+
+$$x^*_{n+1:n+H}$$
 
 **손실 함수:**
 
@@ -95,7 +97,9 @@ $$\mathcal{X}_i = \text{Top-k}(-\nabla_{e_{x_i}} \mathcal{L}(x_{1:n}))$$
 
 이것은 테일러 1차 근사로, "이 토큰으로 교체하면 손실이 얼마나 감소하는가"를 근사한다.
 
-3. **랜덤 샘플링**: 전체 후보 $k \times |\mathcal{I}|$개 중 $B$개를 무작위로 선택
+3. **랜덤 샘플링**: 위치별 top-k 후보들 중에서 $B$개를 무작위로 선택. 전체 후보 수는 다음과 같다.
+
+$$N_{\text{cand}} = k \cdot |\mathcal{I}|$$
 
 4. **최적 교체 선택**: $B$개 후보 각각의 실제 손실을 계산하여, 손실을 가장 줄이는 것을 선택
 
@@ -113,7 +117,9 @@ $$x_\mathcal{I} \leftarrow \arg\min_{b \in [B]} \mathcal{L}(\tilde{x}^{(b)}_{1:n
   <img src="/assets/post/image/gcg-attack/fig1_overview.png" width="80%">
 </p>
 
-여러 해로운 요청 $\{(x^{(j)}_{1:n_j}, x^{*(j)}_{n_j+1:n_j+H_j})\}_{j=1}^{m}$ 에 대해 접미사를 공동 최적화한다:
+$m$개의 해로운 요청 쌍 (프롬프트, 목표 응답)에 대해 접미사를 공동 최적화한다:
+
+$$\{(x^{(j)}_{1:n_j},\ x^{*(j)}_{n_j+1:n_j+H_j})\}_{j=1}^{m}$$
 
 $$\min_{x_\mathcal{I}} \sum_{j=1}^{m_c} \mathcal{L}_j(x_{1:n_j})$$
 
@@ -228,7 +234,8 @@ GCG는 세 가지 핵심 메시지를 전달한다.
 14. [InjecAgent (Zhan 2024)](/blog/2026/injecagent/) — Tool-use LLM agent에 대한 IPI 벤치마크
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
 16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
-17. 이후 JailbreakBench, Constitutional AI, Llama Guard 순으로 이어진다.
+17. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
+18. 이후 Constitutional AI, Llama Guard 순으로 이어진다.
 
 # 참고 문헌
 
