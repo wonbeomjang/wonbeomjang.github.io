@@ -127,7 +127,7 @@
       ]
     },
     {
-      "name": "Smaller, Safer, Stronger: SK Telecom Tunes Gemma 4B for Multilingual Customer Support Moderation",
+      "name": "Smaller, Safer, Stronger: SK Telecom Tunes Gemma 3 4B for Multilingual Customer Support Moderation",
       "startDate": "2024-11",
       "endDate": "2025-07",
       "url": "https://deepmind.google/models/gemma/gemmaverse/adaptiveml/",
@@ -136,7 +136,7 @@
         "Led the project end-to-end as project lead, including scoping, modeling decisions, and cross-organization collaboration with AdaptiveML",
         "Featured in Google DeepMind's Gemmaverse showcase as a reference Gemma fine-tuning case study",
         "Achieved equal or superior performance in both Korean and English compared to proprietary models such as GPT-4.1 and Claude Sonnet 3.7",
-        "Applied SFT + PPO reinforcement learning on small open models including Gemma 4B and Llama 3.1 8B",
+        "Applied SFT + PPO reinforcement learning on small open models including Gemma 3 4B and Llama 3.1 8B",
         "Outperformed proprietary large models with small open models — demonstrating cost/latency-efficient moderation at production scale"
       ]
     }
