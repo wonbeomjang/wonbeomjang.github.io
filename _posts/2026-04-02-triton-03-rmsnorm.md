@@ -4,7 +4,7 @@ title: "Triton 03: RMSNorm — LLM에서 쓰이는 실전 커널"
 date: 2026-04-02 00:00:00 +0900
 description: LLaMA, Mistral, Gemma 등 최신 LLM에서 사용하는 RMSNorm을 Triton으로 구현합니다.
 categories: [triton]
-tags: [triton, gpu, rmsnorm, llm]
+tags: [triton, gpu, rmsnorm, llm, optimization]
 giscus_comments: true
 related_posts: true
 ---

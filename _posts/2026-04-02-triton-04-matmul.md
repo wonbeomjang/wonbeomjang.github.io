@@ -4,7 +4,7 @@ title: "Triton 04: Matrix Multiplication — 2D 타일링과 Autotune"
 date: 2026-04-02 00:00:00 +0900
 description: 딥러닝의 핵심 연산인 행렬 곱셈을 Triton으로 구현하며 2D 타일링, tl.dot, autotune을 학습합니다.
 categories: [triton]
-tags: [triton, gpu, matmul, tensor-core]
+tags: [triton, gpu, matmul, tensor-core, optimization]
 giscus_comments: true
 related_posts: true
 ---

@@ -4,7 +4,7 @@ title: "MLA 학습 시 modeling-side projection fusion: q_a/kv_a 배치 + K-side
 date: 2026-05-10 10:00:00 +0900
 description: "DeepSeek 의 Multi-Latent Attention 이 학습 forward 에서 남기는 직렬 GEMM chain 을 어떻게 정리할 수 있는지 — 두 개의 안전한 변환과 한 개의 trade-off"
 categories: [dev]
-tags: [llm, mla, attention, flash-attention, deepseek, training-optimization]
+tags: [llm, mla, attention, flash-attention, deepseek, training-optimization, optimization]
 giscus_comments: true
 related_posts: true
 ---

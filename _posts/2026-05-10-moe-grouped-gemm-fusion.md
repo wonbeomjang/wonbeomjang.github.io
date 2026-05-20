@@ -4,7 +4,7 @@ title: "DeepSeek 계열 MoE 학습 가속: Python expert loop → grouped GEMM"
 date: 2026-05-10 09:00:00 +0900
 description: "DeepSeek-V3 공개 modeling 의 expert for-loop 가 왜 학습 병목이 되는지, grouped GEMM 으로 fuse 해 단일 GPU 마이크로벤치 6.69×, end-to-end FSDP 학습 6.27× 가속한 과정"
 categories: [dev]
-tags: [llm, moe, cuda, deepseek, training-optimization]
+tags: [llm, moe, cuda, deepseek, training-optimization, optimization]
 giscus_comments: true
 related_posts: true
 ---
