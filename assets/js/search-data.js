@@ -206,6 +206,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/perez-red-teaming/";
           
         },
+      },{id: "post-trl-sequence-packing-deepseek-mla-누락된-cu-seqlens-복원",
+        
+          title: "TRL sequence packing → DeepSeek MLA: 누락된 cu_seqlens 복원",
+        
+        description: "TRL packing 을 켜자 loss 가 2.57 → 5.70 으로 망가졌다. DeepSeek-V3 modeling 의 padding_free 경로가 doc 경계를 잃어버리는 지점을 추적하고, position_ids 의 0-reset 패턴으로 cu_seqlens 를 복원해 학습 정합성 + 4.65× 추가 가속을 회복한 과정",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/deepseek-mla-trl-packing-fix/";
+          
+        },
       },{id: "post-mla-학습-시-modeling-side-projection-fusion-q-a-kv-a-배치-k-side-absorption",
         
           title: "MLA 학습 시 modeling-side projection fusion: q_a/kv_a 배치 + K-side absorption",
