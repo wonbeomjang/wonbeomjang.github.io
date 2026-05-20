@@ -206,6 +206,28 @@ ninja.data = [{
             window.location.href = "/blog/2026/perez-red-teaming/";
           
         },
+      },{id: "post-mla-학습-시-modeling-side-projection-fusion-q-a-kv-a-배치-k-side-absorption",
+        
+          title: "MLA 학습 시 modeling-side projection fusion: q_a/kv_a 배치 + K-side absorption",
+        
+        description: "DeepSeek 의 Multi-Latent Attention 이 학습 forward 에서 남기는 직렬 GEMM chain 을 어떻게 정리할 수 있는지 — 두 개의 안전한 변환과 한 개의 trade-off",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/mla-projection-fusion/";
+          
+        },
+      },{id: "post-deepseek-계열-moe-학습-가속-python-expert-loop-grouped-gemm",
+        
+          title: "DeepSeek 계열 MoE 학습 가속: Python expert loop → grouped GEMM",
+        
+        description: "DeepSeek-V3 공개 modeling 의 expert for-loop 가 왜 학습 병목이 되는지, grouped GEMM 으로 fuse 해 단일 GPU 마이크로벤치 6.69×, end-to-end FSDP 학습 6.27× 가속한 과정",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/moe-grouped-gemm-fusion/";
+          
+        },
       },{id: "post-codeattack-code-based-adversarial-attacks-for-pre-trained-programming-language-models",
         
           title: "CodeAttack: Code-based Adversarial Attacks for Pre-trained Programming Language Models",
