@@ -26,38 +26,9 @@ DeepSeek-V2/V3 의 공개 modeling 코드를 그대로 SFT 학습에 쓰면, MoE
 
 # Background — DeepSeek 계열 MoE 구조
 
-먼저 DeepSeek-V3 의 [`modeling_deepseek.py`](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/main/modeling_deepseek.py) 의 MoE 모듈을 그대로 보자. (snippet 은 추후 Gist 임베드로 교체 예정)
+먼저 DeepSeek-V3 의 [`modeling_deepseek.py`](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/main/modeling_deepseek.py) 의 MoE 모듈을 그대로 보자.
 
-```python
-class DeepseekV3MoE(nn.Module):
-    """A mixed expert module containing shared experts."""
-
-    def __init__(self, config):
-        super().__init__()
-        ...
-        self.experts = nn.ModuleList([
-            DeepseekV3MLP(config, intermediate_size=config.moe_intermediate_size)
-            for _ in range(config.n_routed_experts)
-        ])
-        self.gate = MoEGate(config)
-        if config.n_shared_experts is not None:
-            self.shared_experts = DeepseekV3MLP(
-                config=config,
-                intermediate_size=config.moe_intermediate_size * config.n_shared_experts,
-            )
-
-    def forward(self, hidden_states):
-        identity = hidden_states
-        orig_shape = hidden_states.shape
-        topk_idx, topk_weight = self.gate(hidden_states)
-        hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
-        flat_topk_idx = topk_idx.view(-1)
-        if not self.training:
-            y = self.moe_infer(hidden_states, topk_idx, topk_weight).view(*orig_shape)
-        if self.config.n_shared_experts is not None:
-            y = y + self.shared_experts(identity)
-        return y
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet01_deepseek_moe_class.py"></script>
 
 이상한 부분이 두 가지 보인다.
 
@@ -66,24 +37,7 @@ class DeepseekV3MoE(nn.Module):
 
 학습용 forward 를 직접 짜야 하니, 가장 자연스러운 형태가 다음과 같은 Mixtral-style scatter-gather 다.
 
-```python
-def moe_train(self, x, topk_ids, topk_weight):
-    num_experts = self.config.n_routed_experts            # e.g. 256
-    y = torch.zeros(x.shape[0], x.shape[1],
-                    dtype=topk_weight.dtype, device=x.device)
-    expert_mask = F.one_hot(topk_ids, num_classes=num_experts).permute(2, 1, 0)
-    # (num_experts, top_k, N)
-
-    for expert_idx in range(num_experts):                 # ← Python loop 256회
-        expert = self.experts[expert_idx]
-        top_k_slot, token_idx = torch.where(expert_mask[expert_idx])
-        if token_idx.numel() == 0:
-            continue
-        expert_out = expert(x[token_idx])                 # 3 GEMMs (gate/up/down)
-        weights = topk_weight[token_idx, top_k_slot, None]
-        y.index_add_(0, token_idx, expert_out.to(topk_weight.dtype) * weights)
-    return y.to(x.dtype)
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet02_naive_moe_train.py"></script>
 
 매 forward 마다 **`num_experts × 3 = 768` 개 작은 GEMM kernel 을 직렬로 launch** 한다. A100 의 CUDA kernel launch latency 는 ~5–10 μs, 그래서 768 launch × 7 μs ≈ **5.4 ms 가 순수 launch overhead**. 거기다 expert 당 평균 token 수는 `N × top_k / num_experts` 인데, `N=4096 / top_k=8 / E=256` 이면 **expert 당 평균 128 token** — 이 정도 크기의 GEMM 은 A100 의 tensor core 를 채우지 못해 GPU 가 거의 idle 상태가 된다.
 
@@ -104,17 +58,7 @@ def moe_train(self, x, topk_ids, topk_weight):
 
 API 는 다음과 같이 단순하다.
 
-```python
-out = gg.gmm(a, b, batch_sizes, trans_b=False)
-# a:            (M_total, K)
-# b:            (E, K, N)      [or (E, N, K) if trans_b=True]
-# batch_sizes:  (E,) int64 CPU tensor — 합 = M_total
-# out:          (M_total, N)
-#
-# Per group e:
-#   out[batch_sizes[:e].sum():batch_sizes[:e+1].sum()]
-#     = a[해당 슬라이스] @ b[e]
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet03_gg_gmm_api.py"></script>
 
 ---
 
@@ -122,62 +66,7 @@ out = gg.gmm(a, b, batch_sizes, trans_b=False)
 
 이제 위 naive `moe_train` 을 grouped GEMM 으로 다시 작성한다.
 
-```python
-import torch
-import torch.nn.functional as F
-from grouped_gemm import ops as gg
-
-
-def fused_moe_train(self, x, topk_ids, topk_weight):
-    """
-    Args:
-        x:           (N, H)     flattened token hidden states
-        topk_ids:    (N, top_k) expert indices per token
-        topk_weight: (N, top_k) gate weights (fp32)
-    Returns:
-        y: (N, H) in x.dtype
-    """
-    N, H = x.shape
-    top_k = topk_ids.shape[1]
-    E = self.config.n_routed_experts
-
-    # (1) Flatten (token, slot) → assignment list of size N*top_k.
-    flat_expert_id = topk_ids.reshape(-1)
-    flat_token_id = torch.arange(N, device=x.device).repeat_interleave(top_k)
-    flat_weight = topk_weight.reshape(-1)
-
-    # (2) Sort by expert so tokens for the same expert are contiguous.
-    sort_idx = flat_expert_id.argsort()
-    sorted_token_id = flat_token_id[sort_idx]
-    sorted_weight = flat_weight[sort_idx]
-
-    # (3) group_sizes[e] = number of (token, slot) assignments → expert e.
-    #     grouped_gemm requires a CPU int64 tensor.
-    group_sizes = torch.bincount(flat_expert_id, minlength=E).to(
-        device="cpu", dtype=torch.int64
-    )
-
-    # (4) Gather sorted token features.
-    sorted_x = x[sorted_token_id]                                 # (N*k, H)
-
-    # (5) Stack expert weights → (E, out, in). Use trans_b=True so we don't
-    #     pay a non-contiguous transpose; gg internally does b^T per group.
-    w_gate = torch.stack([e.gate_proj.weight for e in self.experts])  # (E, I, H)
-    w_up = torch.stack([e.up_proj.weight for e in self.experts])      # (E, I, H)
-    w_down = torch.stack([e.down_proj.weight for e in self.experts])  # (E, H, I)
-
-    # (6) Three grouped GEMMs replace 3 × E sequential Linear calls.
-    gate_out = gg.gmm(sorted_x, w_gate, group_sizes, trans_b=True)    # (N*k, I)
-    up_out = gg.gmm(sorted_x, w_up, group_sizes, trans_b=True)        # (N*k, I)
-    mid = F.silu(gate_out) * up_out
-    down_out = gg.gmm(mid, w_down, group_sizes, trans_b=True)         # (N*k, H)
-
-    # (7) Weight by gate score (fp32 accum) and scatter back.
-    weighted = down_out.to(topk_weight.dtype) * sorted_weight.unsqueeze(-1)
-    y = torch.zeros(N, H, dtype=topk_weight.dtype, device=x.device)
-    y.index_add_(0, sorted_token_id, weighted)
-    return y.to(x.dtype)
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet04_fused_moe_train.py"></script>
 
 핵심은 다음 세 가지다.
 
@@ -187,36 +76,11 @@ def fused_moe_train(self, x, topk_ids, topk_weight):
 
 `forward` 에서 학습 모드에 이 함수를 호출하도록 분기시키면 끝이다.
 
-```python
-def forward(self, hidden_states):
-    identity = hidden_states
-    orig_shape = hidden_states.shape
-    topk_idx, topk_weight = self.gate(hidden_states)
-    hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
-    if self.training:
-        y = self.moe_train(hidden_states, topk_idx, topk_weight).view(*orig_shape)
-    else:
-        y = self.moe_infer(hidden_states, topk_idx, topk_weight).view(*orig_shape)
-    if self.config.n_shared_experts is not None:
-        y = y + self.shared_experts(identity)
-    return y
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet05_forward_train_branch.py"></script>
 
 `moe_train` 은 위의 `fused_moe_train` 을 monkey-patch 형태로 클래스에 붙이면 modeling 파일 자체는 손대지 않을 수 있다.
 
-```python
-from transformers import AutoModelForCausalLM
-
-model = AutoModelForCausalLM.from_pretrained(
-    "deepseek-ai/DeepSeek-V3",
-    trust_remote_code=True,
-    dtype=torch.bfloat16,
-)
-for m in model.modules():
-    if m.__class__.__name__ == "DeepseekV3MoE":
-        m.__class__.moe_train = fused_moe_train
-        # 동시에 forward 도 학습 분기를 갖도록 교체
-```
+<script src="https://gist.github.com/wonbeomjang/eff4ab0ee45b7f1ec30f4a3311b9e5d8.js?file=moe_grouped_gemm_snippet06_monkey_patch.py"></script>
 
 ---
 
@@ -283,5 +147,3 @@ DeepSeek-V3 계열 MoE 모델은 **공개 modeling 코드가 학습용 MoE forwa
 - [MegaBlocks](https://github.com/stanford-futuredata/megablocks) — block-sparse MoE 의 reference 구현 (같은 author)
 - [DeepEP](https://github.com/deepseek-ai/DeepEP) — expert parallel 환경의 token dispatch/combine kernel
 - 후속편: MLA 학습 시 modeling-side projection fusion (q_a/kv_a 묶기 + K-side absorption)
-
-> 이 글의 모든 코드 스니펫은 추후 GitHub Gist 로 옮겨 `<script>` 임베드로 교체된다.

@@ -27,53 +27,9 @@ DeepSeek-V2 가 도입하고 V3 가 그대로 쓰는 **Multi-Latent Attention (M
 
 # Background — MLA 의 학습 forward
 
-DeepSeek-V3 의 [`modeling_deepseek.py`](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/main/modeling_deepseek.py) 에서 `DeepseekV3FlashAttention2.forward` 를 발췌하면 다음과 같다 (snippet 은 추후 Gist 로 교체).
+DeepSeek-V3 의 [`modeling_deepseek.py`](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/main/modeling_deepseek.py) 에서 `DeepseekV3FlashAttention2.forward` 를 발췌하면 다음과 같다.
 
-```python
-# Q path
-if self.q_lora_rank is None:
-    q = self.q_proj(hidden_states)
-else:
-    q = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(hidden_states)))
-q = q.view(bsz, q_len, self.num_heads, self.q_head_dim).transpose(1, 2)
-q_nope, q_pe = torch.split(
-    q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
-)
-
-# KV path
-compressed_kv = self.kv_a_proj_with_mqa(hidden_states)
-compressed_kv, k_pe = torch.split(
-    compressed_kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
-)
-k_pe = k_pe.view(bsz, q_len, 1, self.qk_rope_head_dim).transpose(1, 2)
-kv = (
-    self.kv_b_proj(self.kv_a_layernorm(compressed_kv))
-    .view(bsz, q_len, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
-    .transpose(1, 2)
-)
-k_nope, value_states = torch.split(
-    kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
-)
-
-# RoPE on pe-part only
-cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
-
-# Stitch Q / K
-query_states = k_pe.new_empty(bsz, self.num_heads, q_len, self.q_head_dim)
-query_states[:, :, :, : self.qk_nope_head_dim] = q_nope
-query_states[:, :, :, self.qk_nope_head_dim :] = q_pe
-
-key_states = k_pe.new_empty(bsz, self.num_heads, q_len, self.q_head_dim)
-key_states[:, :, :, : self.qk_nope_head_dim] = k_nope
-key_states[:, :, :, self.qk_nope_head_dim :] = k_pe
-
-# FA2 needs q_head_dim == v_head_dim → pad V with zeros
-if self.q_head_dim != self.v_head_dim:
-    value_states = F.pad(value_states, [0, self.q_head_dim - self.v_head_dim])
-
-# ... transpose to (B, S, H, D) → flash_attn_func → o_proj
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet01_deepseek_mla_forward.py"></script>
 
 한 레이어당 GEMM 만 보면 다음 다섯 개가 순차적으로 launch 된다.
 
@@ -91,18 +47,7 @@ if self.q_head_dim != self.v_head_dim:
 
 GEMM 1번과 3번은 **둘 다 입력이 `hidden_states` 로 같다**. 그러면 두 weight 를 row 방향으로 concat 해서 단일 GEMM 으로 처리할 수 있다.
 
-```python
-# A: batched q_a_proj + kv_a_proj_with_mqa
-w_combined = torch.cat(
-    [self.q_a_proj.weight, self.kv_a_proj_with_mqa.weight], dim=0
-)
-# w_combined: (q_lora + kv_lora + qk_rope, hidden)
-
-combined = F.linear(hidden_states, w_combined)
-q_a_out, kv_compressed_full = combined.split(
-    [self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim], dim=-1
-)
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet02_batched_qa_kva.py"></script>
 
 이게 안전한 이유는 다음과 같다.
 
@@ -118,11 +63,7 @@ q_a_out, kv_compressed_full = combined.split(
 
 원본 코드의 query/key 조립 패턴은 다음과 같다.
 
-```python
-query_states = k_pe.new_empty(bsz, self.num_heads, q_len, self.q_head_dim)
-query_states[:, :, :, : self.qk_nope_head_dim] = q_nope
-query_states[:, :, :, self.qk_nope_head_dim :] = q_pe
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet03_orig_new_empty_pattern.py"></script>
 
 이건 `(B, H, S, q_head_dim)` 의 새 텐서를 0 으로 초기화하지 않고 (empty) 만든 뒤, 두 번의 slice assignment 로 채우는 패턴이다. 결과는 같지만 다음 두 가지가 단점이다.
 
@@ -131,13 +72,7 @@ query_states[:, :, :, self.qk_nope_head_dim :] = q_pe
 
 `torch.cat` 으로 치환하면 다음과 같이 간결해진다.
 
-```python
-query_states = torch.cat([q_nope, q_pe], dim=-1)
-key_states = torch.cat(
-    [k_nope, k_pe.expand(bsz, self.num_heads, q_len, self.qk_rope_head_dim)],
-    dim=-1,
-)
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet04_cat_query_key.py"></script>
 
 `k_pe` 는 원래 `(B, 1, S, qk_rope)` 로 head 차원이 1 인데, MLA 의 K_pe 는 모든 head 가 공유한다. 원본은 slice assignment 에서 broadcast 가 일어났지만, `torch.cat` 으로 묶을 땐 `.expand()` 로 명시적으로 head 차원을 풀어 줘야 한다 (`.expand` 는 메모리 복사 없는 stride-0 view).
 
@@ -151,90 +86,11 @@ B 단독의 wall-time 효과는 작지만, autograd graph 가 단순해지면서
 
 A + B 를 합친 fused forward 의 전체 모양은 다음과 같다.
 
-```python
-def fused_mla_forward_ab(
-    self,
-    hidden_states,
-    attention_mask=None,
-    position_ids=None,
-    past_key_value=None,
-    output_attentions=False,
-    use_cache=False,
-    **kwargs,
-):
-    bsz, q_len, _ = hidden_states.size()
-
-    # A: batched q_a + kv_a projection
-    w_combined = torch.cat(
-        [self.q_a_proj.weight, self.kv_a_proj_with_mqa.weight], dim=0
-    )
-    combined = F.linear(hidden_states, w_combined)
-    q_a_out, kv_compressed_full = combined.split(
-        [self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim], dim=-1
-    )
-
-    # Q path
-    q = self.q_b_proj(self.q_a_layernorm(q_a_out))
-    q = q.view(bsz, q_len, self.num_heads, self.q_head_dim).transpose(1, 2)
-    q_nope, q_pe = torch.split(
-        q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
-    )
-
-    # KV path
-    compressed_kv, k_pe = kv_compressed_full.split(
-        [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
-    )
-    k_pe = k_pe.view(bsz, q_len, 1, self.qk_rope_head_dim).transpose(1, 2)
-    kv = (
-        self.kv_b_proj(self.kv_a_layernorm(compressed_kv))
-        .view(bsz, q_len, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
-        .transpose(1, 2)
-    )
-    k_nope, value_states = torch.split(
-        kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
-    )
-
-    cos, sin = self.rotary_emb(value_states, seq_len=value_states.shape[-2])
-    q_pe, k_pe = apply_rotary_pos_emb(q_pe, k_pe, cos, sin, position_ids)
-
-    # B: cat instead of new_empty + slice
-    query_states = torch.cat([q_nope, q_pe], dim=-1)
-    key_states = torch.cat(
-        [k_nope, k_pe.expand(bsz, self.num_heads, q_len, self.qk_rope_head_dim)],
-        dim=-1,
-    )
-
-    if self.q_head_dim != self.v_head_dim:
-        value_states = F.pad(value_states, [0, self.q_head_dim - self.v_head_dim])
-
-    # FA2 layout: (B, S, H, D)
-    query_states = query_states.transpose(1, 2)
-    key_states = key_states.transpose(1, 2)
-    value_states = value_states.transpose(1, 2)
-
-    dropout_rate = self.attention_dropout if self.training else 0.0
-    attn_output = self._flash_attention_forward(
-        query_states, key_states, value_states, attention_mask,
-        q_len, dropout=dropout_rate, softmax_scale=self.softmax_scale,
-    )
-    if self.q_head_dim != self.v_head_dim:
-        attn_output = attn_output[:, :, :, : self.v_head_dim]
-
-    attn_output = attn_output.reshape(
-        bsz, q_len, self.num_heads * self.v_head_dim
-    ).contiguous()
-    attn_output = self.o_proj(attn_output)
-    return attn_output, None, past_key_value
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet05_fused_ab_full.py"></script>
 
 이걸 modeling 코드 자체에 넣는 대신 다음처럼 monkey-patch 로 적용하면 원본 modeling 파일은 그대로 유지된다.
 
-```python
-for m in model.modules():
-    if m.__class__.__name__ == "DeepseekV3FlashAttention2":
-        m.__class__.forward = fused_mla_forward_ab
-        break  # 모든 instance 가 같은 class 를 공유
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet06_monkey_patch.py"></script>
 
 ---
 
@@ -267,42 +123,7 @@ $$
 
 `W_abs_h` 는 head 마다 `(q_lora_rank, kv_lora_rank)` 의 작은 행렬이다. 이걸 매 forward 마다 한 번 계산하면, K 의 `k_b_nope` GEMM 을 통째로 건너뛸 수 있다.
 
-```python
-# Per-head reshape of q_b and kv_b weights
-q_b_w = self.q_b_proj.weight.view(H, self.q_head_dim, self.q_lora_rank)
-q_b_w_nope = q_b_w[:, : qn, :]                            # (H, qk_nope, q_lora)
-q_b_w_pe = q_b_w[:, qn :, :]                              # (H, qk_rope, q_lora)
-
-kv_b_w = self.kv_b_proj.weight.view(H, qn + vd, self.kv_lora_rank)
-k_b_w_nope = kv_b_w[:, : qn, :]                           # (H, qk_nope, kv_lora)
-v_b_w = kv_b_w[:, qn :, :]                                # (H, v_head_dim, kv_lora)
-
-# D: absorb K_nope into Q
-w_abs = torch.bmm(q_b_w_nope.transpose(-2, -1), k_b_w_nope)  # (H, q_lora, kv_lora)
-
-# q_eff_h = LN(q_a) @ W_abs_h → (B, S, H, kv_lora)
-q_a_ln = self.q_a_layernorm(q_a_out)
-q_eff = torch.einsum("bsq,hqk->bshk", q_a_ln, w_abs).transpose(1, 2)
-# (B, H, S, kv_lora)
-
-# Q rope part: standard
-q_pe = F.linear(q_a_ln, q_b_w_pe.reshape(H * qr, self.q_lora_rank))
-q_pe = q_pe.view(bsz, q_len, H, qr).transpose(1, 2)
-
-# K side: k_eff is just LN(kv_a), broadcast across heads.
-kv_a_ln = self.kv_a_layernorm(compressed_kv)              # (B, S, kv_lora)
-k_eff = kv_a_ln.unsqueeze(2).expand(bsz, q_len, H, self.kv_lora_rank).transpose(1, 2)
-
-# V is still per-head, but we slice it from the same kv_b weight.
-v = F.linear(kv_a_ln, v_b_w.reshape(H * vd, self.kv_lora_rank))
-value_states = v.view(bsz, q_len, H, vd).transpose(1, 2)
-
-# Stitch query / key
-query_states = torch.cat([q_eff, q_pe], dim=-1)
-key_states = torch.cat(
-    [k_eff, k_pe.expand(bsz, H, q_len, qr)], dim=-1,
-)
-```
+<script src="https://gist.github.com/wonbeomjang/4920fba049a999ba4a5460179181006e.js?file=mla_projection_snippet07_absorbed_d.py"></script>
 
 수학적으로 동등하므로 학습 loss curve 는 bf16 ULP 노이즈 내에서 baseline 과 일치한다.
 
@@ -370,5 +191,3 @@ MLA 의 학습 forward 는 KV 압축 이점을 못 받으면서 직렬 GEMM chai
 - [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437) — MLA absorption 의 추론 적용
 - [FlashAttention 2](https://github.com/Dao-AILab/flash-attention) — `flash_attn_func` / `flash_attn_varlen_func`
 - 선행편: DeepSeek 계열 MoE 학습 가속 (Python expert loop → grouped GEMM)
-
-> 이 글의 모든 코드 스니펫은 추후 GitHub Gist 로 옮겨 `<script>` 임베드로 교체된다.
