@@ -7,7 +7,7 @@ categories: [paper]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true
-featured: true
+featured: false
 ---
 
 > [Meta-Rewarding Language Models: Self-Improving Alignment with LLM-as-a-Meta-Judge](https://arxiv.org/abs/2407.19594) (Wu et al., Meta, arXiv 2024)

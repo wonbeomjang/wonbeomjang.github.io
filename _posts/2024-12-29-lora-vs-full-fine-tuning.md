@@ -7,7 +7,7 @@ categories: [paper]
 tags: [paper, llm]
 giscus_comments: true
 related_posts: true
-featured: true
+featured: false
 ---
 
 > [LoRA vs Full Fine-tuning: An Illusion of Equivalence](https://arxiv.org/abs/2410.21228) (Shuttleworth et al., MIT, arXiv 2024)
