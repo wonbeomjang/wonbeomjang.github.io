@@ -30,7 +30,62 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations",
+        },{id: "post-medagentbench-a-realistic-virtual-ehr-environment-to-benchmark-medical-llm-agents",
+        
+          title: "MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents",
+        
+        description: "MedAgentBench 논문 리뷰 — Stanford EHR 데이터 + FHIR 환경에서 의료 LLM agent를 평가하는 도메인 특화 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/medagentbench/";
+          
+        },
+      },{id: "post-travelplanner-a-benchmark-for-real-world-planning-with-language-agents",
+        
+          title: "TravelPlanner: A Benchmark for Real-World Planning with Language Agents",
+        
+        description: "TravelPlanner 논문 리뷰 — multi-constraint planning에서 GPT-4도 1% 미만, agent planning의 한계 노출",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/travelplanner/";
+          
+        },
+      },{id: "post-swe-bench-can-language-models-resolve-real-world-github-issues",
+        
+          title: "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?",
+        
+        description: "SWE-bench 논문 리뷰 — 실 레포의 실 GitHub 이슈로 LLM agent를 평가하는 sandboxed execution benchmark",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/swe-bench/";
+          
+        },
+      },{id: "post-gaia-a-benchmark-for-general-ai-assistants",
+        
+          title: "GAIA: a benchmark for General AI Assistants",
+        
+        description: "GAIA 논문 리뷰 — 인간 92% vs GPT-4 15%, AI assistant 평가의 reality check",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/gaia/";
+          
+        },
+      },{id: "post-agentbench-evaluating-llms-as-agents",
+        
+          title: "AgentBench: Evaluating LLMs as Agents",
+        
+        description: "AgentBench 논문 리뷰 — LLM as Agent 평가 패러다임을 정립한 8환경 multi-turn 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/agentbench/";
+          
+        },
+      },{id: "post-llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations",
         
           title: "Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
         
