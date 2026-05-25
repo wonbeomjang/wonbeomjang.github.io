@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [Generative Adversarial Networks](https://arxiv.org/abs/1406.2661) (Goodfellow et al., Universite de Montreal, NeurIPS 2014)
+
 논문 링크: [Generative Adversarial Network][1]<br><br/>
 GAN은 2014년도에 나온 논문으로 현재 많은 연구에 영향을 끼치고 있고 Yann LeCun이 혁명적인 아이디어라고 극찬했다. GAN은 Image Generation에 관한 기초 모델로 이를 활용해 늙은 사진, 안경쓴 사진 등 원하는 이미지를 만들어낼 수 있다.
 

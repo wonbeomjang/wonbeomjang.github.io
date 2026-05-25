@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Invariant Representation for Unsupervised Image Restoration](https://arxiv.org/abs/2106.06927)
+> [Learning Invariant Representation for Unsupervised Image Restoration](https://arxiv.org/abs/2003.12769) (Du et al., Sichuan University, CVPR 2020)
 
 # Introduction
 

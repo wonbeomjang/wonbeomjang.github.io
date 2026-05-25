@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method](https://arxiv.org/abs/2409.14781)
+> [Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method](https://arxiv.org/abs/2409.14781) (Zhang et al., CAS ICT, EMNLP 2024)
 
 # Introduction
 

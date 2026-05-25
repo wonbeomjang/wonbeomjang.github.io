@@ -9,6 +9,8 @@ giscus_comments: true
 related_posts: true
 ---
 
+> [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946) (Tan & Le, Google, ICML 2019)
+
 이번에 소개해드릴 논문은 [EfficientNet](https://arxiv.org/pdf/1905.11946.pdf)입니다.
 EfficientNet은 ICML 2019에 나왔고, 저자는 이전에 [MnasNet](https://arxiv.org/pdf/1807.11626.pdf)을 발표한 적이 있습니다.
 

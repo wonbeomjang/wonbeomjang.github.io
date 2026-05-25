@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer](https://arxiv.org/abs/2110.02178)
+> [MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer](https://arxiv.org/abs/2110.02178) (Mehta & Rastegari, Apple, ICLR 2022)
 
 # Introduction
 

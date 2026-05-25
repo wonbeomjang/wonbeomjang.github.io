@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)
+> [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., Stanford, NeurIPS 2022)
 
 # Introduction
 

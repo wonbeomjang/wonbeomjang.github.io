@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608)
+> [FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision](https://arxiv.org/abs/2407.08608) (Shah et al., Colfax / Meta, NeurIPS 2024)
 
 # Introduction
 

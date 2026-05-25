@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [A.X K1 Technical Report](https://arxiv.org/abs/2601.09200)
+> [A.X K1 Technical Report](https://arxiv.org/abs/2601.09200) (Cheon et al., SKT, Tech Report 2026)
 
 # Introduction
 

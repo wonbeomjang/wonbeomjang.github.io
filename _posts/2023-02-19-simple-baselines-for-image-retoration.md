@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Simple Baselines for Image Restoration](https://arxiv.org/abs/2204.04676)
+> [Simple Baselines for Image Restoration](https://arxiv.org/abs/2204.04676) (Chen et al., MEGVII, ECCV 2022)
 
 # Introduction
 

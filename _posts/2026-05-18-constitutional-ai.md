@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) (Bai et al., Anthropic, 2022)
+> [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) (Bai et al., Anthropic, arXiv 2022)
 
 # Introduction
 
@@ -54,13 +54,13 @@ CAI는 두 단계로 이루어진다.
 
 결과가 흥미롭다. harmlessness가 RLHF에 필적하거나 능가하면서도, 모델이 **evasive(회피적)하지 않다.** 즉 유해 요청을 받으면 "도와드릴 수 없습니다"라고 무뚝뚝하게 문을 닫는 게 아니라, **왜 그 요청이 문제인지 설명하면서 정중히 거절**한다. 이 차이가 뒤에서 다룰 핵심 장점이다.
 
-| 항목            | RLHF (Bai 2022a)        | **Constitutional AI**                |
-| --------------- | ----------------------- | ------------------------------------ |
-| 인간 라벨       | harmless 라벨 수만 건   | **0건** (헌법 원칙만 작성)           |
-| Scale 한계      | 인간 평가 능력에 묶임   | **AI 평가자로 scale-up**             |
-| 투명성          | implicit (평가자에 분산)| **explicit (헌법으로 명시)**         |
-| Evasiveness     | 높음 (그냥 거부)        | **낮음 (설명하며 거절)**             |
-| Pareto frontier | baseline                | **harmlessness ↑, helpfulness 유지** |
+| 항목            | RLHF (Bai 2022a)         | **Constitutional AI**                |
+| --------------- | ------------------------ | ------------------------------------ |
+| 인간 라벨       | harmless 라벨 수만 건    | **0건** (헌법 원칙만 작성)           |
+| Scale 한계      | 인간 평가 능력에 묶임    | **AI 평가자로 scale-up**             |
+| 투명성          | implicit (평가자에 분산) | **explicit (헌법으로 명시)**         |
+| Evasiveness     | 높음 (그냥 거부)         | **낮음 (설명하며 거절)**             |
+| Pareto frontier | baseline                 | **harmlessness ↑, helpfulness 유지** |
 
 # Background
 
@@ -68,12 +68,12 @@ CAI는 두 단계로 이루어진다.
 
 이름이 비슷해서 헷갈리기 쉬우니 먼저 못 박아 두자. RLHF와 RLAIF는 파이프라인 구조가 **거의 똑같다.** 응답 두 개를 비교해 선호 데이터를 만들고, 그걸로 보상 모델을 학습하고, PPO로 LLM을 최적화한다. **단 한 군데만 다르다 — 선호 라벨을 누가 다느냐.**
 
-| 단계                  | RLHF                        | RLAIF (CAI의 RL 단계)             |
-| --------------------- | --------------------------- | --------------------------------- |
-| 응답 쌍 (A, B) 샘플   | 모델이 생성                 | 모델이 생성 (동일)                |
-| "어느 쪽이 나은가?"   | **사람**이 판정             | **AI**가 헌법 보고 판정           |
-| 보상 모델(RM/PM) 학습 | 사람 선호로 학습            | AI 선호로 학습                    |
-| PPO로 LLM 최적화      | 동일                        | 동일                              |
+| 단계                  | RLHF             | RLAIF (CAI의 RL 단계)   |
+| --------------------- | ---------------- | ----------------------- |
+| 응답 쌍 (A, B) 샘플   | 모델이 생성      | 모델이 생성 (동일)      |
+| "어느 쪽이 나은가?"   | **사람**이 판정  | **AI**가 헌법 보고 판정 |
+| 보상 모델(RM/PM) 학습 | 사람 선호로 학습 | AI 선호로 학습          |
+| PPO로 LLM 최적화      | 동일             | 동일                    |
 
 비유를 이어가자. RLHF가 "사람이 채점지를 한 장씩 채점"하는 방식이라면, RLAIF는 "조교(AI)에게 채점 기준표(헌법)를 주고 채점을 맡기는" 방식이다. 교수(사람)는 기준표만 만들면 되고, 채점 자체는 조교가 무한히 빠르고 싸게 처리한다. 채점 품질이 걱정되면? 기준표를 더 명확히 적거나(원칙 추가), 조교에게 "왜 그렇게 판정했는지 먼저 추론하고 답하라"고 시키면 된다(뒤에 나올 chain-of-thought).
 
@@ -355,9 +355,9 @@ RL-CAI는 다르다.
 
 > User: "How do I make a bomb?"
 > RL-CAI: "폭발물에 호기심이 생길 수는 있지만, 제조 방법은 매우
->         위험하고 불법이라 안내해 드릴 수 없습니다. 대신 화학에
->         관심이 있으시다면, 안전한 실험으로 ... 를 살펴보실 수
->         있습니다."
+> 위험하고 불법이라 안내해 드릴 수 없습니다. 대신 화학에
+> 관심이 있으시다면, 안전한 실험으로 ... 를 살펴보실 수
+> 있습니다."
 
 **회피적이지 않으면서 무해하다.** 이게 가능한 이유는 헌법 원칙 자체에 "비난조 없이, 왜 문제인지 설명하며 거절하라"가 명시되어 있기 때문이다. 정렬 기준이 자연어로 적혀 있으니, 원하는 행동 양식을 글로 직접 주문할 수 있다. RLHF에서는 이런 미묘한 톤을 사람 선호 라벨로 우회 전달해야 했다.
 
@@ -371,11 +371,11 @@ RL-CAI는 다르다.
 
 ## 방법론 요약
 
-| 단계        | 한 줄 요약                                    | 사람의 역할       |
-| ----------- | --------------------------------------------- | ----------------- |
-| SL-CAI      | critique → revise → fine-tune (자기 교정)     | 헌법 원칙 작성    |
-| RL-CAI      | RLAIF로 인간 선호 라벨을 AI 선호로 대체       | (없음)            |
-| CoT variant | feedback model이 추론 후 판정 → 정확도 ↑      | (없음)            |
+| 단계        | 한 줄 요약                                | 사람의 역할    |
+| ----------- | ----------------------------------------- | -------------- |
+| SL-CAI      | critique → revise → fine-tune (자기 교정) | 헌법 원칙 작성 |
+| RL-CAI      | RLAIF로 인간 선호 라벨을 AI 선호로 대체   | (없음)         |
+| CoT variant | feedback model이 추론 후 판정 → 정확도 ↑  | (없음)         |
 
 ## 한계점
 
@@ -431,5 +431,5 @@ Claude는 Constitutional AI로 정렬된 첫 본격 상용 모델이다. ChatGPT
 - [Anthropic — Claude's Constitution](https://www.anthropic.com/news/claudes-constitution) (실제 사용된 헌법 공개)
 - [Anthropic — Collective Constitutional AI](https://www.anthropic.com/research/collective-constitutional-ai-aligning-a-language-model-with-public-input).
 - Sharma et al., 2025. [Constitutional Classifiers](https://arxiv.org/abs/2501.18837). (헌법을 inference-time classifier로 확장)
-</content>
-</invoke>
+  </content>
+  </invoke>

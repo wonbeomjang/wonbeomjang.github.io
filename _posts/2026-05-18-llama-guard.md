@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations](https://arxiv.org/abs/2312.06674) (Inan et al., Meta, 2023)
+> [Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations](https://arxiv.org/abs/2312.06674) (Inan et al., Meta, arXiv 2023)
 
 # Introduction
 
@@ -54,11 +54,11 @@ Llama Guard는 이들과 다른 축, **추론 시점 방어**다. 한 번 학습
 
 Llama Guard 이전에도 가드레일은 있었다. 다만 다음과 같은 약점이 있었다.
 
-| 기존 가드레일             | 약점                                                        |
-| ------------------------- | ----------------------------------------------------------- |
+| 기존 가드레일             | 약점                                                         |
+| ------------------------- | ------------------------------------------------------------ |
 | **OpenAI Moderation API** | 비공개(closed), 카테고리 고정, 출력 형식 고정, 외부 API 호출 |
 | **Perspective API**       | 비공개, 주로 toxicity(독성)에 집중, 범죄 계획 등은 약함      |
-| **GPT-4 zero-shot**       | 비싸고 느림(latency 큼), 매 호출마다 비용 발생              |
+| **GPT-4 zero-shot**       | 비싸고 느림(latency 큼), 매 호출마다 비용 발생               |
 
 가장 큰 불편함은 **"고정(fixed)"** 이라는 점이다. OpenAI Moderation API는 카테고리가 정해져 있어서, 내 서비스에 맞는 새 안전 정책(예: "의료 오정보 차단")을 추가하고 싶어도 OpenAI가 모델을 업데이트해줄 때까지 기다려야 한다. 사용자 입장에서는 손 댈 수 없는 블랙박스다.
 
@@ -354,12 +354,12 @@ $$\text{AUPRC} = \int_0^1 \text{Precision}(\text{Recall})\, d(\text{Recall})$$
 
 이게 Llama Guard의 가장 매력적인 부분이다. **prompt만 바꿔서** 새 분류 체계(OpenAI의 9개 카테고리)에 적응시킨 결과를 보자.
 
-| Adaptation                        | OpenAI Mod AUPRC |
-| --------------------------------- | ---------------- |
-| No adaptation (원래 6개 그대로)   | 0.837            |
+| Adaptation                               | OpenAI Mod AUPRC |
+| ---------------------------------------- | ---------------- |
+| No adaptation (원래 6개 그대로)          | 0.837            |
 | **Zero-shot** (OpenAI 카테고리만 prompt) | 0.847            |
-| **Few-shot** (설명 + 예시 2–4개)  | **0.872**        |
-| OpenAI API (baseline)             | 0.856            |
+| **Few-shot** (설명 + 예시 2–4개)         | **0.872**        |
+| OpenAI API (baseline)                    | 0.856            |
 
 각 행의 의미를 풀자.
 

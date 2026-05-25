@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Proper Reuse of Image Classification Features Improves Object Detection](https://arxiv.org/abs/2003.06957)
+> [Proper Reuse of Image Classification Features Improves Object Detection](https://arxiv.org/abs/2204.00484) (Vasconcelos et al., Google, CVPR 2022)
 
 # Introduction
 

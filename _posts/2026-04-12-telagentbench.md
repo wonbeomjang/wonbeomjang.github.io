@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications](https://aclanthology.org/2025.emnlp-industry.83/) (EMNLP 2025 Industry Track)
+> [TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications](https://aclanthology.org/2025.emnlp-industry.83/) (Lee et al., SKT, EMNLP 2025 Industry)
 
 # Introduction
 

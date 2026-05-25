@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Rethinking "Batch" in BatchNorm](https://arxiv.org/abs/2105.07576)
+> [Rethinking "Batch" in BatchNorm](https://arxiv.org/abs/2105.07576) (Wu & Johnson, Meta AI, arXiv 2021)
 
 # Introduction
 

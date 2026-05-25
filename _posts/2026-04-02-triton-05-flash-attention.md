@@ -254,7 +254,7 @@ class FlashAttentionV1Function(torch.autograd.Function):
 
 Block 크기는 SRAM 용량에 직접 제약된다. SRAM에 동시에 올려야 하는 데이터 (fp16, head_dim=64 기준):
 
-$$\text{SRAM 사용량} \approx \underbrace{(\text{BLOCK\_M} + 2 \times \text{BLOCK\_N}) \times d \times 2}_{\text{Q, K, V 블록 (fp16)}} + \underbrace{\text{BLOCK\_M} \times d \times 4}_{\text{acc (fp32)}} \text{ bytes}$$
+$$\text{SRAM 사용량} \approx \underbrace{(\text{BLOCK_M} + 2 \times \text{BLOCK_N}) \times d \times 2}_{\text{Q, K, V 블록 (fp16)}} + \underbrace{\text{BLOCK_M} \times d \times 4}_{\text{acc (fp32)}} \text{ bytes}$$
 
 | GPU                | BLOCK_M | BLOCK_N | SRAM 사용량 | SM당 동시 thread block |
 | ------------------ | ------- | ------- | ----------- | ---------------------- |

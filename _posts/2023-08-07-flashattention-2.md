@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691)
+> [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691) (Dao, Princeton, arXiv 2023)
 
 # Introduction
 
@@ -258,7 +258,7 @@ Thread block 내에서 여러 warp이 어떻게 작업을 나누느냐도 성능
 **문제**: 각 warp이 $$QK^\top$$의 서로 다른 열 블록을 계산한 후, softmax를 위해 이들을 합쳐야 한다. 이 과정에서:
 
 1. 각 warp이 자기 결과를 **shared memory에 쓴다**
-2. **동기화 배리어** ($$\text{\_\_syncthreads}$$)
+2. **동기화 배리어** ($$\text{__syncthreads}$$)
 3. 다른 warp의 결과를 **shared memory에서 읽는다**
 4. Reduction으로 max, sum을 계산한다
 

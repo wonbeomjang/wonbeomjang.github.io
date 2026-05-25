@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [MobileOne: An Improved One millisecond Mobile Backbone](https://arxiv.org/abs/2206.04040)
+> [MobileOne: An Improved One millisecond Mobile Backbone](https://arxiv.org/abs/2206.04040) (Vasu et al., Apple, CVPR 2023)
 
 # Introduction
 

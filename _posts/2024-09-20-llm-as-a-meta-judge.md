@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [Meta-Rewarding Language Models: Self-Improving Alignment with LLM-as-a-Meta-Judge](https://arxiv.org/abs/2407.19594)
+> [Meta-Rewarding Language Models: Self-Improving Alignment with LLM-as-a-Meta-Judge](https://arxiv.org/abs/2407.19594) (Wu et al., Meta, arXiv 2024)
 
 # Introduction
 

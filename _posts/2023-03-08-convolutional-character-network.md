@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Convolutional Character Networks](https://arxiv.org/abs/1910.07954)
+> [Convolutional Character Networks](https://arxiv.org/abs/1910.07954) (Xing et al., ICCV 2019)
 
 # Introduction
 

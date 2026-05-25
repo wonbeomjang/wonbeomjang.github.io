@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned](https://arxiv.org/abs/2209.07858) (Ganguli et al., Anthropic, 2022)
+> [Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned](https://arxiv.org/abs/2209.07858) (Ganguli et al., Anthropic, arXiv 2022)
 
 # Introduction
 

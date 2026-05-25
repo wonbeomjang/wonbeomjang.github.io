@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [CodeAttack: Code-based Adversarial Attacks for Pre-trained Programming Language Models](https://arxiv.org/abs/2206.00052) (Jha & Reddy, AAAI 2023)
+> [CodeAttack: Code-based Adversarial Attacks for Pre-trained Programming Language Models](https://arxiv.org/abs/2206.00052) (Jha & Reddy, Virginia Tech, AAAI 2023)
 
 # Introduction
 
@@ -54,7 +54,7 @@ NLP 모델에서 적대 공격은 잘 알려진 문제다. TextFooler, BERT-Atta
 
 **공격자의 능력**: 입력 코드 시퀀스를 수정할 수 있다. 단, 모델 파라미터, 아키텍처, 그래디언트, 학습 데이터는 볼 수 없다. 오직 입력을 넣고 출력 확률을 받는 **블랙박스 접근**만 가능하다.
 
-**공격자의 목표**: 최솟값의 변경으로 모델 출력 품질을 최대한 떨어뜨린다. 적대 코드 $X_{adv}$는 다음 조건을 모두 만족해야 한다:
+**공격자의 목표**: 최솟값의 변경으로 모델 출력 품질을 최대한 떨어뜨린다. 적대 코드 $$X_{adv}$$는 다음 조건을 모두 만족해야 한다:
 
 $$X_{adv} \neq X, \quad X_{adv} = X + \delta \text{ s.t. } \|\delta\| < \theta, \quad \text{Sim}(X_{adv}, X) \geq \epsilon$$
 
@@ -62,7 +62,7 @@ $$X_{adv} \neq X, \quad X_{adv} = X + \delta \text{ s.t. } \|\delta\| < \theta, 
 
 $$\Delta_{atk} = \arg\max_{\delta} \left[ Q(F(X)) - Q(F(X_{adv})) \right]$$
 
-여기서 $Q(\cdot)$는 CodeBLEU(코드 작업) 또는 BLEU(요약 작업)로 측정한다.
+여기서 $$Q(\cdot)$$는 CodeBLEU(코드 작업) 또는 BLEU(요약 작업)로 측정한다.
 
 ## 알고리즘 개요
 
@@ -72,13 +72,13 @@ CodeAttack은 두 단계로 구성된다.
 
 코드 중 어떤 토큰을 바꿔야 효과가 가장 클까? 모델이 예측할 때 강하게 의존하는 토큰을 찾는다.
 
-토큰 $x_i$를 `[MASK]`로 치환한 뒤 출력 로짓 변화를 측정한다:
+토큰 $$x_i$$를 `[MASK]`로 치환한 뒤 출력 로짓 변화를 측정한다:
 
 $$I_{x_i} = \sum_{t=1}^{n} o_t - \sum_{t=1}^{q} o'_t$$
 
-$o_t$는 원본 입력의 올바른 출력 토큰 $y_t$에 대한 로짓, $o'_t$는 마스킹 후 로짓이다. $I_{x_i}$가 클수록 이 토큰이 모델 예측에 영향을 크게 미치는 **취약 토큰**이다.
+$$o_t$$는 원본 입력의 올바른 출력 토큰 $$y_t$$에 대한 로짓, $$o'_t$$는 마스킹 후 로짓이다. $$I_{x_i}$$가 클수록 이 토큰이 모델 예측에 영향을 크게 미치는 **취약 토큰**이다.
 
-취약 토큰들을 $I_{x_i}$ 내림차순으로 정렬해 상위 $k$개를 선택한다.
+취약 토큰들을 $$I_{x_i}$$ 내림차순으로 정렬해 상위 $$k$$개를 선택한다.
 
 ### Step 2: 취약 토큰 치환 (Substituting Vulnerable Tokens)
 
@@ -137,7 +137,7 @@ return Xadv
 - **다운스트림 태스크**: 코드 번역(C# ↔ Java), 코드 수정(Java), 코드 요약(Python/Java/PHP)
 - **피해자 모델**: CodeT5, CodeBERT, GraphCodeBERT, RoBERTa
 - **베이스라인**: TextFooler, BERT-Attack
-- **지표**: $\Delta_{drop}$ (CodeBLEU/BLEU 감소량), Success%, #Queries, #Perturbation, CodeBLEUq
+- **지표**: $$\Delta_{drop}$$ (CodeBLEU/BLEU 감소량), Success%, #Queries, #Perturbation, CodeBLEUq
 
 ## 메인 결과 (Table 2)
 
@@ -174,7 +174,7 @@ CodeAttack은 세 모델 모두에서 99%+ 성공률을 달성했으며, 평균 
 **핵심 관찰:**
 
 - CodeAttack은 9개 중 6개 케이스에서 베이스라인을 능가
-- BERT-Attack이 일부 케이스에서 $\Delta_{drop}$이 높지만 쿼리 수가 10배 이상 필요 (163→26, 290→26)
+- BERT-Attack이 일부 케이스에서 $$\Delta_{drop}$$이 높지만 쿼리 수가 10배 이상 필요 (163→26, 290→26)
 - CodeAttack은 평균 **1~3개 토큰**만 바꾸고도 고성공률 달성
 - GraphCodeBERT가 가장 취약 — 데이터 플로우 그래프에서 식별자 관계를 학습하기 때문에, 식별자 변경이 치명적
 

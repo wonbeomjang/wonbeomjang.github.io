@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Cross-Domain Adaptive Teacher for Object Detection](https://arxiv.org/abs/2111.13216)
+> [Cross-Domain Adaptive Teacher for Object Detection](https://arxiv.org/abs/2111.13216) (Li et al., Meta AI, CVPR 2022)
 
 # Introduction
 

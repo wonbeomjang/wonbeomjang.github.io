@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Integral Neural Networks](https://arxiv.org/abs/2206.12418)
+> [Integral Neural Networks](https://arxiv.org/abs/2206.12418) (Solodskikh et al., CVPR 2023)
 
 # Introduction
 

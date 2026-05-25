@@ -9,7 +9,7 @@ giscus_comments: true
 related_posts: true
 ---
 
-> [Meta Pseudo Labels](https://arxiv.org/abs/2003.10580)
+> [Meta Pseudo Labels](https://arxiv.org/abs/2003.10580) (Pham et al., Google, CVPR 2021)
 
 # Introduction
 

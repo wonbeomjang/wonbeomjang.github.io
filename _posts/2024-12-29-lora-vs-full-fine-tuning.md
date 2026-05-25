@@ -10,7 +10,7 @@ related_posts: true
 featured: true
 ---
 
-> [LoRA vs Full Fine-tuning: An Illusion of Equivalence](https://arxiv.org/abs/2410.21228)
+> [LoRA vs Full Fine-tuning: An Illusion of Equivalence](https://arxiv.org/abs/2410.21228) (Shuttleworth et al., MIT, arXiv 2024)
 
 # Introduction
 
