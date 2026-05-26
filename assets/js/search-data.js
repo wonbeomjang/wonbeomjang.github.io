@@ -30,7 +30,84 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-에이전트란-무엇인가-지능형-에이전트의-고전-정의부터-llm-에이전트까지",
+        },{id: "post-alma-9-000개-주석만으로-llm을-정렬하기",
+        
+          title: "ALMA: 9,000개 주석만으로 LLM을 정렬하기",
+        
+        description: "Red-Teaming 시리즈 #22 — 9K 라벨(전체의 1% 미만)로 합성 데이터를 만들어 정렬하는 데이터 효율 기법 (Yasunaga et al., Meta, 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/alma/";
+          
+        },
+      },{id: "post-pika-난이도에-집중한-expert-level-합성-정렬-데이터셋",
+        
+          title: "PIKA: 난이도에 집중한 expert-level 합성 정렬 데이터셋",
+        
+        description: "Red-Teaming 시리즈 #21 — prompt 난이도에 집중해 30K로 10M 규모를 능가하는 합성 SFT/preference 데이터셋 (arXiv 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/pika/";
+          
+        },
+      },{id: "post-wildjailbreak-in-the-wild-탈옥을-대규모로-합성한-안전-학습-데이터셋",
+        
+          title: "WildJailbreak: in-the-wild 탈옥을 대규모로 합성한 안전 학습 데이터셋",
+        
+        description: "Red-Teaming 시리즈 #20 — WildTeaming으로 합성한 vanilla/adversarial × harmful/benign 학습 데이터와 over-refusal 문제 (Jiang et al., AI2, NeurIPS 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/wildjailbreak/";
+          
+        },
+      },{id: "post-beavertails-helpfulness와-harmlessness를-분리한-안전-정렬-데이터셋",
+        
+          title: "BeaverTails: helpfulness와 harmlessness를 분리한 안전 정렬 데이터셋",
+        
+        description: "Red-Teaming 시리즈 #19 — helpfulness/harmlessness를 분리 라벨링한 QA 데이터셋과 14개 위해 카테고리, QA-moderation (Ji et al., PKU, NeurIPS 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/beavertails/";
+          
+        },
+      },{id: "post-harmfulqa-amp-red-instruct-chain-of-utterances로-유해-질문을-만들고-안전-정렬까지",
+        
+          title: "HarmfulQA &amp; RED-INSTRUCT: Chain of Utterances로 유해 질문을 만들고 안전 정렬까지",
+        
+        description: "Red-Teaming 시리즈 #18 — CoU 기반 RED-EVAL 공격으로 수집한 유해 QA 데이터셋과 STARLING 안전 정렬 (Bhardwaj &amp; Poria, 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/harmfulqa/";
+          
+        },
+      },{id: "post-hh-rlhf-red-team-attempts-anthropic의-38-961건-레드팀-대화-데이터셋",
+        
+          title: "HH-RLHF Red-Team Attempts: Anthropic의 38,961건 레드팀 대화 데이터셋",
+        
+        description: "Red-Teaming 시리즈 #17 — Anthropic이 공개한 red-team 대화 데이터셋의 구조·라벨·활용 (Ganguli et al., Anthropic, 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/hh-rlhf-red-team/";
+          
+        },
+      },{id: "post-advbench-llm-공격-평가의-사실상-표준이-된-유해-행동-데이터셋",
+        
+          title: "AdvBench: LLM 공격 평가의 사실상 표준이 된 유해 행동 데이터셋",
+        
+        description: "Red-Teaming 시리즈 #16 — GCG 논문이 만든 harmful strings/behaviors 벤치마크와 그 영향·한계 (Zou et al., CMU, 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/advbench/";
+          
+        },
+      },{id: "post-에이전트란-무엇인가-지능형-에이전트의-고전-정의부터-llm-에이전트까지",
         
           title: "에이전트란 무엇인가: 지능형 에이전트의 고전 정의부터 LLM 에이전트까지",
         
@@ -111,7 +188,7 @@ ninja.data = [{
         
           title: "Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
         
-        description: "Red-Teaming 시리즈 #19 (마지막) — Llama-2-7B를 input/output safety classifier로 fine-tune, OpenAI Moderation API를 능가하는 공개 가드레일 (Inan et al., Meta, 2023)",
+        description: "Red-Teaming 시리즈 #26 (마지막) — Llama-2-7B를 input/output safety classifier로 fine-tune, OpenAI Moderation API를 능가하는 공개 가드레일 (Inan et al., Meta, 2023)",
         section: "Posts",
         handler: () => {
           
@@ -122,7 +199,7 @@ ninja.data = [{
         
           title: "Constitutional AI: Harmlessness from AI Feedback",
         
-        description: "Red-Teaming 시리즈 #18 — 인간 라벨 없이 자연어 원칙(헌법)만으로 정렬, SL 단계의 critique-revise + RL 단계의 RLAIF (Bai et al., Anthropic, 2022)",
+        description: "Red-Teaming 시리즈 #25 — 인간 라벨 없이 자연어 원칙(헌법)만으로 정렬, SL 단계의 critique-revise + RL 단계의 RLAIF (Bai et al., Anthropic, 2022)",
         section: "Posts",
         handler: () => {
           
@@ -133,7 +210,7 @@ ninja.data = [{
         
           title: "JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models",
         
-        description: "Red-Teaming 시리즈 #17 — 100 misuse + 100 benign 행동, 공격 artifact 공개, 재현성 중심 RT 벤치마크 (Chao et al., NeurIPS 2024 D&amp;B)",
+        description: "Red-Teaming 시리즈 #24 — 100 misuse + 100 benign 행동, 공격 artifact 공개, 재현성 중심 RT 벤치마크 (Chao et al., NeurIPS 2024 D&amp;B)",
         section: "Posts",
         handler: () => {
           
@@ -144,7 +221,7 @@ ninja.data = [{
         
           title: "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal",
         
-        description: "Red-Teaming 시리즈 #16 — 510개 행동, 18개 공격, 33개 모델을 표준화된 평가 + R2D2 방어 학습 (Mazeika et al., CAIS, ICML 2024)",
+        description: "Red-Teaming 시리즈 #23 — 510개 행동, 18개 공격, 33개 모델을 표준화된 평가 + R2D2 방어 학습 (Mazeika et al., CAIS, ICML 2024)",
         section: "Posts",
         handler: () => {
           
