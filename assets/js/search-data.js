@@ -30,7 +30,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-medagentbench-a-realistic-virtual-ehr-environment-to-benchmark-medical-llm-agents",
+        },{id: "post-osworld-benchmarking-multimodal-agents-for-open-ended-tasks-in-real-computer-environments",
+        
+          title: "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments",
+        
+        description: "OSWorld 논문 리뷰 — 실제 OS 위에서 마우스·키보드로 작업하는 GUI 에이전트를 execution-based로 평가하는 벤치마크. 인간 72% vs 최고 모델 12%",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/osworld/";
+          
+        },
+      },{id: "post-medagentbench-a-realistic-virtual-ehr-environment-to-benchmark-medical-llm-agents",
         
           title: "MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents",
         
@@ -83,6 +94,17 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2026/agentbench/";
+          
+        },
+      },{id: "post-에이전트란-무엇인가-지능형-에이전트의-고전-정의부터-llm-에이전트까지",
+        
+          title: "에이전트란 무엇인가: 지능형 에이전트의 고전 정의부터 LLM 에이전트까지",
+        
+        description: "agent 벤치마크 시리즈의 도입부 — Russell &amp; Norvig의 지능형 에이전트 정의(PEAS, 5유형, 환경 속성)부터 Lilian Weng·Anthropic의 LLM 에이전트 해부까지",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/what-is-an-agent/";
           
         },
       },{id: "post-llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations",
