@@ -1,16 +1,13 @@
 ---
 layout: post
 title: "에이전트란 무엇인가: 지능형 에이전트의 고전 정의부터 LLM 에이전트까지"
-date: 2026-05-20 12:00:00 +0900
+date: 2026-05-26 23:00:00 +0900
 description: "agent 벤치마크 시리즈의 도입부 — Russell & Norvig의 지능형 에이전트 정의(합리성, 기대효용, PEAS, MDP/POMDP, 5유형, 환경 속성)부터 Lilian Weng·Anthropic의 LLM 에이전트 해부까지, 수식과 함께"
 categories: [paper]
 tags: [llm, agent, concept, intelligent-agent, benchmark, paper]
 giscus_comments: true
 related_posts: true
 featured: false
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 agent 평가 벤치마크 시리즈([AgentBench](/blog/2026/agentbench/), [GAIA](/blog/2026/gaia/), [SWE-bench](/blog/2026/swe-bench/), [TravelPlanner](/blog/2026/travelplanner/), [MedAgentBench](/blog/2026/medagentbench/), [OSWorld](/blog/2026/osworld/))의 도입부다. 논문 리뷰로 들어가기 전에 **"에이전트란 무엇인가", "지능형 에이전트란 무엇인가"**라는 일반론을, 가능한 한 형식적으로(수식과 함께) 정리한다.
@@ -35,13 +32,9 @@ AIMA의 정의는 한 문장으로 시작한다.
 
 즉 에이전트의 본질은 **지각(perceive) → 행동(act)의 순환 루프**다. 인간(눈·귀 → 손·발), 로봇(카메라 → 모터), 소프트웨어(파일·패킷 입력 → 화면·네트워크 출력) 모두 같은 틀로 설명된다.
 
-```mermaid
-graph LR
-    E["환경 (Environment)"] -->|"percepts"| S["센서 (Sensors)"]
-    S --> AG["에이전트<br/>agent function"]
-    AG --> AC["액추에이터 (Actuators)"]
-    AC -->|"actions"| E
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_1.svg" width="100%">
+</p>
 
 ## 지각, 지각 이력, 에이전트 함수
 
@@ -108,13 +101,9 @@ $$
 
 합리적 에이전트를 설계하려면 먼저 성과 척도와 환경을 명세해야 한다. AIMA는 이를 **PEAS**로 정리한다.
 
-```mermaid
-graph LR
-    AG(("에이전트")) --- P["P — Performance<br/>성과 척도"]
-    AG --- E["E — Environment<br/>환경"]
-    AG --- A["A — Actuators<br/>행동 수단"]
-    AG --- S["S — Sensors<br/>지각 수단"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_2.svg" width="42%">
+</p>
 
 자율주행차를 예로 들면 다음과 같다.
 
@@ -143,12 +132,9 @@ $$\mathcal{M} = (S,\, A,\, P,\, R,\, \gamma)$$
 - $$R(s, a, s')$$: 보상 함수 (성과 척도의 스텝별 신호)
 - $$\gamma \in [0, 1]$$: 미래 보상의 할인율
 
-```mermaid
-graph LR
-    AG["에이전트<br/>정책 π : s → a"] -->|"행동 a_t"| ENV["환경<br/>전이 P, 보상 R"]
-    ENV -->|"상태 s_t+1"| AG
-    ENV -->|"보상 r_t+1"| AG
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_3.svg" width="59%">
+</p>
 
 에이전트의 행동 규칙은 **정책(policy)** $$\pi(a \mid s)$$ — 상태에서 행동으로의 (확률적) 사상이다. 에이전트가 추구하는 것은 할인된 누적 보상, 즉 **return**의 기대값이다.
 
@@ -188,11 +174,9 @@ AIMA는 에이전트를 지능 수준에 따라 5가지로 분류한다. 위의 
 
 **현재 지각만** 보고 `if 조건 then 행동` 규칙으로 반응한다. 정책이 $$\pi(a \mid o_t)$$로, 과거 이력과 상태 추정이 없다. 환경이 **완전관측(fully observable)**일 때만 제대로 동작한다.
 
-```mermaid
-graph LR
-    P["현재 지각<br/>(percept)"] --> C{"조건-행동 규칙<br/>if condition then action"}
-    C --> A["행동"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_4.svg" width="75%">
+</p>
 
 예: "장애물이 앞에 있으면 멈춘다." POMDP에서는 믿음 상태가 없으니 쉽게 실패한다.
 
@@ -200,26 +184,17 @@ graph LR
 
 세계가 어떻게 돌아가는지에 대한 **내부 모델(world model)**, 즉 전이·관측 모델을 갖고 **믿음 상태 $$b(s)$$를 유지**한다. 정책이 $$\pi(a \mid b)$$가 되어 **부분관측(partially observable)** 환경에 대응한다.
 
-```mermaid
-graph TD
-    P["지각"] --> ST["내부 상태(belief) 갱신"]
-    M["world model<br/>P(s'|s,a), O(o|s',a)"] --> ST
-    ST --> C{"조건-행동 규칙"}
-    C --> A["행동"]
-    A -.->|"상태에 반영"| ST
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_5.svg" width="46%">
+</p>
 
 ## (3) Goal-based Agent
 
 조건-행동 규칙을 넘어, **목표(goal)**를 명시하고 거기에 도달하는 행동열을 **탐색·계획(search & planning)**으로 찾는다. 목표는 "보상이 목표 상태에서만 1"인 특수한 보상 함수로 볼 수 있다.
 
-```mermaid
-graph TD
-    P["지각"] --> ST["내부 상태(belief)"]
-    ST --> PL["탐색 / 계획<br/>(목표까지의 경로)"]
-    G["목표 (Goal)"] --> PL
-    PL --> A["행동"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_6.svg" width="49%">
+</p>
 
 예: "공항에 가야 한다"는 목표를 두고 여러 경로를 시뮬레이션해 도달 가능한 행동열을 고른다.
 
@@ -227,28 +202,17 @@ graph TD
 
 목표 달성/미달성의 이분법을 넘어, 상태마다 **효용 $$U(s)$$**(또는 가치 $$V(s)$$)를 매겨 **기대효용을 최대화**한다. "도착하기만 하면 된다"가 아니라 "더 빠르고 안전하고 싸게 도착한다"를 구분한다. 2장의 MEU 식 $$a^{*} = \arg\max_a EU(a \mid e)$$, 3장의 $$\pi^{*}(s) = \arg\max_a Q^{*}(s,a)$$가 바로 이 유형의 정의다.
 
-```mermaid
-graph TD
-    P["지각"] --> ST["내부 상태(belief)"]
-    ST --> U["효용 / 가치 함수<br/>U(s), Q(s,a)"]
-    U --> CH["기대효용 최대화<br/>arg max_a EU(a)"]
-    CH --> A["행동"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_7.svg" width="38%">
+</p>
 
 ## (5) Learning Agent
 
 위 어느 유형이든 **학습 능력**을 더할 수 있다. 전이 $$P$$, 보상 $$R$$, 가치 $$Q$$를 미리 모를 때, 경험으로부터 이를 추정해 정책을 개선한다 — 이것이 바로 **강화학습(RL)**이다. AIMA의 학습 에이전트는 4개 부품으로 구성된다.
 
-```mermaid
-graph TD
-    ENV["환경"] -->|"percept"| PE["Performance Element<br/>(행동 선택 = 기존 에이전트)"]
-    PE -->|"action"| ENV
-    ENV -->|"성과 관찰"| CR["Critic<br/>(성과 기준과 비교)"]
-    CR -->|"피드백"| LE["Learning Element"]
-    LE -->|"성능 개선"| PE
-    LE --> PG["Problem Generator"]
-    PG -->|"탐험적 행동 제안"| PE
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_8.svg" width="63%">
+</p>
 
 - **Performance element**: 실제 행동을 고르는 부분 (앞의 1~4유형)
 - **Critic**: 외부 성과 기준에 비추어 잘했는지 평가 (RL의 reward/value 신호)
@@ -307,15 +271,9 @@ LLM 에이전트의 구성요소에 대한 가장 널리 인용되는 정리는 
 
 > **Agent = LLM (brain) + Planning + Memory + Tool use**
 
-```mermaid
-graph TD
-    LLM["LLM<br/>(brain / controller)"]
-    LLM --- PLAN["Planning<br/>task decomposition<br/>+ self-reflection"]
-    LLM --- MEM["Memory<br/>short-term: context<br/>long-term: retrieval"]
-    LLM --- TOOL["Tool use<br/>function calling / API"]
-    TOOL -->|"action a_t"| ENV["환경"]
-    ENV -->|"observation o_t"| LLM
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_9.svg" width="100%">
+</p>
 
 ## Planning — 탐색의 LLM 버전
 
@@ -344,17 +302,9 @@ graph TD
 
 $$(\tau_t,\, a_t) \sim \pi_{\theta}(\cdot \mid c_t), \qquad c_{t+1} = c_t \,\oplus\, (\tau_t,\, a_t,\, o_t)$$
 
-```mermaid
-sequenceDiagram
-    participant A as Agent(LLM)
-    participant E as 환경
-    loop DONE 토큰까지 반복
-        A->>A: Thought (추론)
-        A->>E: Action (도구 호출)
-        E->>A: Observation (관찰 결과)
-    end
-    A->>A: 최종 답 / DONE
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_10.svg" width="64%">
+</p>
 
 [AgentBench](/blog/2026/agentbench/)의 `Thought:` + `Action:` 포맷, [OSWorld](/blog/2026/osworld/)의 pyautogui 액션 + 스크린샷 관측이 모두 이 루프의 구체화다.
 
@@ -364,33 +314,23 @@ Anthropic은 2024년 *"Building Effective Agents"*에서 중요한 구분을 제
 
 먼저 기본 빌딩블록은 **augmented LLM** — 검색·도구·메모리로 증강된 LLM이다.
 
-```mermaid
-graph LR
-    IN["입력"] --> LLM["Augmented LLM"]
-    LLM --> OUT["출력"]
-    LLM <-->|"retrieval"| R["검색"]
-    LLM <-->|"tools"| T["도구"]
-    LLM <-->|"memory"| M["메모리"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_11.svg" width="71%">
+</p>
 
 이 블록을 어떻게 엮느냐에 따라 두 갈래로 나뉜다.
 
 **Workflow** — LLM과 도구가 **사전 정의된 코드 경로**로 오케스트레이션된다. 상태 전이가 개발자의 코드로 고정되어 예측 가능하다.
 
-```mermaid
-graph LR
-    I["입력"] --> L1["LLM 1"] --> L2["LLM 2"] --> L3["LLM 3"] --> O["출력"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_12.svg" width="90%">
+</p>
 
 **Agent** — LLM이 **스스로 프로세스와 도구 사용을 동적으로 결정**한다. 즉 다음 행동도, 종료 시점도 정책 $$\pi$$가 정한다. 매 스텝 환경에서 "ground truth" 피드백을 받아 진행을 평가한다.
 
-```mermaid
-graph LR
-    H["사용자 명령"] --> AG["Agent (LLM)"]
-    AG -->|"action"| ENV["환경"]
-    ENV -->|"feedback / ground truth"| AG
-    AG -->|"종료 판단"| DONE["완료"]
-```
+<p align="center">
+    <img src="/assets/post/image/what-is-an-agent/fig_13.svg" width="87%">
+</p>
 
 | 구분        | Workflow              | Agent                         |
 | ----------- | --------------------- | ----------------------------- |

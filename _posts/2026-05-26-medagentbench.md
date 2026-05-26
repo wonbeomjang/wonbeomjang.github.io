@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents"
-date: 2026-05-25 12:00:00 +0900
+date: 2026-05-26 18:00:00 +0900
 description: "MedAgentBench 논문 리뷰 — Stanford EHR 데이터 + FHIR 환경에서 의료 LLM agent를 평가하는 도메인 특화 벤치마크"
 categories: [paper]
 tags: [llm, agent, benchmark, evaluation, medical, healthcare, paper]
