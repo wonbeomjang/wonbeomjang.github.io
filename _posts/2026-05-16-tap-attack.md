@@ -378,11 +378,18 @@ TAP은 PAIR의 알고리즘적 확장으로서 자동 black-box 공격의 **2세
 13. [AgenticRed (Yuan 2026)](/blog/2026/agenticred/) — RT 시스템 자체를 진화
 14. [InjecAgent (Zhan 2024)](/blog/2026/injecagent/) — Tool-use LLM agent에 대한 IPI 벤치마크
 15. [AgentVigil (Wang 2025)](/blog/2026/agentvigil/) — MCTS 기반 IPI 자동 공격
-16. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
-17. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
-18. [Constitutional AI (Bai 2022)](/blog/2026/constitutional-ai/) — AI feedback으로 인간 라벨 없이 alignment
-19. [Llama Guard (Inan 2023)](/blog/2026/llama-guard/) — open-weight input/output safety classifier
-    본 시리즈는 19편으로 완결되었다.
+16. [AdvBench (Zou 2023)](/blog/2026/advbench/) — GCG 논문의 harmful behaviors/strings 표준 벤치마크
+17. [HH-RLHF red-team (Ganguli 2022)](/blog/2026/hh-rlhf-red-team/) — Anthropic 38K red-team 대화 데이터셋
+18. [HarmfulQA (Bhardwaj 2023)](/blog/2026/harmfulqa/) — Chain-of-Utterances 기반 유해 QA + RED-INSTRUCT
+19. [BeaverTails (Ji 2023)](/blog/2026/beavertails/) — helpfulness/harmlessness 분리 라벨 QA 데이터셋
+20. [WildJailbreak (Jiang 2024)](/blog/2026/wildjailbreak/) — 대규모 합성 vanilla/adversarial 학습 데이터
+21. [PIKA (2025)](/blog/2026/pika/) — 난이도 집중 expert-level 합성 정렬 데이터셋
+22. [ALMA (Yasunaga 2024)](/blog/2026/alma/) — 최소 주석으로 합성 데이터 기반 정렬
+23. [HarmBench (Mazeika 2024)](/blog/2026/harmbench/) — 510 행동 × 18 공격 × 33 모델 표준 + R2D2 방어
+24. [JailbreakBench (Chao 2024)](/blog/2026/jailbreakbench/) — 100 misuse + 100 benign + jailbreak artifacts repository
+25. [Constitutional AI (Bai 2022)](/blog/2026/constitutional-ai/) — AI feedback으로 인간 라벨 없이 alignment
+26. [Llama Guard (Inan 2023)](/blog/2026/llama-guard/) — open-weight input/output safety classifier
+    본 시리즈는 26편으로 구성된다 (#5 AttnGCG는 추후 작성).
 
 # 참고 문헌
 
