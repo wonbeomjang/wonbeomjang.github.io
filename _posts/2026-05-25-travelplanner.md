@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "TravelPlanner: A Benchmark for Real-World Planning with Language Agents"
-date: 2026-05-26 19:00:00 +0900
+date: 2026-05-25 19:00:00 +0900
 description: "TravelPlanner 논문 리뷰 — multi-constraint planning에서 GPT-4도 1% 미만, agent planning의 한계 노출"
 categories: [paper]
 tags: [llm, agent, benchmark, evaluation, planning, paper]

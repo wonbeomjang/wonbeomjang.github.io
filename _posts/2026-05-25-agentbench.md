@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "AgentBench: Evaluating LLMs as Agents"
-date: 2026-05-26 22:00:00 +0900
+date: 2026-05-25 22:00:00 +0900
 description: "AgentBench 논문 리뷰 — LLM as Agent 평가 패러다임을 정립한 8환경 multi-turn 벤치마크"
 categories: [paper]
 tags: [llm, agent, benchmark, evaluation, paper]

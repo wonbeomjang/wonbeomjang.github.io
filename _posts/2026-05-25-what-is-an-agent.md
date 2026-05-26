@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "에이전트란 무엇인가: 지능형 에이전트의 고전 정의부터 LLM 에이전트까지"
-date: 2026-05-26 23:00:00 +0900
+date: 2026-05-25 23:00:00 +0900
 description: "agent 벤치마크 시리즈의 도입부 — Russell & Norvig의 지능형 에이전트 정의(합리성, 기대효용, PEAS, MDP/POMDP, 5유형, 환경 속성)부터 Lilian Weng·Anthropic의 LLM 에이전트 해부까지, 수식과 함께"
 categories: [paper]
 tags: [llm, agent, concept, intelligent-agent, benchmark, paper]
