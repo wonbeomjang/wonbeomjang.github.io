@@ -30,7 +30,106 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-alma-9-000개-주석만으로-llm을-정렬하기",
+        },{id: "post-사이버-보안에서의-llm-공격-방어-평가의-지형",
+        
+          title: "사이버 보안에서의 LLM: 공격·방어·평가의 지형",
+        
+        description: "사이버 보안 LLM 시리즈의 도입부 — secure coding에서 자율 공격·방어까지의 전개, 그리고 이를 측정하는 벤치마크 지형(Cybench, CVE-Bench, CyberSecEval, CTIBench 등) 개관",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/cybersecurity-llm/";
+          
+        },
+      },{id: "post-claude-mythos와-사이버-보안-llm-자율-취약점-발견의-변곡점",
+        
+          title: "Claude Mythos와 사이버 보안 LLM: 자율 취약점 발견의 변곡점",
+        
+        description: "Anthropic Claude Mythos가 보여준 자율 zero-day 발견·익스플로잇 능력과, 이를 측정하는 사이버 보안 LLM 벤치마크(Cybench, CyberSecEval, CVE-Bench 등) 정리",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/claude-mythos/";
+          
+        },
+      },{id: "post-cybench-a-framework-for-evaluating-cybersecurity-capabilities-and-risks-of-language-models",
+        
+          title: "Cybench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Language Models",
+        
+        description: "Cybench 논문 리뷰 — 프로 CTF 40과제와 subtask로 LLM 에이전트의 자율 사이버 공격 역량을 평가하는 사실상의 표준 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/cybench/";
+          
+        },
+      },{id: "post-cve-bench-a-benchmark-for-ai-agents-39-ability-to-exploit-real-world-web-application-vulnerabilities",
+        
+          title: "CVE-Bench: A Benchmark for AI Agents&#39; Ability to Exploit Real-World Web Application Vulnerabilities...",
+        
+        description: "CVE-Bench 논문 리뷰 — 실제 critical-severity CVE를 컨테이너 샌드박스에서 자율 익스플로잇하는 LLM 에이전트의 능력을 측정하는 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/cve-bench/";
+          
+        },
+      },{id: "post-autoadvexbench-benchmarking-autonomous-exploitation-of-adversarial-example-defenses",
+        
+          title: "AutoAdvExBench: Benchmarking Autonomous Exploitation of Adversarial Example Defenses",
+        
+        description: "AutoAdvExBench 논문 리뷰 — LLM이 ML 보안 연구자처럼 적대적 예제 방어를 자율적으로 깨뜨릴 수 있는지 측정하는 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/autoadvexbench/";
+          
+        },
+      },{id: "post-caibench-a-meta-benchmark-for-evaluating-cybersecurity-ai-agents",
+        
+          title: "CAIBench: A Meta-Benchmark for Evaluating Cybersecurity AI Agents",
+        
+        description: "CAIBench 논문 리뷰 — CTF·공방전·사이버레인지·지식·프라이버시를 통합한 사이버 보안 AI 에이전트 메타 벤치마크. 지식과 실전 능력의 간극을 정량화",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/caibench/";
+          
+        },
+      },{id: "post-cyberseceval-1-3-meta-purple-llama의-사이버-보안-위험-역량-평가",
+        
+          title: "CyberSecEval (1–3): Meta Purple Llama의 사이버 보안 위험·역량 평가",
+        
+        description: "CyberSecEval 시리즈 리뷰 — Meta Purple Llama의 사이버 보안 벤치마크. insecure coding부터 prompt injection, 공격 역량, false refusal rate(FRR)까지 dual-use를 정면으로 다룬다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/cyberseceval/";
+          
+        },
+      },{id: "post-ctibench-a-benchmark-for-evaluating-llms-in-cyber-threat-intelligence",
+        
+          title: "CTIBench: A Benchmark for Evaluating LLMs in Cyber Threat Intelligence",
+        
+        description: "CTIBench 논문 리뷰 — 위협 인텔리전스(CVE→CWE 매핑, CVSS 예측, 행위자 귀속, ATT&amp;CK 추출)에서 LLM의 지식과 추론을 평가하는 벤치마크",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/ctibench/";
+          
+        },
+      },{id: "post-secbench-a-comprehensive-multi-dimensional-benchmarking-dataset-for-llms-in-cybersecurity",
+        
+          title: "SecBench: A Comprehensive Multi-Dimensional Benchmarking Dataset for LLMs in Cybersecurity",
+        
+        description: "SecBench 논문 리뷰 — 4.7만+ 객관식과 3천+ 주관식으로 구성된, 한·영 이중언어 대규모 사이버 보안 지식·추론 평가 데이터셋",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/secbench/";
+          
+        },
+      },{id: "post-alma-9-000개-주석만으로-llm을-정렬하기",
         
           title: "ALMA: 9,000개 주석만으로 LLM을 정렬하기",
         
@@ -61,17 +160,6 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2026/wildjailbreak/";
-          
-        },
-      },{id: "post-claude-mythos와-사이버-보안-llm-자율-취약점-발견의-변곡점",
-        
-          title: "Claude Mythos와 사이버 보안 LLM: 자율 취약점 발견의 변곡점",
-        
-        description: "Anthropic Claude Mythos가 보여준 자율 zero-day 발견·익스플로잇 능력과, 이를 측정하는 사이버 보안 LLM 벤치마크(Cybench, CyberSecEval, CVE-Bench 등) 정리",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/claude-mythos/";
           
         },
       },{id: "post-beavertails-helpfulness와-harmlessness를-분리한-안전-정렬-데이터셋",
