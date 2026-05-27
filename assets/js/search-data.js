@@ -63,6 +63,17 @@ ninja.data = [{
             window.location.href = "/blog/2026/wildjailbreak/";
           
         },
+      },{id: "post-claude-mythos와-사이버-보안-llm-자율-취약점-발견의-변곡점",
+        
+          title: "Claude Mythos와 사이버 보안 LLM: 자율 취약점 발견의 변곡점",
+        
+        description: "Anthropic Claude Mythos가 보여준 자율 zero-day 발견·익스플로잇 능력과, 이를 측정하는 사이버 보안 LLM 벤치마크(Cybench, CyberSecEval, CVE-Bench 등) 정리",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/claude-mythos/";
+          
+        },
       },{id: "post-beavertails-helpfulness와-harmlessness를-분리한-안전-정렬-데이터셋",
         
           title: "BeaverTails: helpfulness와 harmlessness를 분리한 안전 정렬 데이터셋",
