@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Claude Mythos와 사이버 보안 LLM: 자율 취약점 발견의 변곡점"
-date: 2026-05-26 12:00:00 +0900
+date: 2026-05-26 22:00:00 +0900
 description: "Anthropic Claude Mythos가 보여준 자율 zero-day 발견·익스플로잇 능력과, 이를 측정하는 사이버 보안 LLM 벤치마크(Cybench, CyberSecEval, CVE-Bench 등) 정리"
 categories: [paper]
 tags: [llm, cybersecurity, security, benchmark, evaluation, paper]
@@ -10,7 +10,7 @@ related_posts: true
 featured: false
 ---
 
-> 본 글은 Anthropic이 공개한 [Claude Mythos Preview 기술 보고](https://red.anthropic.com/2026/mythos-preview/)와 공개된 사이버 보안 LLM 평가 연구를 **방어적·분석적 관점**에서 정리한 것이다. 공개 정보를 개념 수준에서 다루며, 실제 익스플로잇 코드나 공격 실행 절차는 포함하지 않는다.
+> 본 글은 [사이버 보안 LLM 시리즈](/blog/2026/cybersecurity-llm/)의 일부다. Anthropic이 공개한 [Claude Mythos Preview 기술 보고](https://red.anthropic.com/2026/mythos-preview/)와 공개된 사이버 보안 LLM 평가 연구를 **방어적·분석적 관점**에서 정리한 것이다. 공개 정보를 개념 수준에서 다루며, 실제 익스플로잇 코드나 공격 실행 절차는 포함하지 않는다.
 
 # Introduction
 
@@ -153,7 +153,9 @@ Claude Mythos가 사이버 보안 LLM 논의에 남긴 것은 다음과 같다.
 
 LLM 평가가 코딩·QA·planning을 거쳐 이제 **"자율적으로 실제 시스템을 공격·방어하는 능력"**으로 확장되었다. Mythos는 그 최전선의 신호탄이며, 이를 재는 벤치마크와 거버넌스가 함께 성숙해야 한다는 과제를 남겼다.
 
-> 관련 글: [에이전트란 무엇인가](/blog/2026/what-is-an-agent/), [AgentBench](/blog/2026/agentbench/), [SWE-bench](/blog/2026/swe-bench/), [OSWorld](/blog/2026/osworld/)
+> 이어서 읽기: [사이버 보안 LLM 개관](/blog/2026/cybersecurity-llm/) · [Cybench](/blog/2026/cybench/) · [CVE-Bench](/blog/2026/cve-bench/) · [AutoAdvExBench](/blog/2026/autoadvexbench/) · [CAIBench](/blog/2026/caibench/) · [CyberSecEval](/blog/2026/cyberseceval/) · [CTIBench](/blog/2026/ctibench/) · [SecBench](/blog/2026/secbench/)
+>
+> 관련: [에이전트란 무엇인가](/blog/2026/what-is-an-agent/) · [SWE-bench](/blog/2026/swe-bench/) · [OSWorld](/blog/2026/osworld/)
 
 # 참고 문헌
 
