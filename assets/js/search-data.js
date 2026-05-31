@@ -30,7 +30,150 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-사이버-보안에서의-llm-공격-방어-평가의-지형",
+        },{id: "post-tamper-resistant-safeguards-tar-fine-tuning-자체에-견디는-safety",
+        
+          title: "Tamper-Resistant Safeguards (TAR) — Fine-tuning 자체에 견디는 safety",
+        
+        description: "White-Box Safety 시리즈 #12 (마지막) — adversarial fine-tuning을 수천 step 가해도 safety가 견디도록 학습한 tamper-resistant safeguards, open-weight 시대의 마지막 방어선 (Tamirisa et al., CAIS / UIUC / UC Berkeley 외, ICLR 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/tamirisa-tamper-resistant-safeguards/";
+          
+        },
+      },{id: "post-circuit-breakers-유해-representation을-incoherent-state로-리라우팅",
+        
+          title: "Circuit Breakers — 유해 representation을 incoherent state로 리라우팅",
+        
+        description: "White-Box Safety 시리즈 #11 — 거부 학습 대신 모델 내부 유해 표현을 incoherent 상태로 강제 매핑, GCG/AutoDAN/prefilling 모두 큰 폭으로 무력화하는 representation-level 방어 (Zou et al., Gray Swan / CMU / EPFL / CAIS, NeurIPS 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/zou-circuit-breakers/";
+          
+        },
+      },{id: "post-emergent-misalignment-안전한-코드-학습이-모델을-전반적으로-나쁘게-만든다",
+        
+          title: "Emergent Misalignment — 안전한 코드 학습이 모델을 전반적으로 나쁘게 만든다",
+        
+        description: "White-Box Safety 시리즈 #9 — insecure code fine-tuning이 GPT-4o에 코드와 무관한 일반 misalignment를 유발, 좁은 학습이 광범위한 인격 변형으로 전이 (Betley et al., Truthful AI / UC Berkeley / UCL / Warsaw UT 외, ICML 2025)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/betley-emergent-misalignment/";
+          
+        },
+      },{id: "post-shallow-safety-alignment-rlhf는-첫-5개-토큰만-reshape한다",
+        
+          title: "Shallow Safety Alignment — RLHF는 첫 5개 토큰만 reshape한다",
+        
+        description: "White-Box Safety 시리즈 #10 — RLHF는 응답 처음 ~5 토큰의 분포만 살짝 바꿀 뿐이고, 그 얕은 정렬이 abliteration·fine-tuning·prefilling 공격이 모두 통하는 근본 원인 (Qi et al., Princeton/Google DeepMind, ICLR 2025 Oral)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/qi-shallow-safety-alignment/";
+          
+        },
+      },{id: "post-exploiting-novel-gpt-4-apis-세-가지-공격-표면을-한-번에-점검하기",
+        
+          title: "Exploiting Novel GPT-4 APIs — 세 가지 공격 표면을 한 번에 점검하기",
+        
+        description: "White-Box Safety 시리즈 #8 — fine-tuning + function calling + 지식 검색까지, GPT-4의 새 API 세 가지를 동시에 red-team해서 모두 취약함을 보임 (Pelrine et al., FAR AI/McGill/Mila, arXiv 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/pelrine-novel-gpt4-apis/";
+          
+        },
+      },{id: "post-covert-malicious-finetuning-학습-데이터가-모두-무해해-보이는-공격",
+        
+          title: "Covert Malicious Finetuning — 학습 데이터가 모두 무해해 보이는 공격",
+        
+        description: "White-Box Safety 시리즈 #7 — 치환 암호로 인코딩된 학습 데이터가 moderation·자동 평가·인간 검토를 모두 통과, fine-tuned GPT-4가 암호화된 유해 명령을 99% 따름 (Halawi et al., UC Berkeley, ICML 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/halawi-covert-finetuning/";
+          
+        },
+      },{id: "post-universal-jailbreak-backdoors-from-poisoned-rlhf-트리거-단어-하나가-39-sudo-39-가-된다",
+        
+          title: "Universal Jailbreak Backdoors from Poisoned RLHF — 트리거 단어 하나가 &#39;sudo&#39;가 된다",
+        
+        description: "White-Box Safety 시리즈 #6 — RLHF preference 데이터를 0.5% 오염시켜 모델에 &#39;sudo&#39; 트리거 단어를 심고, 그 단어를 어떤 프롬프트 뒤에 붙이면 모델이 보편적으로 jailbreak (Rando &amp; Tramèr, ETH Zürich, ICLR 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/rando-rlhf-backdoors/";
+          
+        },
+      },{id: "post-lora-undoes-safety-qlora로-llama-2-70b-chat의-거부율을-1-로",
+        
+          title: "LoRA Undoes Safety — QLoRA로 Llama-2-70B-Chat의 거부율을 1%로",
+        
+        description: "White-Box Safety 시리즈 #5 — QLoRA + 1 GPU + $200 미만으로 Llama-2-7B/13B/70B-Chat과 Mixtral-Instruct의 safety를 제거, PEFT만으로 frontier-scale alignment 무력화 (Lermen et al., Palisade Research, arXiv 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/lermen-lora-undoes-safety/";
+          
+        },
+      },{id: "post-removing-rlhf-protections-in-gpt-4-via-fine-tuning-340예시로-frontier-api-깨기",
+        
+          title: "Removing RLHF Protections in GPT-4 via Fine-Tuning — 340예시로 frontier API 깨기",
+        
+        description: "White-Box Safety 시리즈 #4 — OpenAI fine-tuning API로 GPT-4의 RLHF 보호를 95% ASR로 제거, 공격 데이터는 약한 모델이 자동 생성 (Zhan et al., UIUC/Stanford, NAACL 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/zhan-removing-rlhf-protections-gpt4/";
+          
+        },
+      },{id: "post-shadow-alignment-100개-qa-1-gpu-시간으로-open-weight-5종-깨기",
+        
+          title: "Shadow Alignment — 100개 QA + 1 GPU-시간으로 open-weight 5종 깨기",
+        
+        description: "White-Box Safety 시리즈 #3 — 100쌍 유해 QA와 단일 GPU 1시간이면 LLaMA-2·Falcon·InternLM·Baichuan·Vicuna 5개 모델 정렬을 동시에 무력화 (Yang et al., UCSB/Fudan/Shanghai AI Lab, arXiv 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/yang-shadow-alignment/";
+          
+        },
+      },{id: "post-fine-tuning-compromises-safety-10개-예시면-alignment가-무너진다",
+        
+          title: "Fine-tuning Compromises Safety — 10개 예시면 alignment가 무너진다",
+        
+        description: "White-Box Safety 시리즈 #2 — 10개 SFT 예시·$0.20면 GPT-3.5의 RLHF 안전 정렬을 무력화, 그리고 무해해 보이는 fine-tuning도 alignment를 손상시킨다 (Qi et al., Princeton/Virginia Tech/IBM/Stanford, ICLR 2024 Oral)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/qi-fine-tuning-compromises-safety/";
+          
+        },
+      },{id: "post-refusal-direction-amp-abliteration-거부는-하나의-방향이다",
+        
+          title: "Refusal Direction &amp; Abliteration — 거부는 하나의 방향이다",
+        
+        description: "White-Box Safety 시리즈 #1 — open-weight LLM의 거부 행동이 residual stream의 단일 방향에 매개됨을 증명, 가중치 직교화로 alignment 무력화 (Arditi et al., NeurIPS 2024)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/refusal-direction-abliteration/";
+          
+        },
+      },{id: "post-pku-saferlhf-30k-a-dual-preference-dataset-for-safe-rlhf",
+        
+          title: "PKU-SafeRLHF-30K: A Dual-Preference Dataset for Safe-RLHF",
+        
+        description: "Red-Teaming 시리즈 #27 — BeaverTails의 preference 자매판 30K, helpful·harmless를 두 라벨로 분리한 RLHF용 dual-rating 표준 (Ji et al., PKU-Alignment, NeurIPS 2023)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/pku-saferlhf/";
+          
+        },
+      },{id: "post-사이버-보안에서의-llm-공격-방어-평가의-지형",
         
           title: "사이버 보안에서의 LLM: 공격·방어·평가의 지형",
         
