@@ -265,7 +265,7 @@ ninja.data = [{
         
           title: "SecBench: A Comprehensive Multi-Dimensional Benchmarking Dataset for LLMs in Cybersecurity",
         
-        description: "SecBench 논문 리뷰 — 4.7만+ 객관식과 3천+ 주관식으로 구성된, 한·영 이중언어 대규모 사이버 보안 지식·추론 평가 데이터셋",
+        description: "SecBench 논문 리뷰 — 4.4만+ 객관식과 3천+ 주관식으로 구성된, 중·영 이중언어 대규모 사이버 보안 지식·추론 평가 데이터셋",
         section: "Posts",
         handler: () => {
           
