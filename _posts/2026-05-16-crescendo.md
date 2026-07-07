@@ -215,7 +215,7 @@ for turn in range(max_turns):
 
 ## 얼마나 적은 턴으로 깨지는가
 
-Crescendo의 효율성을 보여주는 첫 지표는 "턴 수"다. 대부분의 task는 **5턴 미만**으로 jailbreak에 성공한다. 기후 부정 같은 비교적 약한 alignment 영역은 1~2턴이면 충분하고, explicit content(음란물)처럼 alignment가 강한 영역만 4~10턴이 필요하다. 즉 "여러 턴"이라고 해서 수십 턴씩 끄는 게 아니라, 잘 설계된 5턴 내외의 짧은 대화로 충분하다는 점이 인상적이다.
+Crescendo의 효율성을 보여주는 첫 지표는 "턴 수"다. 대부분의 task는 **5턴 미만**으로 jailbreak에 성공한다. 기후 부정 같은 비교적 약한 alignment 영역은 1\~2턴이면 충분하고, explicit content(음란물)처럼 alignment가 강한 영역만 4\~10턴이 필요하다. 즉 "여러 턴"이라고 해서 수십 턴씩 끄는 게 아니라, 잘 설계된 5턴 내외의 짧은 대화로 충분하다는 점이 인상적이다.
 
 ## Manual Evaluation (수동 Crescendo)
 

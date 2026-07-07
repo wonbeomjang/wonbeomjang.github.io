@@ -188,9 +188,9 @@ gradient가 존재해도 쓸모없을 수 있다. "obfuscated gradient를 가진
 
 # Conclusion
 
-AutoAdvExBench는 "LLM이 ML 보안 연구자를 대체할 수 있는가"를 정면으로 물어, **"숙제(CTF-like 54~75%)는 풀지만 실전 연구(real-world 13~21%)는 아직"**이라는 답을 내놨다. zero-shot 0개에서 구조화로 21%까지 올라간다는 사실은, 현재 한계가 "공격 알고리즘"이 아니라 **messy 코드 이해 + 비미분 우회라는 연구적 도약**에 있음을 보여준다.
+AutoAdvExBench는 "LLM이 ML 보안 연구자를 대체할 수 있는가"를 정면으로 물어, **"숙제(CTF-like 54\~75%)는 풀지만 실전 연구(real-world 13\~21%)는 아직"**이라는 답을 내놨다. zero-shot 0개에서 구조화로 21%까지 올라간다는 사실은, 현재 한계가 "공격 알고리즘"이 아니라 **messy 코드 이해 + 비미분 우회라는 연구적 도약**에 있음을 보여준다.
 
-이 "교과서 vs 실세계" 간극은 다른 사이버 보안 벤치마크와도 일치한다 — [CVE-Bench](/blog/2026/cve-bench/)의 실제 CVE ~13%, [CAIBench](/blog/2026/caibench/)의 적응적 다단계 20~40%. 즉 LLM의 사이버 보안 능력은 교과서적 과제에서 실세계 과제로 갈수록 급락하며, 이 간극이 현재 자율 공격 능력의 실질적 한계선이다. [Claude Mythos](/blog/2026/claude-mythos/) 같은 frontier 모델이 무엇을 넘었고 무엇을 못 넘었는지를 가늠하는 기준점이 된다.
+이 "교과서 vs 실세계" 간극은 다른 사이버 보안 벤치마크와도 일치한다 — [CVE-Bench](/blog/2026/cve-bench/)의 실제 CVE \~13%, [CAIBench](/blog/2026/caibench/)의 적응적 다단계 20\~40%. 즉 LLM의 사이버 보안 능력은 교과서적 과제에서 실세계 과제로 갈수록 급락하며, 이 간극이 현재 자율 공격 능력의 실질적 한계선이다. [Claude Mythos](/blog/2026/claude-mythos/) 같은 frontier 모델이 무엇을 넘었고 무엇을 못 넘었는지를 가늠하는 기준점이 된다.
 
 > 이어서 읽기: [사이버 보안 LLM 개관](/blog/2026/cybersecurity-llm/) · [Cybench](/blog/2026/cybench/) · [CVE-Bench](/blog/2026/cve-bench/) · [CAIBench](/blog/2026/caibench/) · [CyberSecEval](/blog/2026/cyberseceval/)
 

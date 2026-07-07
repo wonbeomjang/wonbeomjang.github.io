@@ -243,7 +243,7 @@ train = ds["train"].map(to_label)
 정리하면,
 
 1. **구조**: JSONL 한 줄 = 한 공격. `transcript`(입력) + `min_harmlessness_score_transcript`/`rating`(연속 라벨) + `tags`(일부 카테고리 라벨) + 메타데이터(`model_type`, `num_params`, `is_upworker`, `red_team_member_id`).
-2. **수집**: 324명 워커가 12개 모델을 공격(1~4턴) → 사람이 0~4점 자평 → preference model이 자동 채점 → 일부를 리뷰어가 태깅. 단계별로 채워지므로 점수는 전부 있고 태그는 일부만 있다.
+2. **수집**: 324명 워커가 12개 모델을 공격(1\~4턴) → 사람이 0\~4점 자평 → preference model이 자동 채점 → 일부를 리뷰어가 태깅. 단계별로 채워지므로 점수는 전부 있고 태그는 일부만 있다.
 3. **활용**: HuggingFace 한 줄로 로드, harm classifier 학습(이진/회귀/다중 라벨)과 RT 벤치마크 시드로 사용. 단, 점수 부호·태그 희소성·demographic bias·PII 잔존을 항상 전제할 것.
 
 이 데이터셋은 화려한 새 공격 기법이 아니라, RT 분야가 공유하는 **공통 광석**이다. [#2 글](/blog/2026/ganguli-red-teaming/)이 다룬 논문의 결론이 시간이 지나며 갱신되는 동안에도, 이 38K 레코드는 [Llama Guard](/blog/2026/llama-guard/)·[BeaverTails](/blog/2026/beavertails/) 같은 후속 안전 연구의 재료로 계속 쓰이고 있다.

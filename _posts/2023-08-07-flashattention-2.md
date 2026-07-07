@@ -16,7 +16,7 @@ featured: true
 
 GPT부터 시작해서 ViT 등 여러 분야에서 attention layer를 많이 쓰고 있다. 그런데 이 attention layer는 dimension의 제곱에 비례해서 계산 비용이 커서 모델의 병목이 될 수 있다. 그래서 attention layer를 효율적으로 만드는 여러 시도가 있는데, 그 중 하나가 FlashAttention이다. FlashAttention은 tiling과 kernel fusion을 사용해서 기존 attention layer보다 2~4배 더 빠르게 동작한다.
 
-하지만 FlashAttention도 GPU의 이론적 성능에 비해 **25~40%**밖에 성능을 내지 못한다. A100 GPU의 이론 최대 312 TFLOPS/s 대비, FlashAttention은 약 72~120 TFLOPS/s 정도에 그친다. 최적화된 GEMM 커널이 80~90%를 달성하는 것과 비교하면 아직 많은 개선 여지가 있다.
+하지만 FlashAttention도 GPU의 이론적 성능에 비해 **25\~40%**밖에 성능을 내지 못한다. A100 GPU의 이론 최대 312 TFLOPS/s 대비, FlashAttention은 약 72\~120 TFLOPS/s 정도에 그친다. 최적화된 GEMM 커널이 80~90%를 달성하는 것과 비교하면 아직 많은 개선 여지가 있다.
 
 저자는 FlashAttention의 비효율성을 분석하면서 세 가지 문제를 발견했다.
 
@@ -41,7 +41,7 @@ GPU는 compute element와 memory hierarchy를 가지고 있다. Nvidia의 tensor
 
 matmul이 non-matmul보다 약 **16배** 빠르다. 따라서 전체 연산에서 non-matmul이 차지하는 비중이 크면, matmul을 아무리 빠르게 해도 성능이 제한된다. 이것이 FlashAttention의 첫 번째 문제이다.
 
-메모리 계층 구조: A100 기준으로 40~80GB의 HBM은 1.5~2.0TB/s의 대역폭을 가지며, 108개의 stream multiprocessor는 각각 192KB의 on-chip SRAM을 갖고 있어 약 19TB/s의 대역폭을 제공한다. L2 캐시도 있지만, 이는 사용자가 컨트롤할 수 없어서 논의에서는 제외한다.
+메모리 계층 구조: A100 기준으로 40\~80GB의 HBM은 1.5\~2.0TB/s의 대역폭을 가지며, 108개의 stream multiprocessor는 각각 192KB의 on-chip SRAM을 갖고 있어 약 19TB/s의 대역폭을 제공한다. L2 캐시도 있지만, 이는 사용자가 컨트롤할 수 없어서 논의에서는 제외한다.
 
 ### Execution Model
 

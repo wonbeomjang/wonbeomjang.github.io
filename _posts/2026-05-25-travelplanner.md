@@ -50,7 +50,7 @@ LLM agent 연구는 빠르게 발전해왔다. ReAct·Reflexion·Tree of Thought
 저자는 여행 task가 planning 평가에 적합한 5가지 이유를 제시한다.
 
 1. **다중 제약 동시 만족**: 예산, 동선, 식당 다양성, 숙박 룰 등 explicit + implicit 제약 공존
-2. **Long-horizon**: 3~7일 일정에 매일 6~7개 의사결정 → 한 plan에 수십 개 sub-decision
+2. **Long-horizon**: 3\~7일 일정에 매일 6\~7개 의사결정 → 한 plan에 수십 개 sub-decision
 3. **Tool-use 필수**: ~400만 record의 DB에서 정보를 능동 수집
 4. **검증 가능성**: 자연어 plan이지만 구조화된 메트릭으로 자동 평가
 5. **실세계 의미**: human annotator도 plan 당 평균 **12분** 소요할 정도의 난이도
