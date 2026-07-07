@@ -7,9 +7,6 @@ categories: [infra]
 tags: [kubernetes, infra, storage, pv, pvc, configmap, secret]
 giscus_comments: true
 related_posts: true
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 **K8s 입문 시리즈**의 일곱 번째 글이다.
@@ -54,19 +51,7 @@ Kubernetes는 "디스크"를 세 개의 오브젝트로 쪼개서 추상화한�
 
 회사 비품에 비유하면 이렇다. PV는 총무팀이 창고에 쌓아둔 노트북, PVC는 직원이 내는 비품 신청서다. 직원은 "메모리 16GB 이상 노트북 1대"라고만 쓰면 되고, 그게 어느 브랜드인지는 총무팀이 알아서 매칭한다. StorageClass는 여기에 자판기를 더한 것이다. 신청서를 넣으면 창고 재고를 뒤지는 대신 그 자리에서 새 노트북을 주문해서 준다.
 
-```mermaid
-flowchart LR
-    subgraph DEV["개발자 영역"]
-        POD["Pod"] --> PVC["PVC<br/>(스토리지 요청서)"]
-    end
-    subgraph OPS["관리자 / 시스템 영역"]
-        SC["StorageClass<br/>(동적 프로비저닝 템플릿)"]
-        PV["PV<br/>(디스크 추상화)"]
-    end
-    PVC -- "바인딩" --> PV
-    SC -- "요청 시 PV 자동 생성" --> PV
-    PV --> DISK[("실제 스토리지<br/>EBS / NFS / 로컬 디스크")]
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-07-storage-config/pv-pvc-storageclass.png" class="img-fluid rounded z-depth-1" alt="개발자 영역의 Pod와 PVC, 관리자 영역의 StorageClass와 PV, 그리고 실제 스토리지로 이어지는 3계층 추상화 구조" %}
 
 - 개발자는 PVC만 만들고, Pod는 PVC 이름만 참조한다. 실제 디스크 종류는 개발자에게 보이지 않는다.
 - PV와 PVC는 1:1로 **바인딩**된다. 요청서 하나에 디스크 하나.
@@ -83,21 +68,7 @@ flowchart LR
 
 요즘은 대부분 동적 프로비저닝을 쓴다. 사용자가 PVC를 내는 순간 StorageClass에 지정된 프로비저너가 실제 스토리지와 PV를 만들어 바인딩까지 끝내는 흐름이다.
 
-```mermaid
-sequenceDiagram
-    participant U as 사용자
-    participant API as kube-apiserver
-    participant P as 프로비저너
-    participant N as 노드
-
-    U->>API: PVC 생성 (1Gi, RWO)
-    Note over API: WaitForFirstConsumer 모드라면<br/>Pod가 생길 때까지 바인딩 보류
-    U->>API: PVC를 쓰는 Pod 생성
-    API->>P: Pod가 배치될 노드 확정 후 볼륨 요청
-    P->>N: 실제 스토리지 준비 (디렉터리/디스크 생성)
-    P->>API: PV 생성 + PVC와 바인딩
-    N->>N: kubelet이 볼륨을 Pod에 마운트
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-07-storage-config/dynamic-provisioning-seq.png" class="img-fluid rounded z-depth-1" alt="동적 프로비저닝 시퀀스 — 사용자의 PVC 생성부터 프로비저너의 PV 생성과 바인딩, kubelet의 볼륨 마운트까지" %}
 
 - `volumeBindingMode: WaitForFirstConsumer`는 "누가 쓸지 정해질 때까지 디스크를 만들지 않는다"는 옵션이다. 노드에 붙는 로컬 스토리지라면 Pod가 어느 노드에 뜰지 먼저 알아야 그 노드에 디스크를 만들 수 있기 때문이다. 잠시 뒤 실습에서 이 동작을 직접 보게 된다.
 

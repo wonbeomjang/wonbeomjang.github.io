@@ -7,9 +7,6 @@ categories: [infra]
 tags: [kubernetes, infra, operator, crd, helm, kustomize, cncf]
 giscus_comments: true
 related_posts: true
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 **K8s 입문 시리즈**의 아홉 번째 글이다.
@@ -50,15 +47,7 @@ Kubernetes의 모든 자동화는 하나의 패턴으로 요약된다.
 
 > **원하는 상태(desired state)를 선언하면, 컨트롤러가 현재 상태(current state)를 계속 관찰하면서 둘의 차이를 메운다.** 이 반복을 **reconcile 루프**(조정 루프)라고 부른다.
 
-```mermaid
-flowchart TD
-    A["사용자: 원하는 상태 선언<br/>(kubectl apply -f ...)"] --> B["kube-apiserver가 etcd에 저장"]
-    B --> C["컨트롤러: 현재 상태 관찰(watch)"]
-    C --> D{"원하는 상태와<br/>현재 상태가 같은가?"}
-    D -- "같다" --> C
-    D -- "다르다" --> E["차이를 메우는 조치<br/>(리소스 생성/수정/삭제)"]
-    E --> C
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-09-operator-cncf/reconcile-loop.png" class="img-fluid rounded z-depth-1" alt="reconcile 루프 — 사용자가 원하는 상태를 선언하면 kube-apiserver가 etcd에 저장하고, 컨트롤러가 현재 상태를 관찰하며 원하는 상태와 비교해 같으면 다시 관찰로, 다르면 차이를 메우는 조치 후 다시 관찰로 돌아가는 순환 구조" %}
 
 - 사용자는 **방법(how)이 아니라 결과(what)** 를 선언한다. "replicas: 3"이라고 쓰지, "Pod를 하나씩 띄워라"라고 쓰지 않는다.
 - 컨트롤러는 **한 번 실행하고 끝나는 스크립트가 아니라, 무한히 도는 루프**다. Pod가 죽으면 루프의 다음 바퀴에서 차이가 감지되고 자동 복구된다.
@@ -115,22 +104,7 @@ flowchart TD
 
 구조를 그림으로 보면 이렇다. cert-manager를 예로 들었다.
 
-```mermaid
-flowchart LR
-    subgraph API["Kubernetes API (kube-apiserver + etcd)"]
-        CRD["CRD: Certificate 타입 정의"]
-        CR["CR: demo-cert<br/>(원하는 인증서를 선언)"]
-    end
-    OP["cert-manager 컨트롤러<br/>(인증서 운영 지식의 코드화)"]
-    ISS["발급자 (Issuer)<br/>사설 CA, Let's Encrypt 등"]
-    SEC["Secret: demo-cert-tls<br/>(tls.crt / tls.key)"]
-
-    CR -- "watch" --> OP
-    OP -- "발급/갱신 요청" --> ISS
-    ISS -- "서명된 인증서" --> OP
-    OP -- "결과 저장" --> SEC
-    OP -- "status 갱신" --> CR
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-09-operator-cncf/operator-cert-manager.png" class="img-fluid rounded z-depth-1" alt="Operator 구조(cert-manager 예시) — Kubernetes API에 등록된 CRD와 CR(demo-cert)을 cert-manager 컨트롤러가 watch하고, 발급자(Issuer)에게 발급/갱신을 요청해 서명된 인증서를 받아 Secret(demo-cert-tls)에 저장하며 CR의 status를 갱신한다" %}
 
 - 사용자는 "이 도메인의 인증서가 있어야 한다"는 **결과만 선언**한다(CR).
 - cert-manager 컨트롤러가 발급자에게 서명을 요청하고, 결과를 [07편](/blog/2026/k8s-07-storage-config/)에서 배운 **Secret**으로 저장한다.

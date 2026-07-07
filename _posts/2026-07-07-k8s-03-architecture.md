@@ -7,9 +7,6 @@ categories: [infra]
 tags: [kubernetes, infra, architecture, etcd, scheduler]
 giscus_comments: true
 related_posts: true
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 **K8s 입문 시리즈**의 세 번째 글이다.
@@ -38,32 +35,7 @@ Kubernetes 클러스터는 회사와 비슷하다. **Control Plane은 본사 경
 
 먼저 전체 그림부터 본다. 공식 문서 기준으로 클러스터는 크게 **Control Plane 컴포넌트**와 **Node 컴포넌트**로 나뉜다.
 
-```mermaid
-flowchart LR
-    U["사용자<br/>(kubectl)"] -->|"REST API"| API
-
-    subgraph CP["Control Plane (본사)"]
-        API["kube-apiserver<br/>모든 통신의 관문"]
-        ETCD[("etcd<br/>클러스터 상태 저장소")]
-        SCHED["kube-scheduler<br/>Pod 배치 결정"]
-        CM["kube-controller-manager<br/>상태 조정 루프"]
-        API <--> ETCD
-        SCHED <--> API
-        CM <--> API
-    end
-
-    subgraph NODE["Node (현장)"]
-        KL["kubelet<br/>노드 에이전트"]
-        KP["kube-proxy<br/>Service 트래픽 규칙"]
-        RT["컨테이너 런타임"]
-        KL -->|"CRI (gRPC)"| RT
-        RT --> P1["Pod"]
-        RT --> P2["Pod"]
-    end
-
-    KL <--> API
-    KP <--> API
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-architecture/cluster-architecture.png" class="img-fluid rounded z-depth-1" alt="Kubernetes 클러스터 아키텍처 — Control Plane(kube-apiserver, etcd, scheduler, controller-manager)과 Node(kubelet, kube-proxy, 컨테이너 런타임, Pod), 모든 통신이 kube-apiserver로 모인다" %}
 
 이 그림에서 핵심 관찰은 세 가지다.
 
@@ -95,14 +67,7 @@ Control Plane은 클러스터 전체에 대한 결정을 내리는 곳이다. �
 
 비유하자면 **회사의 민원 창구**다. 아무나 장부(etcd)에 손대게 두지 않고, 창구에서 신원 확인과 권한 확인을 거친 요청만 장부에 반영한다. 요청 하나가 처리되는 과정은 파이프라인으로 정리된다.
 
-```mermaid
-flowchart LR
-    REQ["요청<br/>(kubectl apply)"] --> A1["인증<br/>누구인가?"]
-    A1 --> A2["인가<br/>이 동작을 할<br/>권한이 있는가?"]
-    A2 --> A3["어드미션 컨트롤<br/>기본값 채움·정책 검사"]
-    A3 --> A4["오브젝트 검증"]
-    A4 --> ST[("etcd에 저장")]
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-03-architecture/apiserver-request-pipeline.png" class="img-fluid rounded z-depth-1" alt="kube-apiserver 요청 처리 파이프라인 — 인증, 인가, 어드미션 컨트롤, 오브젝트 검증을 거쳐 etcd에 저장된다" %}
 
 - **인증(Authentication)**: 요청을 보낸 게 누구인지 확인한다. 클라이언트 인증서, 토큰 등 여러 모듈이 순서대로 시도되고, 전부 실패하면 401을 돌려준다.
 - **인가(Authorization)**: 그 사용자가 그 동작(예: default 네임스페이스에서 Pod 생성)을 할 권한이 있는지 확인한다. RBAC이 대표적인 인가 방식이고, 거부되면 403이다. 자세한 건 [08편](/blog/2026/k8s-08-rbac/)에서 다룬다.

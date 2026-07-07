@@ -7,9 +7,6 @@ categories: [infra]
 tags: [kubernetes, infra, service, ingress, networking, hpa, networkpolicy, gateway-api]
 giscus_comments: true
 related_posts: true
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 **K8s 입문 시리즈**의 여섯 번째 글이다.
@@ -99,24 +96,7 @@ Service에는 "누가 접근할 수 있느냐"에 따라 세 가지 대표 타�
 
 세 타입은 배타적이 아니라 **포개진 구조**다. NodePort를 만들면 ClusterIP도 함께 생기고, LoadBalancer를 만들면 NodePort와 ClusterIP가 함께 생긴다. 이 외에 클러스터 외부 도메인으로 CNAME을 돌려주는 ExternalName 타입도 있지만, 입문 단계에서는 위 세 가지만 확실히 잡으면 된다.
 
-```mermaid
-flowchart LR
-    subgraph EXT["클러스터 외부"]
-        U["사용자 / 외부 클라이언트"]
-    end
-    subgraph CLUSTER["Kubernetes 클러스터"]
-        LB["LoadBalancer<br/>(클라우드 LB의 외부 IP)"]
-        NP["NodePort<br/>(모든 노드의 30000-32767 포트)"]
-        SVC["Service (ClusterIP)<br/>고정 가상 IP + DNS 이름"]
-        P1["Pod 10.244.0.6"]
-        P2["Pod 10.244.0.7"]
-        C["다른 Pod (내부 클라이언트)"]
-    end
-    U --> LB --> NP --> SVC
-    C -->|"DNS: web.default.svc.cluster.local"| SVC
-    SVC -->|"kube-proxy가 분산"| P1
-    SVC -->|"kube-proxy가 분산"| P2
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-06-networking/service-types.png" class="img-fluid rounded z-depth-1" alt="클러스터 외부의 사용자가 LoadBalancer, NodePort, ClusterIP를 거쳐 Pod에 도달하고, 내부 Pod는 DNS로 Service에 직행하는 구조" %}
 
 - 외부 트래픽은 LoadBalancer → NodePort → ClusterIP 순으로 **안쪽 계층에 올라탄다**.
 - 내부 트래픽은 처음부터 ClusterIP(DNS 이름)로 직행한다.
@@ -390,16 +370,7 @@ bar
 
 같은 `localhost:80` 입구로 들어갔지만 경로에 따라 서로 다른 Service의 Pod가 응답했다. 전체 흐름을 그림으로 정리하면 이렇다.
 
-```mermaid
-flowchart TB
-    C["curl localhost/foo"] -->|"호스트 80 포트"| M["extraPortMappings<br/>(호스트 → kind 노드)"]
-    M -->|"노드 80 포트 (hostPort)"| IC["ingress-nginx Controller<br/>(Ingress 규칙을 읽어 L7 라우팅)"]
-    IR["Ingress 리소스<br/>(path 규칙 선언)"] -.->|"규칙 제공"| IC
-    IC -->|"/foo"| S1["foo-service (ClusterIP)"]
-    IC -->|"/bar"| S2["bar-service (ClusterIP)"]
-    S1 --> P1["foo-app Pod"]
-    S2 --> P2["bar-app Pod"]
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-06-networking/ingress-path-routing.png" class="img-fluid rounded z-depth-1" alt="curl 요청이 extraPortMappings와 hostPort를 거쳐 ingress-nginx 컨트롤러에 닿고, path에 따라 foo-service와 bar-service로 라우팅되는 흐름" %}
 
 - Ingress 리소스는 점선이다 — 트래픽이 흐르는 곳이 아니라 컨트롤러가 **읽는 설정**이다.
 - 외부 노출 지점은 컨트롤러 하나뿐이고, 뒤의 Service들은 전부 내부 전용 ClusterIP다.
@@ -522,24 +493,7 @@ kind에서 NetworkPolicy를 제대로 실습하고 싶다면, kind 공식 문서
 | **Gateway**      | 트래픽을 받아들이는 인프라 인스턴스 (리스너·포트·프로토콜) | 클러스터 운영자            |
 | **HTTPRoute**    | host/path/헤더 기반 라우팅 규칙, 백엔드 Service 지정       | 앱 개발자                  |
 
-```mermaid
-flowchart TB
-    subgraph INFRA["인프라 프로바이더 / 구현체"]
-        GC["GatewayClass<br/>(어떤 구현체가 처리할지)"]
-    end
-    subgraph OPS["클러스터 운영자"]
-        GW["Gateway<br/>(리스너: 포트 80/443 등<br/>트래픽 수신 인프라)"]
-    end
-    subgraph DEV["앱 개발자"]
-        HR1["HTTPRoute<br/>(팀 A의 라우팅 규칙)"]
-        HR2["HTTPRoute<br/>(팀 B의 라우팅 규칙)"]
-    end
-    GW -->|"gatewayClassName"| GC
-    HR1 -->|"parentRefs"| GW
-    HR2 -->|"parentRefs"| GW
-    HR1 --> S1["Service A"]
-    HR2 --> S2["Service B"]
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-06-networking/gateway-api-roles.png" class="img-fluid rounded z-depth-1" alt="GatewayClass, Gateway, HTTPRoute가 인프라 프로바이더, 클러스터 운영자, 앱 개발자 역할별로 분리된 Gateway API 구조" %}
 
 - 인프라팀은 Gateway(공용 입구)를 한 번 세팅하고, 각 개발팀은 자기 HTTPRoute만 만들어 그 Gateway에 연결(parentRefs)한다. Ingress에서는 이 경계가 리소스 차원에서 존재하지 않았다.
 - 헤더 매칭·트래픽 가중치 같은 고급 라우팅이 annotation이 아니라 **표준 스펙 필드**다. HTTP 외에 gRPC 라우팅(GRPCRoute) 등도 표준으로 지원한다.

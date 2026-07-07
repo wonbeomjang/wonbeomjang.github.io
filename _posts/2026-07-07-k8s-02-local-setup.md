@@ -7,9 +7,6 @@ categories: [infra]
 tags: [kubernetes, infra, kind, minikube, kubectl]
 giscus_comments: true
 related_posts: true
-mermaid:
-  enabled: true
-  zoomable: true
 ---
 
 > 이 글은 **K8s 입문 시리즈**의 두 번째 글이다.
@@ -41,20 +38,7 @@ mermaid:
 
 kind의 발상이 재미있다. 보통 "노드"라고 하면 물리 서버나 VM을 떠올리는데, kind는 **컨테이너를 노드로 쓴다**. 마트료시카 인형처럼, 컨테이너(노드) 안에서 다시 컨테이너(Pod)가 도는 구조다.
 
-```mermaid
-flowchart TB
-    kubectl["kubectl (내 터미널)"]
-    subgraph laptop["내 노트북"]
-        subgraph docker["Docker"]
-            cp["kind-control-plane 컨테이너<br/>= Control Plane 노드"]
-            w1["kind-worker 컨테이너<br/>= Worker 노드"]
-            w2["kind-worker2 컨테이너<br/>= Worker 노드"]
-        end
-    end
-    kubectl -->|"https://127.0.0.1:포트<br/>(API 서버)"| cp
-    cp --- w1
-    cp --- w2
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-02-local-setup/kind-cluster-in-docker.png" class="img-fluid rounded z-depth-1" alt="kind 클러스터 구조 — 내 노트북의 Docker 안에서 컨테이너 하나가 노드 하나가 되고, kubectl은 API 서버로 접속한다" %}
 
 - 노드 1개 = Docker 컨테이너 1개. VM을 부팅할 필요가 없어서 클러스터 생성·삭제가 가볍다.
 - kubectl은 `127.0.0.1`의 무작위 포트로 노출된 API 서버에 접속한다 (뒤에서 직접 확인한다).
@@ -342,26 +326,7 @@ contexts:
 current-context: kind-kind
 ```
 
-```mermaid
-flowchart LR
-    cur["current-context"] --> c1
-    subgraph contexts["contexts — 단축 다이얼"]
-        c1["kind-kind"]
-        c2["company-prod<br/>(namespace: ml-serving)"]
-    end
-    subgraph clusters["clusters — 어디로"]
-        cl1["https://127.0.0.1:39663"]
-        cl2["https://prod.company.example.com:6443"]
-    end
-    subgraph users["users — 누구로"]
-        u1["kind-kind"]
-        u2["prod-admin"]
-    end
-    c1 --> cl1
-    c1 --> u1
-    c2 --> cl2
-    c2 --> u2
-```
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-02-local-setup/kubeconfig-structure.png" class="img-fluid rounded z-depth-1" alt="kubeconfig 구조 — current-context가 가리키는 context가 cluster(어디로)와 user(누구로)를 묶는다" %}
 
 - `current-context`가 지금 kubectl이 사용하는 단축 다이얼이다. 별도 지정이 없으면 모든 kubectl 명령이 이 컨텍스트로 나간다.
 - kind는 컨텍스트 이름을 `kind-<클러스터 이름>` 형식으로 등록한다. 기본 클러스터 이름이 `kind`라서 컨텍스트가 `kind-kind`가 된다.
