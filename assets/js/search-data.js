@@ -30,7 +30,106 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-tamper-resistant-safeguards-tar-fine-tuning-자체에-견디는-safety",
+        },{id: "post-kubernetes-확장과-생태계-operator와-cncf-projects",
+        
+          title: "Kubernetes 확장과 생태계 — Operator와 CNCF Projects",
+        
+        description: "CRD와 Custom Controller로 나만의 리소스를 만드는 Operator 패턴, cert-manager 실습, 그리고 CNCF 성숙도 3단계로 읽는 생태계 지도 — K8s 입문 시리즈 마지막 편",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-09-operator-cncf/";
+          
+        },
+      },{id: "post-kubernetes-권한-관리-serviceaccount와-rbac",
+        
+          title: "Kubernetes 권한 관리 — ServiceAccount와 RBAC",
+        
+        description: "인증과 인가의 차이부터 ServiceAccount, Role/RoleBinding 4요소, kubectl auth can-i 실습까지 — Kubernetes RBAC 입문",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-08-rbac/";
+          
+        },
+      },{id: "post-kubernetes-스토리지와-설정-pv-pvc-configmap-secret",
+        
+          title: "Kubernetes 스토리지와 설정 — PV/PVC, ConfigMap, Secret",
+        
+        description: "컨테이너의 휘발성 문제를 푸는 PV/PVC/StorageClass 3계층 추상화, 그리고 설정과 비밀값을 이미지에서 분리하는 ConfigMap·Secret을 kind 실습으로 익힌다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-07-storage-config/";
+          
+        },
+      },{id: "post-kubernetes-네트워킹-service와-ingress",
+        
+          title: "Kubernetes 네트워킹 — Service와 Ingress",
+        
+        description: "Pod IP는 재시작마다 바뀐다 — ClusterIP·NodePort·LoadBalancer 세 가지 Service 타입과 Ingress로 Kubernetes 트래픽 라우팅을 이해한다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-06-networking/";
+          
+        },
+      },{id: "post-kubernetes-워크로드-replicaset-deployment-statefulset-daemonset",
+        
+          title: "Kubernetes 워크로드 — ReplicaSet, Deployment, StatefulSet, DaemonSet",
+        
+        description: "Pod를 감싸는 상위 워크로드 리소스 4종 — Label/Selector부터 롤링 업데이트와 롤백, StatefulSet의 순차 기동, DaemonSet까지 kind 클러스터로 실습한다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-05-workloads/";
+          
+        },
+      },{id: "post-pod의-모든-것-생성부터-스케줄링까지",
+        
+          title: "Pod의 모든 것 — 생성부터 스케줄링까지",
+        
+        description: "Kubernetes의 최소 배포 단위 Pod — 사이드카 패턴, nginx 실습, Pod가 뜨는 5단계, 생명주기 phase까지",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-04-pod/";
+          
+        },
+      },{id: "post-kubernetes-아키텍처-control-plane과-node",
+        
+          title: "Kubernetes 아키텍처 — Control Plane과 Node",
+        
+        description: "etcd, kube-apiserver, scheduler, kubelet — 클러스터를 움직이는 컴포넌트들의 역할과 설계 의도를 kind 클러스터에서 직접 확인한다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-03-architecture/";
+          
+        },
+      },{id: "post-내-노트북에-kubernetes-클러스터-만들기-kind와-kubectl",
+        
+          title: "내 노트북에 Kubernetes 클러스터 만들기 — kind와 kubectl",
+        
+        description: "kind로 노트북에 멀티노드 Kubernetes 클러스터를 띄우고, kubectl과 kubeconfig(clusters/users/contexts)로 클러스터를 다루는 법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-02-local-setup/";
+          
+        },
+      },{id: "post-kubernetes의-탄생-google-borg에서-cncf까지",
+        
+          title: "Kubernetes의 탄생 — Google Borg에서 CNCF까지",
+        
+        description: "docker run으로 충분하지 않은 순간은 언제 오는가 — Google Borg에서 시작해 CNCF까지, Kubernetes가 태어난 이유와 역사",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/k8s-01-history/";
+          
+        },
+      },{id: "post-tamper-resistant-safeguards-tar-fine-tuning-자체에-견디는-safety",
         
           title: "Tamper-Resistant Safeguards (TAR) — Fine-tuning 자체에 견디는 safety",
         
@@ -666,72 +765,6 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2026/gcg-attack/";
-          
-        },
-      },{id: "post-k8s-시리즈-06-eks-네트워킹-보안-비용-운영",
-        
-          title: "K8s 시리즈 06: EKS 네트워킹·보안·비용·운영",
-        
-        description: "VPC CNI, Pod Identity vs IRSA, EKS 비용 구조와 숨은 비용, GKE/AKS 비교, 업그레이드 전략, Troubleshooting",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-06-eks-operations/";
-          
-        },
-      },{id: "post-k8s-시리즈-05-amazon-eks-아키텍처와-worker-node",
-        
-          title: "K8s 시리즈 05: Amazon EKS — 아키텍처와 Worker Node",
-        
-        description: "EKS 아키텍처, Worker Node 옵션, VPC CNI, Pod Identity, Auto Mode, 비용 구조, 업그레이드 전략 — 실무 중심 정리",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-05-amazon-eks/";
-          
-        },
-      },{id: "post-k8s-시리즈-04-configmap-secret-storage-설정과-데이터-관리",
-        
-          title: "K8s 시리즈 04: ConfigMap, Secret, Storage — 설정과 데이터 관리",
-        
-        description: "ConfigMap/Secret 주입, PV/PVC/StorageClass, EFS vs EBS, Namespace/Label, Helm 패키지 관리",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-04-config-storage/";
-          
-        },
-      },{id: "post-k8s-시리즈-03-service-ingress-트래픽-라우팅과-외부-접근",
-        
-          title: "K8s 시리즈 03: Service, Ingress — 트래픽 라우팅과 외부 접근",
-        
-        description: "ClusterIP, NodePort, LoadBalancer, Ingress 도메인 라우팅, HPA 오토스케일링, Taint/Toleration GPU 노드 배치",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-03-networking/";
-          
-        },
-      },{id: "post-k8s-시리즈-02-pod-deployment-job-cronjob-k8s-워크로드-총정리",
-        
-          title: "K8s 시리즈 02: Pod, Deployment, Job, CronJob — K8s 워크로드 총정리",
-        
-        description: "Pod 생명주기, Deployment 롤링 업데이트, Resource Requests/Limits, Health Check, Job/CronJob 배치 처리 — LLM 엔지니어를 위한 워크로드 가이드",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-02-workloads/";
-          
-        },
-      },{id: "post-k8s-시리즈-01-kubernetes란-컨테이너부터-클러스터까지",
-        
-          title: "K8s 시리즈 01: Kubernetes란? 컨테이너부터 클러스터까지",
-        
-        description: "VM vs 컨테이너, Kubernetes가 해결하는 문제, 클러스터 구조, 컨테이너 이미지와 Dockerfile — LLM 엔지니어를 위한 K8s 입문",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2026/k8s-01-intro/";
           
         },
       },{id: "post-a-x-k1-technical-report",
