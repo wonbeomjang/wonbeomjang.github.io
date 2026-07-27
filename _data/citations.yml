@@ -1,12 +1,12 @@
 metadata:
-  last_updated: '2026-06-19'
+  last_updated: '2026-07-27'
 papers:
   8tUyWWEAAAAJ:9yKSN-GCB0IC:
     citations: 0
     title: AX K1 Technical Report
     year: '2026'
   8tUyWWEAAAAJ:d1gkVwhDpl0C:
-    citations: 1
+    citations: 2
     title: 'TelAgentBench: A Multi-faceted Benchmark for Evaluating LLM-based Agents in Telecommunications'
     year: '2025'
   8tUyWWEAAAAJ:u-x6o8ySG0sC:
