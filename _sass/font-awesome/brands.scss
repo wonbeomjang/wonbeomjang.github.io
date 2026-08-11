@@ -4,20 +4,21 @@
  * Copyright 2025 Fonticons, Inc.
  */
 @use "sass:string";
-@use 'variables' as v;
-@use 'mixins' as m;
+@use "variables" as v;
+@use "mixins" as m;
 
-:root, :host {
-  --#{v.$css-prefix}-family-brands: 'Font Awesome 7 Brands';
+:root,
+:host {
+  --#{v.$css-prefix}-family-brands: "Font Awesome 7 Brands";
   --#{v.$css-prefix}-font-brands: normal 400 1em/1 var(--#{v.$css-prefix}-family-brands);
 }
 
 @font-face {
-  font-family: 'Font Awesome 7 Brands';
+  font-family: "Font Awesome 7 Brands";
   font-style: normal;
   font-weight: 400;
   font-display: v.$font-display;
-  src: url('#{v.$font-path}/fa-brands-400.woff2');
+  src: url("#{v.$font-path}/fa-brands-400.woff2");
 }
 
 .fab,
@@ -29,7 +30,7 @@
 
 @each $name, $icon in v.$brand-icons {
   .#{v.$css-prefix}-#{$name} {
-    #{v.$icon-property}: string.unquote("\"#{ $icon }\"");
+    #{v.$icon-property}: string.unquote('"#{ $icon }"');
   }
 }
 
@@ -40,6 +41,6 @@
   @extend .#{v.$css-prefix}-brands;
 
   &::before {
-    content: string.unquote("\"#{ $var }\"");
+    content: string.unquote('"#{ $var }"');
   }
 }
