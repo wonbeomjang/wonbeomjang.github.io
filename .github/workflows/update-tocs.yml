@@ -8,6 +8,7 @@ on:
       - master
     paths:
       - "*.md"
+      - "docs/*.md"
   workflow_dispatch:
 
 permissions:
@@ -22,11 +23,15 @@ jobs:
         with:
           fetch-depth: 0 # OR "2" -> To retrieve the preceding commit.
 
+      - uses: actions/setup-node@v4
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46
         with:
-          files: ./*.md
+          files: |
+            ./*.md
+            docs/*.md
 
       - name: Updated toc on all markdown changed files
         env:
@@ -43,13 +48,26 @@ jobs:
           done
           rm gh-md-toc
 
-      # gh-md-toc는 markdown 헤더 anchor에서 underscore를 escape하지 않아
-      # prettier CI를 깨뜨린다. TOC 갱신 직후 prettier --write로 정규화.
-      - name: Run prettier on changed markdown files
-        if: steps.changed-files.outputs.any_changed == 'true'
+      # gh-md-toc and Prettier disagree about escaping in link text: the TOC
+      # generator emits `_config.yml` where Prettier requires `\_config.yml`.
+      # Without this step the auto-commit lands unformatted and prettier.yml
+      # immediately goes red on main. Prettier gets the last word.
+      - name: Normalize TOC formatting 🎨
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          npm install --no-save prettier@3 @shopify/prettier-plugin-liquid
-          npx prettier --write ${{ steps.changed-files.outputs.all_changed_files }}
+          # `npm ci` installs from the lockfile and does not touch package.json or
+          # package-lock.json. `npm install --save-dev` would rewrite the caret
+          # ranges to exact pins and upgrade them, and because the auto-commit step
+          # below sets no file_pattern (default `.`), those dependency changes would
+          # be committed to main under the message "Auto update markdown TOC".
+          npm ci
+          for file in ${ALL_CHANGED_FILES}; do
+            if [[ "$file" != *.md ]]; then
+              continue
+            fi
+            npx prettier --write "$file"
+          done
 
       - name: Commit changes
         if: steps.changed-files.outputs.any_changed == 'true'
