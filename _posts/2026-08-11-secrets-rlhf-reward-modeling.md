@@ -1,0 +1,246 @@
+---
+layout: post
+title: "Secrets of RLHF II: 선호 데이터의 노이즈와 reward model의 일반화"
+date: 2026-08-11 09:05:00 +0900
+description: "RLHF Reward 설계 시리즈 #5 — 잘못된 선호 쌍을 걸러내고 RM을 OOD에 강하게 만드는 법"
+categories: [paper]
+tags: [rlhf, reward-model, preference-data, generalization, paper]
+giscus_comments: true
+related_posts: true
+---
+
+> [Secrets of RLHF in Large Language Models Part II: Reward Modeling](https://arxiv.org/abs/2401.06080) (Binghai Wang et al., Fudan University, arXiv 2024)
+
+# Introduction
+
+시리즈 [1편](/blog/2026/deep-rl-human-preferences/)에서는 사람의 선호로 보상을 배운다는 아이디어의 원형을 봤고, 거기서 이미 policy가 학습되며 분포가 이동하면 reward model이 낡아버린다는 문제가 예고됐다. [4편](/blog/2026/bradley-terry-rethinking/)은 그렇게 만든 reward model의 표준 학습 도구인 Bradley-Terry 손실이 이론적으로 타당한 가정 위에 서 있는지를 캐물었다. 이번 글이 던지는 질문은 결이 다르다. BT 손실이 수학적으로 옳다고 쳐도, 애초에 그 손실이 먹는 **데이터가 믿을 만한가**?
+
+Fudan 대학 MOSS 팀이 쓴 이 논문은 두 가지를 동시에 문제 삼는다. 첫째, 사람이 만든 선호 쌍(preference pair) 자체가 오염돼 있다. 실제로 라벨이 뒤바뀐 쌍(incorrect pair)도 있고, 애초에 사람도 우열을 가리기 힘든 쌍(ambiguous pair)도 있다. 이 둘을 구분하지 않고 그냥 다 똑같은 가중치로 BT 손실에 넣으면 reward model(이하 RM)은 정확히 잘못된 방향으로, 혹은 존재하지 않는 신호를 향해 학습된다. 둘째, RLHF는 한 번에 끝나지 않는다. policy가 PPO로 업데이트될수록 그 policy가 뱉는 응답의 분포는 RM이 학습됐던 원래 선호 데이터의 분포에서 점점 멀어진다. 즉 RM은 자기가 만들어낸 policy에 의해 스스로 OOD(out-of-distribution) 상황에 놓이게 된다.
+
+이 논문의 답은 두 갈래다. 데이터 쪽에서는 여러 RM의 투표로 각 쌍의 **선호 강도(preference strength)** 를 측정하고, 그 강도에 따라 라벨을 뒤집거나(flip), soft label을 주거나, margin을 부여한다. 모델 쪽에서는 contrastive learning으로 표현력을 단단히 하고, meta-learning(MetaRM)으로 policy 분포 이동에 RM이 스스로 적응하게 만든다. 결론부터 말하면 이 논문이 보여주는 것은 "RM 설계의 진짜 병목은 손실 함수나 아키텍처가 아니라 데이터 품질"이라는 사실이고, 이 결론은 뒤에서 다룰 6편 [Skywork-Reward](/blog/2026/skywork-reward/)의 데이터 큐레이션 이야기로 곧장 이어진다.
+
+# Background
+
+RM 학습의 표준 형태부터 복기하자. 프롬프트 $$x$$에 대해 사람이 두 응답 $$y_c$$(chosen)와 $$y_r$$(rejected) 중 하나를 골랐다고 하면, RM $$r_\psi$$는 Bradley-Terry 모델을 따라 다음 손실로 학습된다(4편 참고).
+
+$$\mathcal{L}_{BT}(r_\psi) = -\mathbb{E}_{(x,y_c,y_r)\sim\mathcal{D}_{rm}}\Big[\log \sigma\big(r_\psi(x,y_c) - r_\psi(x,y_r)\big)\Big]$$
+
+이 손실은 하나의 강한 가정을 깔고 있다. **$$\mathcal{D}_{rm}$$의 모든 라벨이 옳고, 모든 쌍이 똑같이 명확하다**는 가정이다. 그런데 현실의 라벨링 파이프라인은 그렇지 않다. 크라우드소싱 채점자 두 명에게 같은 답안지 두 장을 채점하게 하면, 어떤 답안 쌍은 두 채점자 모두 망설임 없이 같은 답을 고르지만(강한 선호), 어떤 쌍은 동전 던지듯 갈리고(애매한 선호), 어떤 쌍은 채점자가 지쳐서 실수로 반대로 체크하기도 한다(라벨 오류). 문제는 학습 파이프라인 입장에서 이 세 종류가 겉보기엔 구분이 안 된다는 점이다. 셋 다 그냥 "$$y_c \succ y_r$$"이라는 한 줄의 라벨로 들어온다.
+
+이 논문이 쓰는 트릭은 온도계 비유로 이해하면 쉽다. 온도계 하나로 잰 36.9도는 오차가 있는지 없는지 알 수 없지만, 온도계 10개로 같은 지점을 재서 평균이 36.9도이고 편차가 0.1도 이내라면 신뢰할 수 있고, 편차가 크거나 평균 자체가 이상하면 뭔가 잘못됐다고 의심할 수 있다. RM도 마찬가지다. 독립적으로 학습된 RM을 여러 개 준비해서 같은 쌍에 투표를 시키면, 그 투표의 평균과 분산으로 "이 쌍이 얼마나 명백한 선호인지"를 정량화할 수 있다. 이것이 이 논문의 핵심 도구인 **preference strength**다.
+
+| 상황        | 겉보기 라벨       | 실제 정체                  | RM 학습에 주는 피해                               |
+| ----------- | ----------------- | -------------------------- | ------------------------------------------------- |
+| 강한 선호   | $$y_c \succ y_r$$ | 진짜로 명백한 우열         | 문제 없음(오히려 과최적화 위험)                   |
+| 애매한 선호 | $$y_c \succ y_r$$ | 사람도 반반으로 갈리는 쌍  | 존재하지 않는 신호를 억지로 학습 → 노이즈 fitting |
+| 라벨 오류   | $$y_c \succ y_r$$ | 실제로는 $$y_r \succ y_c$$ | 정반대 방향으로 그래디언트 → 직접적 성능 훼손     |
+
+# Method
+
+## 다중 RM 투표로 선호 강도 측정하기
+
+먼저 서로 다른 시드/데이터 서브셋으로 $$M$$개의 RM $$\{r_{\psi_1}, \ldots, r_{\psi_M}\}$$을 독립적으로 학습한다(논문은 $$M=10$$을 쓴다). $$i$$번째 선호 쌍 $$(x^{(i)}, y_c^{(i)}, y_r^{(i)})$$에 대해 $$m$$번째 RM이 매긴 점수차는 다음과 같다.
+
+$$d_{i,\psi_m} = r_{\psi_m}\big(x^{(i)}, y_c^{(i)}\big) - r_{\psi_m}\big(x^{(i)}, y_r^{(i)}\big)$$
+
+이 $$M$$개의 점수차를 모아 평균과 표준편차를 낸다.
+
+$$\hat\mu_i = \frac{1}{M}\sum_{m=1}^{M} d_{i,\psi_m}, \qquad \hat\sigma_i = \sqrt{\frac{1}{M}\sum_{m=1}^{M}\left(d_{i,\psi_m} - \hat\mu_i\right)^2}$$
+
+기호를 하나씩 풀면:
+
+- $$x^{(i)}$$: $$i$$번째 프롬프트.
+- $$y_c^{(i)}, y_r^{(i)}$$: 사람이 chosen/rejected로 라벨을 붙인 두 응답.
+- $$r_{\psi_m}$$: $$m$$번째로 독립 학습된 RM(파라미터 $$\psi_m$$).
+- $$d_{i,\psi_m}$$: 그 RM이 이 쌍에 매긴 chosen − rejected 점수차. 라벨이 맞다면 양수여야 정상이다.
+- $$\hat\mu_i$$: $$M$$개 RM 점수차의 평균 = 이 쌍의 **평균 선호 강도**. 크고 양수면 명백한 선호, 0 근처면 애매, 음수면 라벨이 거꾸로일 가능성.
+- $$\hat\sigma_i$$: 그 표준편차 = **RM들 사이의 의견 불일치 정도**. 서로 다르게 학습된 RM 10개가 이 쌍에서도 의견이 갈린다면 쌍 자체가 불안정한 신호라는 뜻이다.
+
+실제로 전체 학습 데이터에 이 측정을 돌려보면 전체 쌍의 약 25%에서 $$\hat\mu_i < 0$$이 나온다. 즉 라벨 그대로 학습하면 4분의 1의 쌍에서 RM이 반대 방향으로 그래디언트를 받는다는 뜻이다. 그리고 $$\hat\mu_i$$와 $$\hat\sigma_i$$의 관계는 U자형을 보인다. $$\hat\mu_i$$가 중간 정도인 쌍에서는 RM들 사이 의견이 비교적 일치하지만, $$\hat\mu_i$$가 극단으로 갈수록(아주 강하거나 아주 이상하거나) 오히려 $$\hat\sigma_i$$도 커진다.
+
+<p align="center"><img src="/assets/post/image/secrets-rlhf-reward-modeling/x1.png" width="70%"></p>
+
+위 그림은 전체 선호 쌍의 $$\hat\mu_i$$ 분포다. 봉우리가 0보다 약간 오른쪽에 있다는 건 대다수 쌍에서 10개 RM이 "사람 라벨이 맞다"에 동의한다는 뜻이다. 하지만 **0 왼쪽으로 뻗은 꼬리가 만만치 않다** — 이 영역이 곧 RM 10개가 입을 모아 "라벨이 거꾸로다"라고 말하는 쌍들이고, 앞서 말한 25%가 여기 해당한다. 동시에 봉우리가 0 근처에 두껍게 몰려 있다는 점도 중요하다. $$\hat\mu_i \approx 0$$인 쌍은 "틀린 라벨"이 아니라 **애초에 우열을 가릴 수 없는 쌍**이며, 이 둘은 뒤에서 서로 다른 처방을 받는다.
+
+<p align="center"><img src="/assets/post/image/secrets-rlhf-reward-modeling/x2.png" width="70%"></p>
+
+이쪽은 $$\hat\sigma_i$$ 분포다. 대부분의 쌍이 0.2~0.4 구간에 몰려 있다 — RM들이 대체로 비슷하게 판단한다는 뜻이다. 그런데 오른쪽으로 길게 늘어진 꼬리가 있고, **여기 들어간 쌍들이 위험 신호**다. 같은 데이터로 학습한 RM 10개가 유독 이 쌍들에서만 의견이 갈린다면, 문제는 RM이 아니라 쌍 자체에 있다고 보는 게 자연스럽다.
+
+두 분포를 같이 읽는 것이 핵심이다. $$\hat\mu_i$$는 "어느 쪽이 좋은가"를, $$\hat\sigma_i$$는 "그 판단을 얼마나 믿을 수 있는가"를 말한다. 건강검진에 비유하면 $$\hat\mu_i$$는 측정된 수치이고 $$\hat\sigma_i$$는 그 측정의 오차범위다. 수치가 정상 범위를 벗어난 것과, 측정 자체가 들쭉날쭉한 것은 전혀 다른 문제이고 처방도 달라야 한다.
+
+## 선호 강도로 데이터를 재단하기
+
+논문은 $$\hat\mu_i$$ 기준으로 정렬한 뒤 데이터를 층으로 나눠 서로 다른 처방을 준다. 정확한 경계는 배타적 파티션이라기보다 두 단계 처리로 이해하는 게 맞다. 먼저 강도 순위로 하위 20% / 다음 20% / 나머지로 나눠 flip과 smoothing을 적용하고, 그 나머지 안에서 강도가 극단적으로 높은 상위 10%를 따로 골라 margin을 추가한다.
+
+| 그룹                 | $$\hat\mu_i$$ 기준             | 대략적 비율   | 문제                                         | 처방                                        |
+| -------------------- | ------------------------------ | ------------- | -------------------------------------------- | ------------------------------------------- |
+| 라벨 오류(incorrect) | $$\hat\mu_i < 0$$, 특히 하위권 | 하위 20%      | 정반대 신호                                  | **라벨 뒤집기(flip)** — $$y_c, y_r$$를 교환 |
+| 애매(ambiguous)      | $$\hat\mu_i \approx 0$$        | 다음 20%      | 존재하지 않는 신호를 억지 학습               | **label smoothing**                         |
+| 정상(normal)         | 적당히 양수                    | 나머지 대부분 | 문제 없음                                    | 그대로 BT 손실                              |
+| 강한 선호(strong)    | 크게 양수, 상위권              | 상위 10%      | 손실이 너무 빨리 0에 수렴 → 표면 패턴 과적합 | **soft label + adaptive margin**            |
+
+**라벨 뒤집기**는 말 그대로다. $$\hat\mu_i$$가 충분히 음수면 애초에 사람이 반대로 표시했다고 보고 $$y_c$$와 $$y_r$$을 맞바꿔서 다시 학습 데이터에 넣는다. 폐기(discard)하지 않고 뒤집어서 재활용하는 이유는, 뒤집힌 쌍도 응답 자체는 여전히 유용한 비교 정보를 담고 있기 때문이다.
+
+**label smoothing**은 애매한 쌍에서 모델이 100% 확신을 갖지 않도록 목표 확률을 완화한다.
+
+$$\mathcal{L}_{LS}(r_\psi) = -\mathbb{E}_{(x,y)\sim\mathcal{D}_{rm}}\Big[(1-\alpha)\log p_\psi(y_c \succ y_r \mid x) + \alpha \log\big(1 - p_\psi(y_c \succ y_r \mid x)\big)\Big]$$
+
+여기서 $$p_\psi(y_c \succ y_r \mid x) = \sigma\big(r_\psi(x,y_c) - r_\psi(x,y_r)\big)$$는 보통의 BT 확률이고, $$\alpha \in [0,1)$$는 smoothing 강도다. $$\alpha=0$$이면 원래 BT 손실과 같다. $$\alpha$$가 커질수록 목표 확률이 1이 아니라 $$1-\alpha$$가 되므로, 모델이 애매한 쌍에서 억지로 극단적인 점수차를 만들려는 유인이 줄어든다.
+
+**adaptive margin**은 반대로 이미 명백한 쌍에서 모델이 너무 쉽게 손실을 0으로 만들어버리는 것을 막는다.
+
+$$\mathcal{L}_{margin}(r_\psi) = -\log \sigma\Big(r_\psi(x,y_c) - r_\psi(x,y_r) - \hat\mu(x,y)\Big)$$
+
+측정된 선호 강도 $$\hat\mu(x,y)$$를 시그모이드 안쪽에서 빼주는 형태다. 그냥 두면 이미 $$\hat\mu_i$$가 큰 쌍은 손실이 금방 0 근처로 떨어져 그래디언트가 사라지는데, margin을 강도만큼 요구하면 "이미 벌어진 만큼 더 벌려야 손실이 0이 된다"는 조건이 걸려서 모델이 표면적인 패턴(길이, 형식 등)에 안주하지 않고 계속 판별력을 벼리게 된다. 이 margin 아이디어는 8편에서 다룰 [Llama 2](/blog/2026/llama2-rlhf/)의 RM 학습에서 프로덕션 버전으로 단순화되어 실제로 쓰인다.
+
+## 토이 예제: 3개의 쌍, 3개의 RM
+
+논문은 $$M=10$$을 쓰지만 손으로 계산해보기 위해 $$M=3$$으로 줄여보자. 세 개의 선호 쌍 A(강한 선호), B(애매), C(라벨 오류 의심)에 대해 RM 3개가 매긴 점수차 $$d$$는 다음과 같다고 하자.
+
+| 쌍                 | RM1  | RM2  | RM3  | $$\hat\mu_i$$ | $$\hat\sigma_i$$ | 분류                  | 처방                |
+| ------------------ | ---- | ---- | ---- | ------------- | ---------------- | --------------------- | ------------------- |
+| A (강한 선호)      | 2.1  | 2.4  | 1.9  | 2.13          | 0.21             | 상위권 강한 선호      | soft label + margin |
+| B (애매)           | 0.3  | −0.2 | 0.1  | 0.07          | 0.21             | $$\hat\mu \approx 0$$ | label smoothing     |
+| C (라벨 오류 의심) | −1.5 | −1.8 | −1.2 | −1.50         | 0.24             | $$\hat\mu < 0$$       | flip                |
+
+계산 과정을 쌍 B로 짚어보자. $$\hat\mu_B = (0.3 - 0.2 + 0.1)/3 = 0.067$$. 편차는 각각 $$0.233, -0.267, 0.033$$이고 제곱합의 평균의 제곱근이 $$\hat\sigma_B \approx 0.206$$이다. $$\hat\mu_B$$가 0에 가까우므로 이 쌍은 애매 그룹으로 분류된다. 원래 BT 확률은 $$p_\psi = \sigma(0.067) \approx 0.517$$이고 그대로 학습하면 손실은 $$-\log(0.517) \approx 0.660$$이다. $$\alpha=0.1$$로 label smoothing을 적용하면(논문은 정확한 $$\alpha$$ 값을 명시하지 않아 여기서는 설명을 위해 0.1을 가정한다) 손실은 $$-[0.9\log(0.517) + 0.1\log(0.483)] \approx 0.667$$로 거의 같은 값이 나온다. 왜냐하면 $$p_\psi$$가 이미 0.5 근처라 완화할 극단값 자체가 없기 때문이다. smoothing의 진짜 효과는 오히려 쌍 A처럼 $$p_\psi$$가 1에 가까워지려는 쌍에서 드러난다.
+
+쌍 A는 $$\hat\mu_A = 2.13$$이라 $$p_\psi = \sigma(2.13) \approx 0.894$$, 손실은 $$-\log(0.894) \approx 0.112$$로 이미 상당히 작다. 그냥 두면 이 쌍은 거의 그래디언트를 주지 않고 학습이 끝나버린다. 반면 margin을 적용해서 $$\hat\mu_A$$만큼 빼면 $$\sigma(2.13 - 2.13) = \sigma(0) = 0.5$$가 되어 손실이 $$-\log(0.5) \approx 0.693$$으로 되살아난다. 즉 이미 벌어진 쌍이라도 "그만큼 더 벌려야 만족"이라는 기준을 세워서 모델이 안주하지 못하게 만드는 것이다.
+
+쌍 C는 $$\hat\mu_C = -1.5$$로 세 RM 모두 일관되게 음수를 준다. $$\hat\sigma_C$$가 작다는 것은(0.24로 A, B와 비슷한 수준) RM들이 "이 라벨은 틀렸다"는 데 서로 동의하고 있다는 뜻이다. 그래서 이 쌍은 폐기 대신 $$y_c$$와 $$y_r$$을 맞바꿔 뒤집는다. 뒤집고 나면 새 점수차는 $$+1.5$$가 되어 정상적인 강한 선호 쌍처럼 취급된다.
+
+## contrastive learning으로 표현을 단단히 하기
+
+데이터를 아무리 잘 재단해도 RM이 표면적인 패턴(길이, 말투, 특정 키워드)에 의존해 점수를 매기면 비슷한 두 응답을 구분하는 능력 자체가 약하다. 논문은 RM의 은닉 표현 $$h$$에 두 가지 contrastive 기법을 얹는다. 하나는 SimCSE 스타일로, 같은 입력을 dropout만 다르게 두 번 통과시켜 만든 표현 쌍을 양성 쌍으로 삼는다.
+
+$$\ell_i = -\log \frac{\exp\big(\mathrm{sim}(h_s^{(i)}, h_t^{(i)})/\tau\big)}{\sum_{j=1}^{N'} \exp\big(\mathrm{sim}(h_s^{(i)}, h_t^{(j)})/\tau\big)}$$
+
+다른 하나는 SwAV 스타일로, 프로토타입 $$\{c_1, \ldots, c_K\}$$에 대한 클러스터 할당이 서로 다른 augmentation 뷰 사이에서 일관되도록 강제한다. 둘 다 원래의 RM 손실에 가중치 $$\beta$$로 더해진다.
+
+$$\mathcal{L}_{total} = \mathcal{L}_{rm} + \beta \cdot \mathcal{L}_{cl}$$
+
+이 항의 목적은 데이터 쪽 처방과는 층이 다르다. 데이터 처방이 "어떤 쌍을 얼마나 믿을지"를 조절한다면, contrastive 항은 "비슷해 보이는 두 응답의 표현을 억지로 더 벌려서" 판별 능력 자체를 강화한다. 논문은 PPO 학습 곡선에서 contrastive learning을 얹은 RM이 그렇지 않은 RM보다 더 안정적으로 수렴한다고 보고한다.
+
+## meta-learning으로 policy 분포 이동을 뒤쫓기(MetaRM)
+
+여기서부터가 [1편](/blog/2026/deep-rl-human-preferences/)이 예고했던 문제, 즉 policy가 이동하면 RM이 낡는다는 문제에 대한 답이다. RLHF는 보통 한 번에 끝나지 않고 "PPO로 policy 업데이트 → 새 policy로 응답 샘플링 → 다시 선호 라벨링 → RM 재학습"을 여러 라운드 반복한다(iterative RLHF). 문제는 라운드가 진행될수록 policy $$\pi^{RL}$$이 뱉는 응답의 분포가 원래 RM이 학습했던 분포에서 멀어진다는 점이다. RM이 새 분포의 응답들을 서로 구분하지 못하면(다 비슷한 점수를 주면) 더 이상 유용한 학습 신호를 주지 못한다.
+
+이사를 자주 다니는 상황을 생각하면 이해가 쉽다. 예전 동네 지도만 들고 새 동네를 돌아다니면 길을 못 찾는다. 그렇다고 예전 지도를 통째로 버리고 새로 그리면 그동안 쌓은 방향 감각을 낭비하는 셈이다. 합리적인 방법은 새 동네를 몇 바퀴 둘러보며 "감"만 빠르게 업데이트하고, 그 감을 기준으로 기존 지도를 미세 조정하는 것이다. MetaRM이 하는 일이 정확히 이거다.
+
+먼저 새 policy $$\pi^{RL}$$에서 같은 프롬프트에 대해 $$k$$개의 응답 $$s_1, \ldots, s_k$$를 뽑아, 라벨 없이 RM이 이들을 얼마나 서로 다르게 평가하는지를 재는 목적함수를 만든다.
+
+$$\mathcal{J}_\theta = \frac{2}{k^2}\sum_{i=1}^{k}\sum_{j=i+1}^{k} \sigma\Big(\big\lvert r_\theta(x, s_i) - r_\theta(x, s_j)\big\rvert\Big)$$
+
+$$\mathcal{J}_\theta$$가 크다는 것은 RM이 새 분포에서도 응답들을 잘 구분하고 있다는 뜻이고, 작다는 것은 다 비슷한 점수를 줘서 판별력이 죽었다는 뜻이다. 이 신호로 두 단계 메타 업데이트를 한다.
+
+$$\theta_t' = \theta_t + \eta \frac{\partial \mathcal{J}_\theta(X_s)}{\partial \theta} \qquad \text{(1단계: 새 분포 표본 } X_s \text{에서 판별력을 키우는 방향으로 임시 이동)}$$
+
+$$\theta_{t+1} = \theta_t - \alpha \nabla_\theta \mathcal{L}_{\theta'}(X_t) \qquad \text{(2단계: 그 임시 파라미터 } \theta' \text{ 기준 그래디언트로 원래 라벨 데이터 } X_t \text{를 학습)}$$
+
+직관은 이렇다. 1단계는 라벨 없이 "새 동네 감"만 잠깐 익힌 임시 파라미터 $$\theta'$$를 만든다. 2단계는 그 감을 가진 상태에서 원래 라벨 데이터 $$X_t$$를 학습하는데, 이때 $$X_t$$ 안에서 "이 예시를 학습하는 방향이 새 분포 판별력을 키우는 방향과 일치하는" 예시일수록 더 큰 그래디언트를 받는다. 즉 원래 있던 라벨 데이터 중에서도 지금 policy가 처한 새 분포에 도움이 되는 예시를 암묵적으로 재가중치하는 셈이다. RM을 통째로 새로 학습하지 않고도 매 라운드 가볍게 적응시킬 수 있다는 게 이 방법의 실용적 장점이다.
+
+# Experiments
+
+측정한 선호 강도가 실제로 의미 있는 신호인지부터 GPT-4를 심판 삼아 검증한다. 강도 상위 500개 쌍은 GPT-4 판정과 95.6% 일치하고, 하위 500개(라벨 오류 의심)는 16.4%만 일치하며, $$\hat\mu_i \approx 0$$인 애매 구간은 54.4%로 사실상 동전 던지기 수준이다.
+
+| 그룹(선호 강도 기준)                | 표본 수 | GPT-4 라벨과 일치율 |
+| ----------------------------------- | ------- | ------------------- |
+| 상위 500 (강한 선호)                | 500     | 95.6%               |
+| $$\hat\mu_i \approx 0$$ 구간 (애매) | —       | 54.4%               |
+| 하위 500 (라벨 오류 의심)           | 500     | 16.4%               |
+
+이 결과가 그대로 RM 성능에도 반영된다. 하위 20% 데이터만 따로 떼서 학습하면 검증 정확도가 랜덤(50%)보다도 낮게 나오고, 20~40% 구간만 학습하면 대략 랜덤 수준에 머문다. 반면 나머지 데이터로 학습하면 뚜렷하게 높은 정확도를 낸다. flip + margin + soft label을 모두 적용한 조합은 원본(노이즈 포함) 데이터로 학습한 baseline과 달리 GPT-4 라벨 검증셋, 원본 검증셋, 재필터링한 검증셋 세 종류 모두에서 안정적인 성능을 유지한다. baseline은 원본 검증셋에서만 성능이 높고 나머지 두 검증셋에서는 무너지는데, 이는 원본 데이터의 노이즈 패턴 자체를 외워버렸다는 뜻이다.
+
+정제된 RM으로 실제 PPO를 3라운드 돌린 결과, SFT 대비 승률은 다음과 같다.
+
+| 벤치마크           | Win | Tie | Loss |
+| ------------------ | --- | --- | ---- |
+| Anthropic-Harmless | 69% | 28% | 3%   |
+| Anthropic-Helpful  | 73% | 23% | 4%   |
+| Summary (TL;DR)    | 78% | 5%  | 17%  |
+
+MetaRM을 적용한 iterative RLHF는 요약 태스크에서 라운드를 거듭할수록 승률이 꾸준히 올라, 1라운드 51%에서 4라운드 78%까지 개선된다. 논문은 이를 "3~4라운드에 걸친 꾸준한 개선"으로 요약한다.
+
+| Round | Summary 승률 |
+| ----- | ------------ |
+| 1     | 51%          |
+| 4     | 78%          |
+
+가장 인상적인 부수 발견은 KL penalty 관련 ablation이다. 노이즈가 낀 원본 RM으로 PPO를 돌리면 KL penalty 계수를 제거했을 때 KL divergence가 요동치며 학습이 불안정해지는데, flip + margin + soft label로 정제한 RM은 KL penalty를 완전히 빼도 KL divergence가 선형적으로 완만하게 증가할 뿐 학습이 안정적으로 유지된다. 이는 RM 노이즈가 곧 reward hacking과 학습 불안정의 근본 원인 중 하나임을 시사하고, 10편에서 다룰 [과최적화 스케일링 법칙](/blog/2026/reward-model-overoptimization/)과 정확히 맞닿아 있다. 실험은 영어 RM은 LLaMA-7B, 중국어 RM은 OpenChineseLLaMA-7B를 백본으로 사용했다.
+
+# Conclusion
+
+이 논문의 결론은 단순하지만 파급력이 크다. **RM 학습에서 손실 함수나 아키텍처를 아무리 정교하게 다듬어도, 학습 데이터의 4분의 1이 잘못됐거나 애매하다면 그 위에서 배운 reward는 태생적으로 흔들린다.** 다중 RM 투표로 측정한 선호 강도라는 지표 하나로 이 문제를 정량화하고, flip·label smoothing·adaptive margin이라는 세 가지 처방으로 나눠 대응한다는 것이 이 글의 핵심이었다. 여기에 contrastive learning으로 표현력을, meta-learning(MetaRM)으로 policy 분포 이동에 대한 적응력을 더해, iterative RLHF 전 과정에서 RM이 계속 쓸모 있게 만든다.
+
+이걸 실무에 그대로 옮기면 아래와 같은 자가 진단표가 된다. 거창한 인프라 없이도 지금 가진 선호 데이터셋이 얼마나 건강한지 점검할 수 있다.
+
+| 점검 항목                  | 확인 방법                                                | 위험 신호                              | 조치                                                       |
+| -------------------------- | -------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| RM 앙상블 확보             | seed·서브셋을 바꿔 $$M \geq 3\text{–}10$$개 RM 독립 학습 | 앙상블을 만들 여력이 없음              | 최소 dropout 앙상블로라도 $$\hat\mu_i, \hat\sigma_i$$ 근사 |
+| $$\hat\mu_i$$ 분포 점검    | 전체 쌍에 대해 $$\hat\mu_i$$ 히스토그램                  | $$\hat\mu_i < 0$$ 비율이 20% 이상      | 하위권부터 사람이 재검수 후 flip                           |
+| $$\hat\sigma_i$$ 분포 점검 | U자형 여부 확인                                          | 극단 구간에서 $$\hat\sigma_i$$ 급증    | 해당 outlier 쌍만 별도로 재라벨링                          |
+| 애매 구간 처리             | $$\hat\mu_i \approx 0$$ 비율 확인                        | 20% 이상이 애매                        | label smoothing 적용, BT 손실로 억지 학습 금지             |
+| 강한 선호 과최적화         | 상위권 쌍의 학습 loss 수렴 속도 관찰                     | 몇 스텝 만에 loss가 0 근처로 붕괴      | adaptive margin 추가                                       |
+| OOD·iterative 대응         | 여러 라운드 RLHF를 계획 중인가                           | RM을 한 번만 학습해 여러 라운드 재사용 | MetaRM류 meta-update 또는 라운드마다 재학습                |
+
+이 표에서 하나라도 "위험 신호" 칸에 걸린다면, 그 다음으로 손댈 곳은 아키텍처가 아니라 데이터 파이프라인이라는 게 이 논문의 주장이다.
+
+이 결론이 남기는 부채는 두 가지다. 첫째, 이 논문은 여전히 선호를 1차원 스칼라로 다룬다. helpful과 harmless가 충돌하는 쌍, 즉 애초에 "무엇을 기준으로 우열을 가릴지"가 다차원적인 문제는 건드리지 않는다. 이 문제는 뒤에서 다룰 다목적 분해([ArmoRM](/blog/2026/armorm/))나 helpfulness·safety RM을 아예 분리해버리는 8편 [Llama 2](/blog/2026/llama2-rlhf/)의 실무적 해법으로 이어진다. 둘째, 이 논문의 20%/20%/60%/10%라는 경계는 이 논문이 쓴 HH-RLHF 데이터셋에서 튜닝된 값이지 보편 상수가 아니다. 대규모로 이 문제를 시스템화해서 데이터 큐레이션 파이프라인 자체를 만든 사례가 바로 다음 6편 [Skywork-Reward](/blog/2026/skywork-reward/)다. 그리고 이렇게 정제된 RM이 실제로 PPO 루프 안에서 어떻게 굴러가는지는 자매편인 [Part I](/blog/2026/secrets-rlhf-ppo/)에서 다룬다.
+
+---
+
+# RLHF Reward 설계 시리즈
+
+이 글은 RLHF Reward 설계 시리즈의 다섯 번째 글이다.
+
+**1부. 지형도**
+
+1. [Deep RL from Human Preferences (Christiano 2017)](/blog/2026/deep-rl-human-preferences/) — 선호로 보상을 배우는 원형
+2. [InstructGPT (Ouyang 2022)](/blog/2026/instructgpt/) — RLHF 3단계 표준 레시피
+3. [HH-RLHF (Bai 2022)](/blog/2026/anthropic-hh-rlhf/) — helpful·harmless preference model
+
+**2부. 스칼라 RM 해부**
+
+4. [Rethinking Bradley-Terry (2024)](/blog/2026/bradley-terry-rethinking/) — reward 변환의 수학적 기반
+5. Secrets of RLHF II (2024) — 선호 데이터 노이즈와 RM 일반화 **(현재 글)**
+6. [Skywork-Reward (2024)](/blog/2026/skywork-reward/) — 데이터 큐레이션이 아키텍처를 이긴다
+7. [ArmoRM (2024)](/blog/2026/armorm/) — 다목적 분해와 MoE 게이팅
+8. [Llama 2 (2023)](/blog/2026/llama2-rlhf/) — helpfulness·safety RM 분리 프로덕션 레시피
+9. [RewardBench 2 (2025)](/blog/2026/rewardbench-2/) — RM을 어떻게 평가할 것인가
+
+**3부. Reward Hacking**
+
+10. [Overoptimization Scaling Laws (2022)](/blog/2026/reward-model-overoptimization/) — Goodhart의 법칙 정량화
+11. [Length Correlations in RLHF (2023)](/blog/2026/rlhf-length-correlations/) — 성능 향상의 얼마가 길이인가
+12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
+13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
+
+**4부. reward를 정책으로**
+
+14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+
+**5부. Process & Verifiable Reward**
+
+19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+
+**6부. Generative Reward Model**
+
+22. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+23. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+24. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+26. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+
+# 참고 문헌
+
+- [Secrets of RLHF in Large Language Models Part II: Reward Modeling (arXiv:2401.06080)](https://arxiv.org/abs/2401.06080)
+- [Secrets of RLHF in Large Language Models Part II — HTML 전문](https://arxiv.org/html/2401.06080v2)
+- [Secrets of RLHF in Large Language Models Part I: PPO (arXiv:2307.04964)](https://arxiv.org/pdf/2307.04964)
+- [OpenLMLab/MOSS-RLHF (GitHub)](https://github.com/OpenLMLab/MOSS-RLHF)
+- [Secrets of RLHF Part II — Hugging Face Papers](https://huggingface.co/papers/2401.06080)
