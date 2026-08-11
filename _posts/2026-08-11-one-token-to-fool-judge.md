@@ -151,7 +151,7 @@ Master key는 judge가 뚫리는 여러 방식 중 하나일 뿐이다. 같은 �
 
 <p align="center"><img src="/assets/post/image/one-token-to-fool-judge/fig1_master_key_fpr.png" width="90%"></p>
 
-위 그림이 이 절 전체의 요약이다. 범용 LLM(Qwen2.5-72B, LLaMA3-70B)은 데이터셋 전반에서 50~~90%대 FPR을 보이고, 전용 verifier(Omni-Judge, GPT-4o, GPT-o1, Claude-4)는 그보다 낮지만 여전히 10~~30%대에서 흔들린다. 오직 데이터 증강으로 학습한 Master-RM만 0에 가까운 막대를 유지한다.
+위 그림이 이 절 전체의 요약이다. 범용 LLM(Qwen2.5-72B, LLaMA3-70B)은 데이터셋 전반에서 50\~90%대 FPR을 보이고, 전용 verifier(Omni-Judge, GPT-4o, GPT-o1, Claude-4)는 그보다 낮지만 여전히 10\~30%대에서 흔들린다. 오직 데이터 증강으로 학습한 Master-RM만 0에 가까운 막대를 유지한다.
 
 # Conclusion
 

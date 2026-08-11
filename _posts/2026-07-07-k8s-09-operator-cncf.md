@@ -20,6 +20,7 @@ related_posts: true
 > - [07: 스토리지와 설정 — PV/PVC, ConfigMap, Secret](/blog/2026/k8s-07-storage-config/)
 > - [08: 권한 관리 — ServiceAccount와 RBAC](/blog/2026/k8s-08-rbac/)
 > - **09: 확장과 생태계 — Operator와 CNCF Projects** ← 현재 글
+> - [10: 관측성 — 로그·메트릭과 Prometheus/Grafana](/blog/2026/k8s-10-observability/)
 >
 > 이 시리즈의 커리큘럼은 SK Devocean의 [Kubernetes(쿠버네티스)를 처음 공부하려면 무엇을 공부해야 할까?](https://devocean.sk.com/blog/techBoardDetail.do?ID=165905&boardType=techBlog) (seungkyua) 글의 학습 로드맵을 바탕으로 구성했다.
 
@@ -384,8 +385,9 @@ CNCF는 이 3단계가 기술 채택 이론(Crossing the Chasm)의 Innovators �
 - **자격증으로 검증**: CKA(Certified Kubernetes Administrator) 같은 실기 시험은 kubectl 실습 위주라 이 시리즈의 연장선에서 준비하기 좋다. 2025년 개편 커리큘럼에는 6절에서 본 Helm·Kustomize도 포함됐다.
 - **생태계 탐색**: [CNCF landscape](https://landscape.cncf.io/)에서 관심 분야(모니터링, CI/CD, 서비스 메시 등)의 프로젝트를 골라 kind 클러스터에 직접 설치해보자. 7절의 성숙도 지도가 나침반이 된다.
 - **Operator 직접 만들기**: Go의 kubebuilder 같은 프레임워크로 간단한 CRD와 컨트롤러를 직접 작성해보면 reconcile 루프가 완전히 체화된다.
+- **운영 중인 클러스터 들여다보기**: 배포까지 됐다면 다음은 "지금 잘 돌고 있나"를 보는 관측성이다. 이 시리즈의 확장편 [10: 관측성 — 로그·메트릭과 Prometheus/Grafana](/blog/2026/k8s-10-observability/)에서 kubectl 내장 도구부터 Prometheus·Grafana 스택까지 이어서 다룬다.
 
-> 이 글로 K8s 입문 시리즈를 마친다. 이전 글은 [08: 권한 관리 — ServiceAccount와 RBAC](/blog/2026/k8s-08-rbac/)이고, 처음부터 다시 보려면 [01: Kubernetes의 탄생 — Google Borg에서 CNCF까지](/blog/2026/k8s-01-history/)에서 시작하면 된다. 완주를 축하한다.
+> 이 글로 K8s 입문 시리즈의 본편(01–09)을 마친다. 이전 글은 [08: 권한 관리 — ServiceAccount와 RBAC](/blog/2026/k8s-08-rbac/)이고, 처음부터 다시 보려면 [01: Kubernetes의 탄생 — Google Borg에서 CNCF까지](/blog/2026/k8s-01-history/)에서 시작하면 된다. 실무 진입을 위한 관측성은 확장편 [10: 관측성 — 로그·메트릭과 Prometheus/Grafana](/blog/2026/k8s-10-observability/)로 이어진다. 완주를 축하한다.
 
 # 참고 문헌
 

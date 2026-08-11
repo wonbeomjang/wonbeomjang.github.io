@@ -151,7 +151,7 @@ $$\pi$$는 현재 정책, $$\pi_0$$는 초기 정책(context-distilled LM), $$\l
 | 학습 데이터 구성           | Helpfulness Test Acc      | Harmlessness Test Acc |
 | -------------------------- | ------------------------- | --------------------- |
 | Helpful 100% / Harmless 0% | 정상(~0.72)               | chance 이하(~0.32)    |
-| Helpful 0% / Harmless 100% | chance 이하(~~0.35~~0.40) | 정상(~0.75)           |
+| Helpful 0% / Harmless 100% | chance 이하(\~0.35\~0.40) | 정상(~0.75)           |
 | 적절한 혼합 (52B)          | ~0.72                     | ~0.72                 |
 
 손실 가중치($$\lambda$$)를 바꾸는 실험도 같은 결론을 가리킨다. $$L_{Total} = L_{Helpfulness} + \lambda \cdot L_{Harmlessness}$$에서 $$\lambda$$를 1에서 10으로 올리면, 13M 모델은 helpfulness 정확도가 **7.4%p** 떨어지지만 52B 모델은 **1.5%p**만 떨어진다. 모델이 커질수록 두 목표를 동시에 잘 배우는 능력 자체가 커진다는 뜻이다.
@@ -166,7 +166,7 @@ MMLU, Lambada, HellaSwag, OpenBookQA, ARC-Easy/Challenge, TriviaQA 7개 벤치�
 
 | 모델 크기        | Zero-shot               | Few-shot                   |
 | ---------------- | ----------------------- | -------------------------- |
-| 소형 (~~10M~~1B) | RLHF < Plain LM (tax)   | RLHF < Plain LM (약한 tax) |
+| 소형 (\~10M\~1B) | RLHF < Plain LM (tax)   | RLHF < Plain LM (약한 tax) |
 | 13B              | RLHF > Plain LM (bonus) | RLHF ≈ Plain LM            |
 | 52B              | RLHF > Plain LM (bonus) | RLHF ≈ Plain LM            |
 

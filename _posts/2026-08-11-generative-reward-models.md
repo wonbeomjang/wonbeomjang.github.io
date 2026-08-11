@@ -196,7 +196,7 @@ GenRM 논문은 자신의 Related Work에서 CLoud(Ankner et al., 2024)를 동�
 
 학습된 모델끼리 비교하면(위 그림) Bradley-Terry RM, PairRM, 학습된 GenRM은 in-distribution(UltraFeedback)에서 모두 73~74%로 대등하고, STaR-DPO도 73.9%로 같은 수준이다. 반면 CoT 없이 SFT만 한 STaR-SFT는 67.4%로 **기저 모델과 사실상 차이가 없다** — CoT 없는 정답 라벨만으로는 판정 능력이 늘지 않는다는 뜻이다.
 
-OOD(RewardBench)에서 격차가 벌어진다. STaR-DPO는 81.9%로, zero-shot LLM-as-judge(77.8%)와 학습된 GenRM(78.9%)을 모두 앞선다. 특히 Safety 범주에서 STaR-DPO는 91.0%인 반면 가장 잘하는 판별형 방법(PairRM)도 81.8%에 그친다. 요약하면, **논문 abstract의 수치**로 zero-shot judge는 ID에서 BT RM보다 9~~36% 낮고, GenRM은 ID에서 BT RM과 대등하면서 OOD에서 10~~45% 더 높으며, zero-shot judge 대비로는 ID 9~~31%, OOD 2~~6% 더 높다.
+OOD(RewardBench)에서 격차가 벌어진다. STaR-DPO는 81.9%로, zero-shot LLM-as-judge(77.8%)와 학습된 GenRM(78.9%)을 모두 앞선다. 특히 Safety 범주에서 STaR-DPO는 91.0%인 반면 가장 잘하는 판별형 방법(PairRM)도 81.8%에 그친다. 요약하면, **논문 abstract의 수치**로 zero-shot judge는 ID에서 BT RM보다 9\~36% 낮고, GenRM은 ID에서 BT RM과 대등하면서 OOD에서 10\~45% 더 높으며, zero-shot judge 대비로는 ID 9\~31%, OOD 2\~6% 더 높다.
 
 ## 추론이 필요한 과제에서는 명암이 갈린다
 

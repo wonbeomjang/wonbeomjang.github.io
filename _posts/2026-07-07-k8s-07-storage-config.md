@@ -2,7 +2,7 @@
 layout: post
 title: "Kubernetes 스토리지와 설정 — PV/PVC, ConfigMap, Secret"
 date: 2026-07-07 07:00:00 +0900
-description: "컨테이너의 휘발성 문제를 푸는 PV/PVC/StorageClass 3계층 추상화, 그리고 설정과 비밀값을 이미지에서 분리하는 ConfigMap·Secret을 kind 실습으로 익힌다"
+description: "emptyDir·hostPath 비영속 볼륨부터 PV/PVC/StorageClass 3계층 추상화, 그리고 설정과 비밀값을 이미지에서 분리하는 ConfigMap·Secret을 kind 실습으로 익힌다"
 categories: [infra]
 tags: [kubernetes, infra, storage, pv, pvc, configmap, secret]
 giscus_comments: true
@@ -20,6 +20,7 @@ related_posts: true
 > - **07: 스토리지와 설정 — PV/PVC, ConfigMap, Secret** ← 현재 글
 > - [08: 권한 관리 — ServiceAccount와 RBAC](/blog/2026/k8s-08-rbac/)
 > - [09: 확장과 생태계 — Operator와 CNCF Projects](/blog/2026/k8s-09-operator-cncf/)
+> - [10: 관측성 — 로그·메트릭과 Prometheus/Grafana](/blog/2026/k8s-10-observability/)
 >
 > 이 시리즈의 커리큘럼은 SK Devocean의 [Kubernetes(쿠버네티스)를 처음 공부하려면 무엇을 공부해야 할까?](https://devocean.sk.com/blog/techBoardDetail.do?ID=165905&boardType=techBlog) (seungkyua) 글의 학습 로드맵을 바탕으로 구성했다.
 
@@ -41,7 +42,69 @@ Kubernetes는 이 두 문제를 각각 다른 리소스로 푼다.
 
 ---
 
-# 2. PV, PVC, StorageClass — 스토리지 3계층 추상화
+# 2. 먼저, 볼륨이란 무엇인가 — emptyDir와 hostPath
+
+PV/PVC로 뛰어들기 전에 한 단계를 짚고 가자. Kubernetes에서 **볼륨(Volume)**은 컨테이너 파일시스템 위에 얹는 **디렉터리**다. Pod의 `spec.volumes`에 "이런 볼륨이 있다"고 선언하고, 컨테이너의 `volumeMounts`에서 "그 볼륨을 이 경로에 붙인다"고 연결한다. 잠시 뒤 배울 PVC도, 이 편에서 다룰 ConfigMap·Secret 마운트도 전부 이 볼륨 문법을 공유한다.
+
+볼륨이 필요한 이유는 두 가지다. **컨테이너가 재시작돼도 데이터를 유지**하기 위해서, 그리고 **같은 Pod의 컨테이너끼리 파일을 공유**하기 위해서다. 그런데 "얼마나 오래 사느냐(수명)"와 "어디에 묶이느냐(범위)"는 볼륨 종류마다 다르다. 영속 스토리지(PV)로 가기 전에, 그보다 수명이 짧은 두 볼륨을 먼저 본다.
+
+{% include figure.liquid loading="lazy" path="assets/post/image/k8s-07-storage-config/volume-scopes.png" class="img-fluid rounded z-depth-1" alt="볼륨 수명·범위 비교 — 컨테이너 파일시스템은 컨테이너 재시작 시 초기화, emptyDir는 Pod 수명, hostPath는 노드에 묶임, PV/PVC는 Pod·노드보다 오래 사는 클러스터 자원" %}
+
+## 2.1 emptyDir — Pod와 생사를 함께하는 임시 공간
+
+**`emptyDir`는 Pod가 노드에 배치되는 순간 빈 디렉터리로 만들어지고, Pod가 사는 동안 유지되다가, Pod가 삭제되면 함께 사라지는 볼륨**이다. 핵심은 수명의 기준이 **컨테이너가 아니라 Pod**라는 점이다. 컨테이너가 크래시나 재시작돼도 emptyDir의 내용은 남아 있고, Pod 자체가 사라질 때만 지워진다.
+
+사실 우리는 이 볼륨을 [04편](/blog/2026/k8s-04-pod/)에서 이미 만났다. 사이드카 패턴에서 nginx와 로그 수집기가 로그 파일을 주고받던 "공유 볼륨", init 컨테이너가 받아둔 파일을 앱 컨테이너가 읽던 그 볼륨의 정체가 바로 emptyDir다. 같은 Pod의 컨테이너들은 emptyDir를 각자의 `mountPath`에 붙여 파일을 주고받는다.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-demo
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["sh", "-c", "echo hello > /shared/msg; sleep 3600"]
+      volumeMounts:
+        - name: scratch
+          mountPath: /shared
+    - name: reader
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 5; cat /shared/msg; sleep 3600"]
+      volumeMounts:
+        - name: scratch
+          mountPath: /shared
+  volumes:
+    - name: scratch
+      emptyDir: {}
+```
+
+- `writer`가 `/shared/msg`에 쓴 내용을 `reader`가 같은 볼륨의 `/shared/msg`에서 읽는다. 두 컨테이너의 `mountPath`는 달라도 되지만, 여기서는 같은 경로로 붙였다.
+- 용도는 컨테이너 간 파일 교환, 스크래치·캐시 공간, init 단계 산출물 전달 등이다. **데이터를 오래 보관하는 용도가 아니다** — Pod가 다른 노드로 옮겨 다시 뜨면 빈 디렉터리로 시작한다.
+- `emptyDir.medium: Memory`를 주면 디스크가 아니라 tmpfs(메모리)에 만들어 더 빠르지만, 노드 메모리를 소비한다.
+
+## 2.2 hostPath — 노드의 디렉터리를 그대로 마운트
+
+**`hostPath`는 노드(호스트) 파일시스템의 특정 경로를 Pod에 그대로 마운트하는 볼륨**이다. emptyDir가 Pod와 함께 사라지는 것과 달리, hostPath의 데이터는 노드에 남는다. 하지만 **그 노드에 묶인다**는 것이 결정적 한계다 — Pod가 다른 노드로 재스케줄링되면 완전히 다른(또는 비어 있는) 디렉터리를 보게 된다.
+
+게다가 hostPath는 **보안 위험**이 크다. 노드의 파일시스템을 Pod 안으로 열어주는 것이라, 잘못 쓰면 Pod가 노드의 민감한 파일이나 다른 컨테이너의 데이터에 접근할 수 있다. 공식 문서도 hostPath 사용을 되도록 피하고, 꼭 필요하면 읽기 전용으로 좁게 열라고 권고한다.
+
+그래서 hostPath는 일반 애플리케이션이 아니라, **노드 자체를 다뤄야 하는 시스템 워크로드**에 제한적으로 쓴다. 노드의 로그 디렉터리를 읽어 수집하는 로그 에이전트, 노드 메트릭을 읽는 모니터링 데몬 같은 것들인데, 이들은 대개 [05편](/blog/2026/k8s-05-workloads/)의 **DaemonSet**으로 노드마다 하나씩 배포된다.
+
+세 종류를 수명과 범위로 비교하면 이렇다.
+
+| 볼륨         | 수명                 | 묶이는 범위     | 대표 용도                               |
+| ------------ | -------------------- | --------------- | --------------------------------------- |
+| **emptyDir** | Pod와 함께 생성·삭제 | 하나의 Pod 내부 | 컨테이너 간 공유, 스크래치·캐시         |
+| **hostPath** | 노드 디스크에 남음   | 특정 노드       | 노드 로그·메트릭 접근 (DaemonSet, 주의) |
+| **PV/PVC**   | Pod·노드보다 오래 삶 | 클러스터 자원   | DB 등 진짜 보존해야 하는 데이터         |
+
+emptyDir는 Pod가 죽으면 사라지고, hostPath는 노드에 묶여 다른 노드로 못 따라간다. 즉 **둘 다 "노드 장애나 재배치를 견디는 진짜 영속성"은 주지 못한다**. 그 영속성을 주는 것이 바로 다음 절의 PV/PVC다.
+
+---
+
+# 3. PV, PVC, StorageClass — 스토리지 3계층 추상화
 
 Kubernetes는 "디스크"를 세 개의 오브젝트로 쪼개서 추상화한다. 처음엔 과해 보이지만, 각 층이 서로 다른 사람의 관심사를 담당한다는 걸 알면 자연스럽다.
 
@@ -74,7 +137,7 @@ Kubernetes는 "디스크"를 세 개의 오브젝트로 쪼개서 추상화한�
 
 ---
 
-# 3. accessModes와 reclaimPolicy — 요청서에 적는 두 가지 조건
+# 4. accessModes와 reclaimPolicy — 요청서에 적는 두 가지 조건
 
 PVC 요청서에서 가장 중요한 항목이 접근 모드(accessModes)다. 공식 문서 기준으로 네 가지가 있다.
 
@@ -101,7 +164,7 @@ PVC 요청서에서 가장 중요한 항목이 접근 모드(accessModes)다. �
 
 ---
 
-# 4. 실습: kind에서 PVC로 데이터 살려보기
+# 5. 실습: kind에서 PVC로 데이터 살려보기
 
 [02편](/blog/2026/k8s-02-local-setup/)에서 만든 kind 클러스터로 직접 확인해보자. 먼저 kind에 기본으로 깔려 있는 StorageClass를 본다.
 
@@ -198,7 +261,7 @@ Pod는 죽었다 살아났지만 데이터는 그대로다. 데이터의 생명�
 
 ---
 
-# 5. ConfigMap — 설정을 이미지 밖으로
+# 6. ConfigMap — 설정을 이미지 밖으로
 
 이제 두 번째 문제, 설정이다. **ConfigMap**은 키-값 쌍으로 된 설정 덩어리를 담는 오브젝트다. 짧은 값(환경 변수용)도, 파일 통째(설정 파일용)도 담을 수 있다. 단, 민감하지 않은 데이터 전용이고 크기는 1MiB를 넘을 수 없다(공식 문서 기준 — 더 크면 볼륨이나 별도 저장소를 쓰라고 안내한다).
 
@@ -275,7 +338,7 @@ server:
 
 ---
 
-# 6. Secret — base64는 암호화가 아니다
+# 7. Secret — base64는 암호화가 아니다
 
 비밀번호, API 키, 인증서는 **Secret**에 담는다. 사용법은 ConfigMap과 거의 같다(env 주입, volume 마운트 모두 가능). 그런데 Secret에 대해 반드시 짚어야 할 사실이 하나 있다.
 
@@ -342,12 +405,14 @@ Secret에는 용도를 나타내는 타입이 있다. 공식 문서의 내장 �
 
 ---
 
-# 7. 마무리
+# 8. 마무리
 
 이번 편의 핵심을 요약한다.
 
 | 개념          | 한 줄 요약                                                      |
 | ------------- | --------------------------------------------------------------- |
+| emptyDir      | Pod 수명 임시 볼륨 — 컨테이너 간 공유·스크래치 (04편 사이드카)  |
+| hostPath      | 노드 디렉터리 마운트 — 노드에 묶이고 보안 위험, DaemonSet 한정  |
 | PV            | 클러스터에 준비된 실제 스토리지 한 조각 (관리자/시스템 영역)    |
 | PVC           | "이런 스토리지가 필요하다"는 사용자의 요청서, Pod는 이것만 참조 |
 | StorageClass  | PVC 요청 시 PV를 자동으로 만들어주는 동적 프로비저닝 템플릿     |
@@ -365,6 +430,7 @@ Secret에는 용도를 나타내는 타입이 있다. 공식 문서의 내장 �
 # 참고 문헌
 
 - [Kubernetes(쿠버네티스)를 처음 공부하려면 무엇을 공부해야 할까?](https://devocean.sk.com/blog/techBoardDetail.do?ID=165905&boardType=techBlog) (seungkyua, SK Devocean, 2024) — 시리즈 로드맵 출처
+- [Kubernetes 공식 문서 — Volumes](https://kubernetes.io/docs/concepts/storage/volumes/) (emptyDir, hostPath 등 볼륨 종류)
 - [Kubernetes 공식 문서 — Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) (accessModes, reclaimPolicy, PV 단계)
 - [Kubernetes 공식 문서 — Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 - [Kubernetes 공식 문서 — ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/)

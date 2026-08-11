@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈의 2부(4~~9편)는 스칼라 reward model(RM)을 해부하는 데 다섯 편을 썼다. [#4 Rethinking Bradley-Terry](/blog/2026/bradley-terry-rethinking/)는 "선호를 스칼라 점수로 접는 변환이 Bradley-Terry(BT)만 있는 게 아니다"라는 수학적 균열을 열었고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)는 "판별형(discriminative) RM과 생성형(generative) judge를 같은 벤치마크로 비교하는 것 자체가 문제"라는 평가 방법론의 틈을 짚었다. 3부(10~~13편)는 그 스칼라 점수가 얼마나 쉽게 hacking당하는지를 보였다. 이 모든 균열이 가리키는 방향은 하나였다. **reward를 스칼라 하나로 접어야 할 이유가 애초에 없다.**
+이 시리즈의 2부(4\~9편)는 스칼라 reward model(RM)을 해부하는 데 다섯 편을 썼다. [#4 Rethinking Bradley-Terry](/blog/2026/bradley-terry-rethinking/)는 "선호를 스칼라 점수로 접는 변환이 Bradley-Terry(BT)만 있는 게 아니다"라는 수학적 균열을 열었고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)는 "판별형(discriminative) RM과 생성형(generative) judge를 같은 벤치마크로 비교하는 것 자체가 문제"라는 평가 방법론의 틈을 짚었다. 3부(10\~13편)는 그 스칼라 점수가 얼마나 쉽게 hacking당하는지를 보였다. 이 모든 균열이 가리키는 방향은 하나였다. **reward를 스칼라 하나로 접어야 할 이유가 애초에 없다.**
 
 이번 글부터 시작하는 6부가 그 답이다. 판별 RM은 사전학습으로 얻은 LLM의 **텍스트 생성 능력을 전혀 쓰지 않는다.** 수십억 토큰으로 "그럴듯한 다음 토큰을 생성하는 법"을 배운 모델을 가져다가, 맨 끝에 classification head 하나만 새로 붙이고 그 능력을 통째로 버린다. Generative Verifiers(이하 GenRM)는 이 낭비를 정면으로 지적한다. 논문은 이렇게 말한다.
 

@@ -20,6 +20,7 @@ related_posts: true
 > - [07: 스토리지와 설정 — PV/PVC, ConfigMap, Secret](/blog/2026/k8s-07-storage-config/)
 > - [08: 권한 관리 — ServiceAccount와 RBAC](/blog/2026/k8s-08-rbac/)
 > - [09: 확장과 생태계 — Operator와 CNCF Projects](/blog/2026/k8s-09-operator-cncf/)
+> - [10: 관측성 — 로그·메트릭과 Prometheus/Grafana](/blog/2026/k8s-10-observability/)
 >
 > 이 시리즈의 커리큘럼은 SK Devocean의 [Kubernetes(쿠버네티스)를 처음 공부하려면 무엇을 공부해야 할까?](https://devocean.sk.com/blog/techBoardDetail.do?ID=165905&boardType=techBlog) (seungkyua) 글의 학습 로드맵을 바탕으로 구성했다.
 
@@ -106,6 +107,20 @@ Kubernetes의 컨트롤러도 똑같다. **끝나지 않는 루프(control loop)
 
 왜 "필터링 후 스코어링"일까. 조건을 만족하는지(하드 제약)와 얼마나 좋은 자리인지(소프트 선호)를 분리하면, 자격 미달 노드를 빠르게 쳐낸 뒤 남은 후보만 정밀하게 비교할 수 있다. 결정이 끝나면 스케줄러는 "이 Pod는 이 노드로"라는 바인딩 결과를 API 서버에 알릴 뿐, 노드에 직접 명령하지 않는다.
 
+## 2.5 cloud-controller-manager — 클라우드와 클러스터를 잇는 다리
+
+지금까지 본 네 컴포넌트가 어떤 환경에서든 도는 필수 부품이라면, **cloud-controller-manager**는 클러스터가 **클라우드(AWS·GCP·Azure 등) 위에서 돌 때만** 함께 뜨는 선택적 컴포넌트다. 이름 그대로 클라우드 제공자에 특화된 컨트롤러들을 모아 실행하는데, 하는 일은 "클러스터의 요구를 실제 클라우드 API 호출로 번역"하는 것이다. 공식 문서가 드는 대표 컨트롤러는 세 가지다.
+
+| 컨트롤러             | 하는 일                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| **Node 컨트롤러**    | 클라우드에서 사라진 인스턴스를 감지해 해당 노드 오브젝트를 정리     |
+| **Route 컨트롤러**   | 클라우드 네트워크에 Pod 통신용 라우트를 설정                        |
+| **Service 컨트롤러** | `LoadBalancer` 타입 Service에 실제 클라우드 로드밸런서를 프로비저닝 |
+
+왜 이걸 kube-controller-manager에서 떼어냈을까. 클라우드마다 API가 제각각이라, 클라우드 연동 코드를 Kubernetes 본체에 섞으면 릴리스가 특정 벤더에 묶인다. cloud-controller-manager라는 **플러그인 경계**로 분리해 두면, 각 클라우드 제공자가 자기 구현체를 독립적으로 개발·교체할 수 있다. 03편 내내 반복된 "표준 인터페이스 뒤로 구현을 위임한다"(CRI·CNI)는 패턴이 클라우드 연동에도 똑같이 적용된 셈이다.
+
+우리가 쓰는 kind에는 이 컴포넌트가 없다. 로컬 노트북에는 프로비저닝할 클라우드가 없기 때문이다. 이 사실은 나중에 [06편](/blog/2026/k8s-06-networking/)에서 `LoadBalancer` 타입 Service를 만들면 EXTERNAL-IP가 영원히 `<pending>`에 머무는 현상으로 직접 확인하게 된다 — 요청을 받아 실제 로드밸런서를 만들어 줄 Service 컨트롤러(즉 cloud-controller-manager)가 로컬에 없기 때문이다.
+
 ---
 
 # 3. Node — 일이 실제로 벌어지는 곳
@@ -142,16 +157,17 @@ Kubernetes는 여기서도 구현을 직접 들고 있지 않고 CNI(Container N
 
 지금까지 나온 컴포넌트를 한 표로 정리한다.
 
-| 컴포넌트                    | 위치          | 역할                                                               | 비유             |
-| --------------------------- | ------------- | ------------------------------------------------------------------ | ---------------- |
-| **etcd**                    | Control Plane | 클러스터 모든 상태의 유일한 저장소, Raft 합의로 고가용성           | 회사 장부·등기부 |
-| **kube-apiserver**          | Control Plane | 모든 통신의 관문, 인증→인가→어드미션, 유일하게 etcd에 접근         | 민원 창구        |
-| **kube-controller-manager** | Control Plane | desired state와 current state의 차이를 reconcile하는 컨트롤러 묶음 | 온도조절기       |
-| **kube-scheduler**          | Control Plane | 미배정 Pod에 노드를 골라줌 (필터링→스코어링)                       | 인사 배치 담당자 |
-| **kubelet**                 | Node          | 지시받은 Pod의 컨테이너를 실행·감시하는 노드 에이전트              | 현장 반장        |
-| **컨테이너 런타임**         | Node          | CRI를 통해 위임받아 컨테이너를 실제로 실행                         | 현장 작업자      |
-| **kube-proxy**              | Node          | Service 트래픽이 Pod에 도달하도록 커널에 규칙 설정                 | 교통 정리 요원   |
-| **네트워크 플러그인(CNI)**  | Node          | Pod IP 할당과 Pod 간 통신 경로 구성 (kind는 kindnetd)              | 도로망 공사      |
+| 컴포넌트                     | 위치          | 역할                                                               | 비유               |
+| ---------------------------- | ------------- | ------------------------------------------------------------------ | ------------------ |
+| **etcd**                     | Control Plane | 클러스터 모든 상태의 유일한 저장소, Raft 합의로 고가용성           | 회사 장부·등기부   |
+| **kube-apiserver**           | Control Plane | 모든 통신의 관문, 인증→인가→어드미션, 유일하게 etcd에 접근         | 민원 창구          |
+| **kube-controller-manager**  | Control Plane | desired state와 current state의 차이를 reconcile하는 컨트롤러 묶음 | 온도조절기         |
+| **kube-scheduler**           | Control Plane | 미배정 Pod에 노드를 골라줌 (필터링→스코어링)                       | 인사 배치 담당자   |
+| **cloud-controller-manager** | Control Plane | (클라우드 환경 한정) LB·라우트·노드를 클라우드 API로 연동          | 클라우드 연락 담당 |
+| **kubelet**                  | Node          | 지시받은 Pod의 컨테이너를 실행·감시하는 노드 에이전트              | 현장 반장          |
+| **컨테이너 런타임**          | Node          | CRI를 통해 위임받아 컨테이너를 실제로 실행                         | 현장 작업자        |
+| **kube-proxy**               | Node          | Service 트래픽이 Pod에 도달하도록 커널에 규칙 설정                 | 교통 정리 요원     |
+| **네트워크 플러그인(CNI)**   | Node          | Pod IP 할당과 Pod 간 통신 경로 구성 (kind는 kindnetd)              | 도로망 공사        |
 
 ---
 
@@ -229,6 +245,7 @@ CoreDNS is running at https://127.0.0.1:xxxxx/api/v1/namespaces/kube-system/serv
 - [Cluster Architecture — kubernetes.io](https://kubernetes.io/docs/concepts/architecture/)
 - [Controllers — kubernetes.io](https://kubernetes.io/docs/concepts/architecture/controller/)
 - [Kubernetes Scheduler — kubernetes.io](https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/)
+- [Cloud Controller Manager — kubernetes.io](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
 - [Controlling Access to the Kubernetes API — kubernetes.io](https://kubernetes.io/docs/concepts/security/controlling-access/)
 - [Operating etcd clusters for Kubernetes — kubernetes.io](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/)
 - [Container Runtime Interface (CRI) — kubernetes.io](https://kubernetes.io/docs/concepts/architecture/cri/)
