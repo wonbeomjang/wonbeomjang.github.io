@@ -4,26 +4,25 @@
  * Copyright 2025 Fonticons, Inc.
  */
 @use "sass:string";
-@use 'variables' as v;
-@use 'mixins' as m;
+@use "variables" as v;
+@use "mixins" as m;
 
-:root, :host {
-  --#{v.$css-prefix}-family-classic: '#{ v.$family }';
+:root,
+:host {
+  --#{v.$css-prefix}-family-classic: "#{ v.$family }";
   --#{v.$css-prefix}-font-solid: normal 900 1em/1 var(--#{v.$css-prefix}-family-classic);
 
   /* deprecated: this older custom property will be removed next major release */
   --#{v.$css-prefix}-style-family-classic: var(--#{v.$css-prefix}-family-classic);
 }
 
-
 @font-face {
-  font-family: 'Font Awesome 7 Free';
+  font-family: "Font Awesome 7 Free";
   font-style: normal;
   font-weight: 900;
   font-display: v.$font-display;
-  src: url('#{v.$font-path}/fa-solid-900.woff2');
+  src: url("#{v.$font-path}/fa-solid-900.woff2");
 }
-
 
 .fas {
   --#{v.$css-prefix}-family: var(--#{v.$css-prefix}-family-classic);
@@ -46,6 +45,6 @@
   @extend .#{v.$css-prefix}-classic;
 
   &::before {
-    content: string.unquote("\"#{ $var }\"");
+    content: string.unquote('"#{ $var }"');
   }
 }

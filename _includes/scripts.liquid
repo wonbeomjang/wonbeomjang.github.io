@@ -239,7 +239,7 @@
   <script defer src="{{ '/assets/js/cookie-consent-setup.js' | relative_url }}"></script>
 {% endif %}
 
-{% if site.enable_google_analytics %}
+{% if site.analytics.google %}
   <!-- Analytics -->
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script
@@ -247,7 +247,7 @@
       type="text/plain" data-category="analytics"
     {% endif %}
     async
-    src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"
+    src="https://www.googletagmanager.com/gtag/js?id={{ site.analytics.google }}"
   ></script>
   <script
     {% if site.enable_cookie_consent %}
@@ -258,7 +258,7 @@
   ></script>
 {% endif %}
 
-{% if site.enable_cronitor_analytics %}
+{% if site.analytics.cronitor %}
   <!-- Cronitor RUM -->
   <script
     {% if site.enable_cookie_consent %}
@@ -275,7 +275,7 @@
     src="{{ '/assets/js/cronitor-analytics-setup.js' | relative_url }}"
   ></script>
 {% endif %}
-{% if site.enable_pirsch_analytics %}
+{% if site.analytics.pirsch %}
   <script
     {% if site.enable_cookie_consent %}
       type="text/plain" data-category="analytics"
@@ -283,10 +283,10 @@
     defer
     src="https://api.pirsch.io/pa.js"
     id="pianjs"
-    data-code="{{ site.pirsch_analytics }}"
+    data-code="{{ site.analytics.pirsch }}"
   ></script>
 {% endif %}
-{% if site.enable_openpanel_analytics %}
+{% if site.analytics.openpanel %}
   <script
     {% if site.enable_cookie_consent %}
       type="text/plain" data-category="analytics"

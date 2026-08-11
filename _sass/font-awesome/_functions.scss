@@ -4,5 +4,5 @@
 
 // fa-content: convenience function used to set content property
 @function fa-content($var) {
-  @return string.unquote("\"#{ $var }\"");
+  @return string.unquote('"#{ $var }"');
 }

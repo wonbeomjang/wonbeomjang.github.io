@@ -1,13 +1,15 @@
 // icons in a list
 // -------------------------
-@use 'variables' as v;
+@use "variables" as v;
 
 .#{v.$css-prefix}-ul {
   list-style-type: none;
   margin-inline-start: var(--#{v.$css-prefix}-li-margin, #{v.$li-margin});
   padding-inline-start: 0;
 
-  > li { position: relative; }
+  > li {
+    position: relative;
+  }
 }
 
 .#{v.$css-prefix}-li {

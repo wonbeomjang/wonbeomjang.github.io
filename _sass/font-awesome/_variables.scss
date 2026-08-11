@@ -1,59 +1,59 @@
 // variables
 // --------------------------
 
-$css-prefix            : fa !default;
-$style                 : 900 !default;
-$family                : "Font Awesome 7 Free" !default;
+$css-prefix: fa !default;
+$style: 900 !default;
+$family: "Font Awesome 7 Free" !default;
 
-$icon-property         : --fa !default;
+$icon-property: --fa !default;
 
-$display               : inline-block !default;
+$display: inline-block !default;
 
-$fw-width              : calc((20/16) * 1em) !default;
-$inverse               : #fff !default;
+$fw-width: calc((20 / 16) * 1em) !default;
+$inverse: #fff !default;
 
-$border-box-sizing     : content-box !default;
-$border-color          : #eee !default;
-$border-padding        : 0.1875em 0.25em !default;
-$border-radius         : .1em !default;
-$border-style          : solid !default;
-$border-width          : .0625em !default;
+$border-box-sizing: content-box !default;
+$border-color: #eee !default;
+$border-padding: 0.1875em 0.25em !default;
+$border-radius: 0.1em !default;
+$border-style: solid !default;
+$border-width: 0.0625em !default;
 
-$size-scale-2xs        : 10 !default;
-$size-scale-xs         : 12 !default;
-$size-scale-sm         : 14 !default;
-$size-scale-base       : 16 !default;
-$size-scale-lg         : 20 !default;
-$size-scale-xl         : 24 !default;
-$size-scale-2xl        : 32 !default;
+$size-scale-2xs: 10 !default;
+$size-scale-xs: 12 !default;
+$size-scale-sm: 14 !default;
+$size-scale-base: 16 !default;
+$size-scale-lg: 20 !default;
+$size-scale-xl: 24 !default;
+$size-scale-2xl: 32 !default;
 
 $sizes: (
-  "2xs"                : $size-scale-2xs,
-  "xs"                 : $size-scale-xs,
-  "sm"                 : $size-scale-sm,
-  "lg"                 : $size-scale-lg,
-  "xl"                 : $size-scale-xl,
-  "2xl"                : $size-scale-2xl
+  "2xs": $size-scale-2xs,
+  "xs": $size-scale-xs,
+  "sm": $size-scale-sm,
+  "lg": $size-scale-lg,
+  "xl": $size-scale-xl,
+  "2xl": $size-scale-2xl,
 ) !default;
 
-$li-width              : 2em !default;
-$li-margin             : calc($li-width * (5/4)) !default;
+$li-width: 2em !default;
+$li-margin: calc($li-width * (5 / 4)) !default;
 
-$pull-margin           : .3em !default;
+$pull-margin: 0.3em !default;
 
-$primary-opacity       : 1 !default;
-$secondary-opacity     : .4 !default;
+$primary-opacity: 1 !default;
+$secondary-opacity: 0.4 !default;
 
-$stack-vertical-align  : middle !default;
-$stack-width           : ($fw-width * 2) !default;
-$stack-z-index         : auto !default;
+$stack-vertical-align: middle !default;
+$stack-width: ($fw-width * 2) !default;
+$stack-z-index: auto !default;
 
 // web fonts-related variables
-$font-display          : block !default;
-$font-path             : "../webfonts" !default;
+$font-display: block !default;
+$font-path: "../webfonts" !default;
 
 // deprecated: these older SCSS variables will be removed with Font Awesome's next major release
-$style-family          : $family;
+$style-family: $family;
 
 $var-0: \30;
 $var-1: \31;
