@@ -30,7 +30,293 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "post-kubernetes-확장과-생태계-operator와-cncf-projects",
+        },{id: "post-one-token-to-fool-genrm도-결국-뚫린다",
+        
+          title: "One Token to Fool: GenRM도 결국 뚫린다",
+        
+        description: "RLHF Reward 설계 시리즈 #26 — 무의미한 토큰 하나로 무너지는 생성형 judge, 그리고 26편의 결론",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/one-token-to-fool-judge/";
+          
+        },
+      },{id: "post-rubrics-as-rewards-정답이-없는-도메인에-reward를-만드는-법",
+        
+          title: "Rubrics as Rewards: 정답이 없는 도메인에 reward를 만드는 법",
+        
+        description: "RLHF Reward 설계 시리즈 #25 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/rubrics-as-rewards/";
+          
+        },
+      },{id: "post-deepseek-grm-reward-model이-평가-기준을-스스로-만든다",
+        
+          title: "DeepSeek-GRM: reward model이 평가 기준을 스스로 만든다",
+        
+        description: "RLHF Reward 설계 시리즈 #24 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/deepseek-grm-spct/";
+          
+        },
+      },{id: "post-generative-reward-models-genrm과-선호-학습을-잇다",
+        
+          title: "Generative Reward Models: GenRM과 선호 학습을 잇다",
+        
+        description: "RLHF Reward 설계 시리즈 #23 — 판별 RM과 생성 judge 사이, 그리고 CLoud 하이브리드",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/generative-reward-models/";
+          
+        },
+      },{id: "post-generative-verifiers-reward를-분류가-아니라-생성으로-풀다",
+        
+          title: "Generative Verifiers: reward를 분류가 아니라 생성으로 풀다",
+        
+        description: "RLHF Reward 설계 시리즈 #22 — next-token prediction으로 학습한 verifier가 CoT와 test-time compute를 얻는 법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/generative-verifiers/";
+          
+        },
+      },{id: "post-deepseek-r1-reward-model을-규칙으로-대체하다",
+        
+          title: "DeepSeek-R1: reward model을 규칙으로 대체하다",
+        
+        description: "RLHF Reward 설계 시리즈 #21 — RLVR이 통하는 도메인과 통하지 않는 도메인, 그리고 PRM을 버린 이유",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/deepseek-r1/";
+          
+        },
+      },{id: "post-math-shepherd-사람-라벨-없이-prm을-만들다",
+        
+          title: "Math-Shepherd: 사람 라벨 없이 PRM을 만들다",
+        
+        description: "RLHF Reward 설계 시리즈 #20 — rollout으로 단계별 라벨을 자동 생성하는 법, 그리고 PRM 평가의 함정",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/math-shepherd/";
+          
+        },
+      },{id: "post-let-39-s-verify-step-by-step-결과가-아니라-과정에-보상을-주다",
+        
+          title: "Let&#39;s Verify Step by Step: 결과가 아니라 과정에 보상을 주다",
+        
+        description: "RLHF Reward 설계 시리즈 #19 — process supervision이 outcome supervision을 이기는 이유와 PRM800K",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/lets-verify-step-by-step/";
+          
+        },
+      },{id: "post-dpo-reward-model을-없애면-무엇을-잃는가",
+        
+          title: "DPO: reward model을 없애면 무엇을 잃는가",
+        
+        description: "RLHF Reward 설계 시리즈 #18 — 암묵적 reward로 RL을 우회한 대가, 그리고 다시 명시적 RM으로 돌아온 이유",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/dpo/";
+          
+        },
+      },{id: "post-rloo-ppo의-절반은-rlhf에-필요-없었다",
+        
+          title: "RLOO: PPO의 절반은 RLHF에 필요 없었다",
+        
+        description: "RLHF Reward 설계 시리즈 #17 — 응답 전체를 하나의 action으로 보면 REINFORCE로 충분하다는 주장",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/rloo-back-to-basics/";
+          
+        },
+      },{id: "post-grpo-value-network를-버리고-그룹-안에서-비교하다",
+        
+          title: "GRPO: value network를 버리고 그룹 안에서 비교하다",
+        
+        description: "RLHF Reward 설계 시리즈 #16 — critic 없이 그룹 상대 advantage로 PPO를 대체한 현재의 사실상 표준",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/grpo-deepseekmath/";
+          
+        },
+      },{id: "post-secrets-of-rlhf-i-ppo-학습은-왜-터지는가",
+        
+          title: "Secrets of RLHF I: PPO 학습은 왜 터지는가",
+        
+        description: "RLHF Reward 설계 시리즈 #15 — reward scaling, advantage normalization, policy 제약까지 PPO-max 안정화 레시피",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/secrets-rlhf-ppo/";
+          
+        },
+      },{id: "post-ppo-clipped-surrogate-objective는-무엇을-지키는가",
+        
+          title: "PPO: clipped surrogate objective는 무엇을 지키는가",
+        
+        description: "RLHF Reward 설계 시리즈 #14 — RLHF의 모든 하이퍼파라미터가 시작된 곳, 그리고 KL 제약의 의미",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/ppo/";
+          
+        },
+      },{id: "post-warm-reward-model을-weight-공간에서-평균내다",
+        
+          title: "WARM: reward model을 weight 공간에서 평균내다",
+        
+        description: "RLHF Reward 설계 시리즈 #13 — 앙상블의 강건성을 단일 모델 비용으로 얻어 reward hacking을 막는 법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/warm-weight-averaged-reward/";
+          
+        },
+      },{id: "post-odin-reward에서-길이-성분을-떼어내다",
+        
+          title: "ODIN: reward에서 길이 성분을 떼어내다",
+        
+        description: "RLHF Reward 설계 시리즈 #12 — 두 개의 head로 품질과 길이를 분리 학습해 length hacking을 막는 법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/odin-disentangled-reward/";
+          
+        },
+      },{id: "post-rlhf는-정말-좋아진-걸까-길어진-걸까",
+        
+          title: "RLHF는 정말 좋아진 걸까, 길어진 걸까",
+        
+        description: "RLHF Reward 설계 시리즈 #11 — reward 향상의 대부분이 길이로 설명된다는 불편한 결과",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/rlhf-length-correlations/";
+          
+        },
+      },{id: "post-reward-model-overoptimization-goodhart의-법칙을-수식으로-쓰다",
+        
+          title: "Reward Model Overoptimization: Goodhart의 법칙을 수식으로 쓰다",
+        
+        description: "RLHF Reward 설계 시리즈 #10 — proxy reward를 올릴수록 진짜 reward가 꺾이는 지점의 스케일링 법칙",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/reward-model-overoptimization/";
+          
+        },
+      },{id: "post-rewardbench-2-reward-model을-어떻게-믿을-것인가",
+        
+          title: "RewardBench 2: reward model을 어떻게 믿을 것인가",
+        
+        description: "RLHF Reward 설계 시리즈 #9 — RewardBench가 saturate된 이유와, downstream 성능과 상관되는 평가 설계",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/rewardbench-2/";
+          
+        },
+      },{id: "post-llama-2의-rlhf-reward-model을-두-개로-쪼갠-이유",
+        
+          title: "Llama 2의 RLHF: reward model을 두 개로 쪼갠 이유",
+        
+        description: "RLHF Reward 설계 시리즈 #8 — helpfulness·safety RM 분리, margin loss, rejection sampling에서 PPO까지의 프로덕션 레시피",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/llama2-rlhf/";
+          
+        },
+      },{id: "post-armorm-하나의-스칼라를-해석-가능한-여러-축으로-쪼개다",
+        
+          title: "ArmoRM: 하나의 스칼라를 해석 가능한 여러 축으로 쪼개다",
+        
+        description: "RLHF Reward 설계 시리즈 #7 — 다목적 reward 분해와 MoE 게이팅으로 8B가 340B에 근접하다",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/armorm/";
+          
+        },
+      },{id: "post-skywork-reward-데이터-큐레이션이-아키텍처를-이긴다",
+        
+          title: "Skywork-Reward: 데이터 큐레이션이 아키텍처를 이긴다",
+        
+        description: "RLHF Reward 설계 시리즈 #6 — 80K 선별 데이터로 SOTA를 찍은 레시피, 그리고 V2의 40M 확장",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/skywork-reward/";
+          
+        },
+      },{id: "post-secrets-of-rlhf-ii-선호-데이터의-노이즈와-reward-model의-일반화",
+        
+          title: "Secrets of RLHF II: 선호 데이터의 노이즈와 reward model의 일반화",
+        
+        description: "RLHF Reward 설계 시리즈 #5 — 잘못된 선호 쌍을 걸러내고 RM을 OOD에 강하게 만드는 법",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/secrets-rlhf-reward-modeling/";
+          
+        },
+      },{id: "post-rethinking-bradley-terry-왜-이-식으로-reward를-만드는가",
+        
+          title: "Rethinking Bradley-Terry: 왜 이 식으로 reward를 만드는가",
+        
+        description: "RLHF Reward 설계 시리즈 #4 — BT 모델의 이론적 근거와 order consistency, 그리고 대안 목적함수",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/bradley-terry-rethinking/";
+          
+        },
+      },{id: "post-hh-rlhf-helpfulness와-harmlessness는-왜-충돌하는가",
+        
+          title: "HH-RLHF: helpfulness와 harmlessness는 왜 충돌하는가",
+        
+        description: "RLHF Reward 설계 시리즈 #3 — preference model의 스케일링과 helpful·harmless 텐션 (Bai et al., Anthropic, arXiv 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/anthropic-hh-rlhf/";
+          
+        },
+      },{id: "post-instructgpt-rlhf-3단계-레시피의-표준을-세우다",
+        
+          title: "InstructGPT: RLHF 3단계 레시피의 표준을 세우다",
+        
+        description: "RLHF Reward 설계 시리즈 #2 — SFT → Reward Model → PPO, 오늘날 모든 RLHF 파이프라인의 원형 (Ouyang et al., OpenAI, NeurIPS 2022)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/instructgpt/";
+          
+        },
+      },{id: "post-deep-rl-from-human-preferences-보상-함수를-사람의-선호로-배우다",
+        
+          title: "Deep RL from Human Preferences: 보상 함수를 사람의 선호로 배우다",
+        
+        description: "RLHF Reward 설계 시리즈 #1 — 선호 비교만으로 reward model을 학습하는 원형 (Christiano et al., OpenAI/DeepMind, NeurIPS 2017)",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/deep-rl-human-preferences/";
+          
+        },
+      },{id: "post-kubernetes-확장과-생태계-operator와-cncf-projects",
         
           title: "Kubernetes 확장과 생태계 — Operator와 CNCF Projects",
         
