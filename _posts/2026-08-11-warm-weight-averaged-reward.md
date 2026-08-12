@@ -118,7 +118,7 @@ $$\phi_1, \phi_2$$ 두 개의 파인튜닝된 weight에 대해, 페어와이즈 
 
 $$\mathrm{Acc}(r_\phi, \mathcal{D}) = \mathbb{E}_{(x,y^+,y^-)\sim \mathcal{D}}\left[\mathbb{1}_{r_\phi(x,y^+) \ge r_\phi(x,y^-)}\right]$$
 
-- $$\mathbb{1}_{[\cdot]}$$: 조건이 참이면 1, 거짓이면 0인 지시함수.
+- $$\mathbb{1}_{[\cdot]}$$: 조건이 참이면 1, 거짓이면 0인 indicator function.
 - 즉 $$\mathrm{Acc}$$는 "RM이 더 선호되는 쪽에 더 높은 점수를 준 비율"이다.
 
 **Observation 1 (LMC)**. 같은 사전학습을 공유하는 $$\phi_1, \phi_2$$에 대해, 모든 $$\lambda \in [0,1]$$에서
