@@ -124,7 +124,7 @@ $$\text{Acc} = \frac{1}{N} \sum_{i=1}^{N} \mathbb{1}\left[ r_\theta(x_i, y_i^{ch
 
 18점이 빠졌다. 그런데 흥미롭게도 이 모델의 후속작 **Skywork-Reward-V2-Llama-3.1-8B는 RewardBench 2에서도 84.1점으로 1위**를 지켰다(Factuality 84.6 / IF 66.3 / Math 77.6 / Safety 96.7 / Focus 98.4 / Ties 81.2). 즉 [#6 글](/blog/2026/skywork-reward/)이 강조하는 "아키텍처보다 데이터 큐레이션"이라는 메시지는 더 어려운 벤치마크에서도 유지된다 — 다만 그 "1위"가 어느 버전 벤치마크에서의 1위인지는 반드시 확인해야 한다는 게 이 표가 주는 실무적 교훈이다.
 
-Table 3 상위권을 조금 더 들여다보면 스칼라 RM과 생성형(LM-as-judge) RM이 나란히 채점된다. ContextualAI의 LMUnit-qwen2.5-72b(82.1)나 Gemini-2.5-Pro(79.5), Claude-Opus-4(76.5) 같은 생성형 모델이 상위권에 있지만, 논문은 이들을 "4개 중 최선 고르기"와 "개별 절대 평가" 두 프롬프팅 방식으로 각각 채점한 뒤 **더 잘 나온 쪽 점수를 채택**했다고 밝힌다. 스칼라 RM은 입력을 한 번 통과시키면 결정론적으로 점수 하나가 나오지만, 생성형 RM은 프롬프팅 방식에 따라 점수가 갈리고 그중 유리한 쪽이 보고된다 — 리더보드에서 스칼라 RM과 생성형 RM을 같은 줄에 놓고 비교할 때 이 비대칭을 감안해야 한다. 생성형 RM 자체의 구조와 한계는 이 시리즈 6부([#22 Generative Verifiers](/blog/2026/generative-verifiers/))에서 본격적으로 다룬다.
+Table 3 상위권을 조금 더 들여다보면 스칼라 RM과 생성형(LM-as-judge) RM이 나란히 채점된다. ContextualAI의 LMUnit-qwen2.5-72b(82.1)나 Gemini-2.5-Pro(79.5), Claude-Opus-4(76.5) 같은 생성형 모델이 상위권에 있지만, 논문은 이들을 "4개 중 최선 고르기"와 "개별 절대 평가" 두 프롬프팅 방식으로 각각 채점한 뒤 **더 잘 나온 쪽 점수를 채택**했다고 밝힌다. 스칼라 RM은 입력을 한 번 통과시키면 결정론적으로 점수 하나가 나오지만, 생성형 RM은 프롬프팅 방식에 따라 점수가 갈리고 그중 유리한 쪽이 보고된다 — 리더보드에서 스칼라 RM과 생성형 RM을 같은 줄에 놓고 비교할 때 이 비대칭을 감안해야 한다. 생성형 RM 자체의 구조와 한계는 이 시리즈 6부([#23 Generative Verifiers](/blog/2026/generative-verifiers/))에서 본격적으로 다룬다.
 
 ## Best-of-N과는 강하게 상관된다
 
@@ -203,7 +203,7 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 6. [Skywork-Reward (2024)](/blog/2026/skywork-reward/) — 데이터 큐레이션이 아키텍처를 이긴다
 7. [ArmoRM (2024)](/blog/2026/armorm/) — 다목적 분해와 MoE 게이팅
 8. [Llama 2 (2023)](/blog/2026/llama2-rlhf/) — helpfulness·safety RM 분리 프로덕션 레시피
-9. **(현재 글)** RewardBench 2 (Malik 2025) — RM을 어떻게 평가할 것인가
+9. **(현재 글)** RewardBench 2 (2025) — RM을 어떻게 평가할 것인가
 
 **3부. Reward Hacking**
 
@@ -228,11 +228,21 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 
 **6부. Generative Reward Model**
 
-22. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-23. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-24. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
-25. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-26. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+
+**7부. 생각하는 Judge, 그리고 그 신뢰**
+
+27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+
+본 시리즈는 31편으로 구성된다.
 
 # 참고 문헌
 

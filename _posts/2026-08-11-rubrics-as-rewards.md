@@ -2,7 +2,7 @@
 layout: post
 title: "Rubrics as Rewards: 정답이 없는 도메인에 reward를 만드는 법"
 date: 2026-08-11 09:25:00 +0900
-description: "RLHF Reward 설계 시리즈 #25 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
+description: "RLHF Reward 설계 시리즈 #29 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
 categories: [paper]
 tags: [rlhf, reward-model, rubric, rlvr, llm-as-a-judge, paper]
 giscus_comments: true
@@ -193,9 +193,9 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 ## RaR을 시리즈 지형도 위에 놓기
 
-이 시리즈에서 "원칙(principle)을 어디서 가져오는가"라는 질문에 답한 글이 이미 하나 있었다. [#24 DeepSeek-GRM/SPCT 글](/blog/2026/deepseek-grm-spct/)이다. 두 방법은 겉보기엔 비슷해 보이지만 원칙의 출처가 정반대다.
+이 시리즈에서 "원칙(principle)을 어디서 가져오는가"라는 질문에 답한 글이 이미 하나 있었다. [#26 DeepSeek-GRM/SPCT 글](/blog/2026/deepseek-grm-spct/)이다. 두 방법은 겉보기엔 비슷해 보이지만 원칙의 출처가 정반대다.
 
-| 축                | DeepSeek-GRM / SPCT (#24)                                      | Rubrics as Rewards (본편)                                   |
+| 축                | DeepSeek-GRM / SPCT (#26)                                      | Rubrics as Rewards (본편)                                   |
 | ----------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
 | 채점 기준의 출처  | judge 모델이 강화학습으로 스스로 원칙을 생성                   | 강한 LLM(GPT-4o/o3-mini)이 참조 답안을 근거로 사전 생성     |
 | 생성 시점         | 추론 시점, 응답마다 즉석 생성                                  | 학습 전 오프라인, 프롬프트당 한 번 생성 후 재사용           |
@@ -217,13 +217,13 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 한계도 논문이 직접 인정한다. 실험이 의료·과학 두 도메인에 한정돼 대화나 도구 사용 같은 더 개방적인 세팅으로의 일반화는 검증되지 않았고, 집계 전략도 explicit·implicit 두 가지만 탐색했다. 더 근본적인 문제는 따로 있다 — RaR이 여전히 **각 항목을 독립적으로 pointwise 스칼라화**한다는 점이다. Open Rubric System(OpenRS, arXiv:2602.14069, Alibaba Qwen 팀)은 바로 이 지점을 정조준한다. OpenRS는 RaR을 포함한 "정적 rubric을 강한 LLM으로 합성해 가중합으로 집계하는" 계열의 방법들이 "discriminability에 내재적 한계(ceiling)를 만들고 reward gaming에 취약하며, 개방형 세팅에서 collapse에 가까운 동역학으로 이어질 수 있다"고 정면으로 지적한다. 대안으로 제시하는 **Pairwise Adaptive Meta-Rubric (PAMR)**은 rubric을 프롬프트마다 미리 고정하는 대신, **비교 대상 두 응답의 의미적 차이에 조건부로** 그때그때 rubric을 생성하고, 항목별로 두 응답을 pairwise 비교한 뒤 그 결과를 judge 내부가 아니라 **외부에서** 집계한다. 정적인 체크리스트를 판 채로 반복 사용하지 않고 비교할 응답 쌍에 맞춰 rubric 자체를 적응시키기 때문에, 정책이 고정된 채점 기준을 미리 파악해 거기에 맞춰 응답을 최적화하기가 훨씬 어려워진다는 논리다. OpenRS는 이 구조로 RM-Bench·JudgeBench·RewardBench v2·PPE Preference 네 개의 reward-modeling 벤치마크에서 스칼라 RM baseline들을 제치고 최상위 결과를 보고한다.
 
-그런데 rubric이든 pairwise adaptive rubric이든, 결국 판정을 내리는 건 여전히 LLM judge라는 사실은 바뀌지 않는다. 항목을 아무리 잘게 쪼개고 비교 방식을 아무리 정교하게 다듬어도, judge 자체가 속는다면 이 모든 구조는 무의미해진다. [#26 One Token to Fool LLM-as-a-Judge 글](/blog/2026/one-token-to-fool-judge/)이 바로 이 지점 — judge를 단 하나의 토큰으로 속일 수 있다는 사실 — 을 다룬다.
+그런데 rubric이든 pairwise adaptive rubric이든, 결국 판정을 내리는 건 여전히 LLM judge라는 사실은 바뀌지 않는다. 항목을 아무리 잘게 쪼개고 비교 방식을 아무리 정교하게 다듬어도, judge 자체가 속는다면 이 모든 구조는 무의미해진다. [#31 One Token to Fool LLM-as-a-Judge 글](/blog/2026/one-token-to-fool-judge/)이 바로 이 지점 — judge를 단 하나의 토큰으로 속일 수 있다는 사실 — 을 다룬다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물다섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물아홉 번째 글이다.
 
 **1부. 지형도**
 
@@ -263,11 +263,21 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 **6부. Generative Reward Model**
 
-22. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-23. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-24. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
-25. **(현재 글)** Rubrics as Rewards (2025) — 비검증 도메인으로
-26. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+
+**7부. 생각하는 Judge, 그리고 그 신뢰**
+
+27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+29. **(현재 글)** Rubrics as Rewards (2025) — 비검증 도메인으로
+30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+
+본 시리즈는 31편으로 구성된다.
 
 # 참고 문헌
 

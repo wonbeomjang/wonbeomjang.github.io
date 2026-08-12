@@ -2,7 +2,7 @@
 layout: post
 title: "DeepSeek-GRM: reward model이 평가 기준을 스스로 만든다"
 date: 2026-08-11 09:24:00 +0900
-description: "RLHF Reward 설계 시리즈 #24 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
+description: "RLHF Reward 설계 시리즈 #26 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, inference-time-scaling, deepseek, paper]
 giscus_comments: true
@@ -245,7 +245,7 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물네 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물여섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -285,11 +285,21 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 **6부. Generative Reward Model**
 
-22. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-23. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-24. **(현재 글)** DeepSeek-GRM / SPCT (2025) — inference-time scaling
-25. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-26. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+26. **(현재 글)** DeepSeek-GRM / SPCT (2025) — inference-time scaling
+
+**7부. 생각하는 Judge, 그리고 그 신뢰**
+
+27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+
+본 시리즈는 31편으로 구성된다.
 
 # 참고 문헌
 

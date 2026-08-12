@@ -2,7 +2,7 @@
 layout: post
 title: "Generative Verifiers: reward를 분류가 아니라 생성으로 풀다"
 date: 2026-08-11 09:22:00 +0900
-description: "RLHF Reward 설계 시리즈 #22 — next-token prediction으로 학습한 verifier가 CoT와 test-time compute를 얻는 법"
+description: "RLHF Reward 설계 시리즈 #23 — next-token prediction으로 학습한 verifier가 CoT와 test-time compute를 얻는 법"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, verifier, llm-as-a-judge, paper]
 giscus_comments: true
@@ -23,7 +23,7 @@ GenRM의 핵심은 단순하다. "이 답이 맞습니까?"라는 질문에 **Ye
 
 이 전환이 중요한 이유는 세 가지다. (a) 판별 head 없이 instruction tuning 파이프라인에 그대로 올라탄다. (b) Yes/No를 뱉기 전에 **검증 근거(rationale)를 먼저 생성**할 수 있다 — chain-of-thought(CoT) 검증이다. (c) 이 rationale을 여러 번 샘플링해서 **test-time compute를 reward 품질에 직접 투입**할 수 있다. 이 시리즈에서 (c)는 처음 등장하는 축이다. 지금까지의 RM은 학습이 끝나면 추론 비용이 고정된 결정론적 함수였다. GenRM은 "얼마나 많이 계산할 것인가"를 reward 품질의 손잡이로 바꿔놓는다.
 
-결과는 명확하다. Best-of-N 선택에서 알고리즘 태스크는 5% → 45.3%, GSM8K는 73% → 93.4%, MATH로의 전이는 28% → 44.6%까지 오른다. 다만 이 모든 이득에는 값이 매겨져 있다. 검증마다 텍스트를 생성해야 하므로 스칼라 RM보다 훨씬 느리다. 이 비용 문제를 정면으로 다루는 것이 [#24 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)다.
+결과는 명확하다. Best-of-N 선택에서 알고리즘 태스크는 5% → 45.3%, GSM8K는 73% → 93.4%, MATH로의 전이는 28% → 44.6%까지 오른다. 다만 이 모든 이득에는 값이 매겨져 있다. 검증마다 텍스트를 생성해야 하므로 스칼라 RM보다 훨씬 느리다. 이 비용 문제를 정면으로 다루는 것이 [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)다.
 
 # Background
 
@@ -165,7 +165,7 @@ GSM8K로만 학습한 verifier를 MMLU의 수학 하위 태스크에 그대로 �
 
 판별 RM은 $$(x, y)$$ 한 쌍마다 forward pass 한 번이면 끝난다. GenRM-CoT는 $$N$$개의 후보 풀이 각각에 대해 $$K$$개의 검증 rationale을 **새로 생성**해야 한다. 즉 채점 비용이 $$O(N)$$에서 $$O(N \times K)$$로 늘어나고, 그마저도 각 rationale이 스칼라 하나가 아니라 수십~수백 토큰짜리 텍스트다. 논문 자체는 이 비용을 정량적으로 다루지 않지만, 구조적으로 명백하다 — 검증이 생성인 이상, 검증은 생성만큼 느리다.
 
-이 트레이드오프 — reward 품질은 좋아지는데 추론은 비싸진다 — 를 어떻게 다룰 것인가가 이후 GenRM 계열 연구의 핵심 과제로 넘어간다. [#24 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 바로 이 inference-time scaling 문제를 정면으로 다룬다.
+이 트레이드오프 — reward 품질은 좋아지는데 추론은 비싸진다 — 를 어떻게 다룰 것인가가 이후 GenRM 계열 연구의 핵심 과제로 넘어간다. [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 바로 이 inference-time scaling 문제를 정면으로 다룬다.
 
 # Conclusion
 
@@ -177,7 +177,7 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물두 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물세 번째 글이다.
 
 **1부. 지형도**
 
@@ -217,11 +217,21 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
 
 **6부. Generative Reward Model**
 
-22. **(현재 글)** Generative Verifiers (2024) — reward를 next-token prediction으로
-23. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-24. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
-25. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-26. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+23. **(현재 글)** Generative Verifiers (2024) — reward를 next-token prediction으로
+24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+
+**7부. 생각하는 Judge, 그리고 그 신뢰**
+
+27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+
+본 시리즈는 31편으로 구성된다.
 
 # 참고 문헌
 
