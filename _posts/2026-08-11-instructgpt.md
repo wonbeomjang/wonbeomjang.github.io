@@ -36,7 +36,7 @@ GPT-3(Brown et al., 2020)는 인터넷 코퍼스에 대해 다음 토큰을 예�
 
 ## Alignment의 정의 — Helpful, Honest, Harmless
 
-논문은 alignment를 Askell et al.(2021)의 프레임을 따라 세 축으로 정의한다.
+논문은 alignment를 [Askell et al. (2021)](https://arxiv.org/abs/2112.00861)의 프레임을 따라 세 축으로 정의한다.
 
 | 축       | 의미                                                     |
 | -------- | -------------------------------------------------------- |
