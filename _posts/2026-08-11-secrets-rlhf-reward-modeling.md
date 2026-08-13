@@ -21,7 +21,7 @@ Fudan 대학 MOSS 팀이 쓴 이 논문은 두 가지를 동시에 문제 삼는
 
 # Background
 
-RM 학습의 표준 형태부터 복기하자. 프롬프트 $$x$$에 대해 사람이 두 응답 $$y_c$$(chosen)와 $$y_r$$(rejected) 중 하나를 골랐다고 하면, RM $$r_\psi$$는 Bradley-Terry 모델을 따라 다음 손실로 학습된다(4편 참고).
+RM 학습의 표준 형태부터 복기하자. 프롬프트 $$x$$에 대해 사람이 두 응답 $$y_c$$(chosen)와 $$y_r$$(rejected) 중 하나를 골랐다고 하면, RM $$r_\psi$$는 Bradley-Terry 모델을 따라 다음 손실로 학습된다([4편 참고](/blog/2026/bradley-terry-rethinking/)).
 
 $$\mathcal{L}_{BT}(r_\psi) = -\mathbb{E}_{(x,y_c,y_r)\sim\mathcal{D}_{rm}}\Big[\log \sigma\big(r_\psi(x,y_c) - r_\psi(x,y_r)\big)\Big]$$
 

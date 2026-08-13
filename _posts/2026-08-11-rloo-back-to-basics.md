@@ -15,7 +15,7 @@ related_posts: true
 
 [16편 GRPO](/blog/2026/grpo-deepseekmath/)는 "critic을 유지할 비용이 없다"는 논리로 value network를 없앴다. 그룹 안에서 스스로를 정규화하면 별도의 critic 없이도 advantage를 만들 수 있다는 것이었다. 이번 글의 논문은 같은 결론 — PPO 없이도 RLHF가 된다 — 에 도착하지만, 출발점이 전혀 다르다. 이 논문은 비용을 말하지 않는다. 대신 **"RLHF라는 문제를 애초에 잘못 모델링했다"**고 말한다.
 
-PPO는 각 토큰을 하나의 action으로, 그 토큰까지의 부분 시퀀스를 하나의 state로 본다. 그래서 [PPO(14편)](/blog/2026/ppo/)는 상태마다 가치를 추정하는 critic을 두고, GAE로 편향과 분산을 저울질하고, 정책이 너무 멀리 가지 않도록 토큰 단위로 clipping을 건다. 이 모든 장치는 "한 시퀀스 안에서 상태가 계속 바뀌고, 각 상태마다 가치가 다르다"는 전제 위에 서 있다.
+PPO는 각 토큰을 하나의 action으로, 그 토큰까지의 부분 시퀀스를 하나의 state로 본다. 그래서 [PPO([14편](/blog/2026/ppo/))](/blog/2026/ppo/)는 상태마다 가치를 추정하는 critic을 두고, GAE로 편향과 분산을 저울질하고, 정책이 너무 멀리 가지 않도록 토큰 단위로 clipping을 건다. 이 모든 장치는 "한 시퀀스 안에서 상태가 계속 바뀌고, 각 상태마다 가치가 다르다"는 전제 위에 서 있다.
 
 그런데 RLHF에서 보상은 언제 주어지는가? 사람이 매기는 것도, reward model이 매기는 것도 **다 만들어진 응답 하나**에 대해서다. "이 문장까지는 잘 썼고 다음 단어는 별로다" 같은 진짜 보상은 세상 어디에도 없다. 그렇다면 애초에 토큰 하나하나를 별도의 상태로 나눌 이유가 있을까? 이 논문(Ahmadian et al., 2024)의 답은 "없다"이다. 응답 전체를 하나의 행동(action)으로, 프롬프트를 하나의 초기 상태로 보는 **bandit 문제**로 재정의하면, GAE도 value network도 clipping도 자연스럽게 사라진다. 남는 것은 1992년에 나온 가장 오래된 정책 경사법, REINFORCE다. 그리고 여기에 샘플 여러 개를 곁들인 확장판이 이 논문이 제안하는 **RLOO(REINFORCE Leave-One-Out)**다.
 
@@ -35,7 +35,7 @@ $$\max_{\pi_\theta} \mathbb{E}_{x\sim D, y\sim \pi_\theta(\cdot\mid x)}\left[r_\
 
 $$R(x,y) = r_\phi(x,y) - \beta \log\frac{\pi_\theta(y\mid x)}{\pi_{ref}(y\mid x)}$$
 
-여기서 중요한 포인트 하나. [PPO(14편)](/blog/2026/ppo/)는 이 $$R(x,y)$$를 토큰 단위로 쪼갠다.
+여기서 중요한 포인트 하나. [PPO([14편](/blog/2026/ppo/))](/blog/2026/ppo/)는 이 $$R(x,y)$$를 토큰 단위로 쪼갠다.
 
 $$R(x,y) = \sum_{t=1}^{T} R_t(x,y_t)$$
 
@@ -140,7 +140,7 @@ $$A_i^{GRPO} = \frac{r_i - \mathrm{mean}(r_1,\dots,r_k)}{\mathrm{std}(r_1,\dots,
 
 ## 세 알고리즘 한눈에 비교
 
-| 항목                  | PPO                                                    | GRPO (16편)                                            | RLOO (이 논문)                                                |
+| 항목                  | PPO                                                    | GRPO ([16편](/blog/2026/grpo-deepseekmath/))           | RLOO (이 논문)                                                |
 | :-------------------- | :----------------------------------------------------- | :----------------------------------------------------- | :------------------------------------------------------------ |
 | baseline/advantage    | 학습된 critic + GAE ($$\lambda$$로 bias-variance 조절) | 그룹 내 **자기 포함** 평균·표준편차로 정규화 (z-score) | 그룹 내 **자기 제외** $$k-1$$개 평균 (leave-one-out)          |
 | critic(value network) | 필요                                                   | 불필요                                                 | 불필요                                                        |

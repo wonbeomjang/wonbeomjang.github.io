@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[18편 DPO](/blog/2026/dpo/)까지 4부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나(16편 GRPO), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는(17편 RLOO) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 4부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
+[18편 DPO](/blog/2026/dpo/)까지 4부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([16편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([17편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 4부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
 
 이번 글부터 시작하는 5부 "Process & Verifiable Reward"는 정확히 반대 방향으로 간다. reward를 없애는 게 아니라 **훨씬 더 촘촘하게 쪼갠다**. 지금까지 다룬 reward model(2부, 3부)은 전부 하나의 응답 전체에 스칼라 하나를 매기는 outcome-level reward였다. 수학 문제를 20단계로 풀어낸 chain-of-thought든, 한 줄짜리 답변이든 reward model은 마지막에 딱 한 번 점수를 준다. 이 글이 다루는 **Let's Verify Step by Step**(OpenAI, ICLR 2024)은 "그 한 번의 점수로 충분한가?"라는 질문에 정면으로 "아니다"라고 답한 논문이다.
 
