@@ -20,7 +20,7 @@ related_posts: true
 미리 결론의 윤곽을 말하면 세 가지다.
 
 1. **검증 가능한 도메인(수학, 코드)에서는 다섯 모델이 놀랄 만큼 수렴한다.** 학습된 RM을 걷어내고 규칙 검증기를 쓴다.
-2. **검증 불가능한 도메인(대화, 글쓰기, 안전성)에서는 갈라진다** — 하지만 그 분기의 한복판에서 **generative reward model(GRM)이 처음으로 프로덕션 report에 등장**했다. 이 시리즈 6부가 "연구 단계에만 있다"고 정리했던 흐름이 DeepSeek-V4에서 실제 학습 파이프라인으로 넘어온 순간이다.
+2. **검증 불가능한 도메인(대화, 글쓰기, 안전성)에서는 갈라진다** — 하지만 그 분기의 한복판에서 **generative reward model(GRM)이 처음으로 프로덕션 report에 등장**했다. 이 시리즈 6부가 "연구 단계에만 있다"고 정리했던 흐름이 DeepSeek-V4와 Kimi K3에서 실제 학습 파이프라인으로 넘어온 순간이다.
 3. **reward 설계는 "함수"만의 문제가 아니다.** 어떤 프롬프트에 그 함수를 먹이느냐(난이도 커리큘럼, 분산 선별), 오프라인·온라인을 어떻게 섞느냐가 함수 선택만큼 중요하다.
 
 이 글은 다음 순서로 그 수렴점과 분기점을 짚는다.
@@ -128,14 +128,21 @@ Llama 3([#8 Llama 2](/blog/2026/llama2-rlhf/)의 후속 세대)의 레시피는 
 
 ## Kimi K3: 도메인 전문가 아홉을 MOPD로 합친다
 
-Kimi K3(2026-07)는 검증 가능한 도메인은 대규모 규칙 reward로 밀어붙이고, 나머지는 도메인별 전문가로 나눠 학습한 뒤 하나로 합치는 구조다. 그 골격은 놀랍게도 DeepSeek-V4와 같은 방향 — **전문가를 따로 키운 뒤 증류로 통합**한다.
+Kimi K3(2026-07)의 후처리는 **세 단계**다 — SFT로 콜드스타트를 잡고, RL로 도메인 전문가들을 서로 다른 reasoning-effort 수준으로 키운 뒤, **MOPD(Multi-Teacher On-Policy Distillation)**로 하나의 모델로 통합한다. 이 "전문가를 따로 키워 증류로 합친다"는 골격은 DeepSeek-V4와 정확히 같은 방향이다.
 
-- **검증 가능 도메인**: 5,120만 개(51.2M)에 이르는 RL 샌드박스에서 규칙 기반 verifiable reward로 학습한다. 검증 가능한 신호를 이 규모로 자동화했다는 것 자체가 설계 포인트다 (①).
-- **도메인 전문가 아홉 개**: 일반 추론·에이전트·코딩 등 카테고리별로 전문가 모델을 따로 학습시키되, 각 전문가는 서로 다른 reasoning-effort 수준으로 최적화된다.
-- **MOPD(Multi-Teacher On-Policy Distillation)**: 아홉 전문가(teacher)를 하나의 통합 모델(student)로 합친다. student가 스스로 생성한 출력 위에서 여러 teacher를 동시에 증류하는 on-policy 방식으로, DeepSeek-V4가 택한 on-policy 증류와 같은 계열이다.
-- **적응적 사고량**: "얼마나 생각할지"를 태스크마다 조절하도록 학습한다 — 늘 긴 CoT를 뽑는 대신 필요한 만큼만(추론 시 `reasoning_effort` low/high/max로 노출된다).
+reward 조달처는 도메인에 따라 갈린다.
 
-검증 불가능한 도메인에서 K3가 쓰는 신호는 전신 K2의 설계를 잇는다. **K2가 도입한 self-critique rubric reward**(모델이 자기 출력을 clarity·factuality로 스스로 채점해 선호 신호를 만드는, Background 4분류의 ④) 위에서, K3는 "검증 가능하면 규칙, 아니면 모델 자신의 판단"이라는 원칙을 아홉 전문가 구조로 키운 셈이다. 다만 K3 공개 자료는 self-critique의 세부보다 MOPD와 검증 샌드박스를 전면에 내세우므로, 이 글은 self-critique를 **K2가 확립한 계보**로 표시한다.
+- **검증 가능 도메인**: 5,120만 개(51.2M) 규모의 RL 샌드박스에서 규칙 기반 verifiable reward로 학습한다 (①).
+- **검증 불가능한 일반 태스크**: **Agentic Generative Reward Model(GRM)**을 쓴다 (④). judge가 강제된 프로토콜을 따른다 — (1) 출력을 읽고, (2) **rubric을 생성**하고, (3) 각 후보를 그 rubric으로 채점하고, (4) 점수를 **scorepad**에 기록한다. K2.5의 토너먼트식 그룹 비교(binary comparison)를 이어받되, **judge가 채점 기준(rubric)을 스스로 만든다**는 점이 핵심이다.
+
+이 Agentic GRM은 [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)의 "judge가 평가 원칙을 스스로 생성한다"와 [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)의 "rubric을 보상 기준으로 쓴다"를 프로덕션에서 합친 형태다. DeepSeek-V4의 GRM과 더불어 **생성형 reward가 더 이상 논문 안에만 있지 않다**는 이번 세대의 증거다.
+
+여기에 두 가지 reward-shaping·방어 장치가 붙는다.
+
+- **Reasoning-effort RL**: 문제마다 초기 토큰 예산 $$b_0(x)$$를 정하고, 토큰 사용량이 $$\tau \cdot b_0(x)$$를 넘으면 task reward를 $$-1$$로 덮어써 과도한 사고를 벌한다. $$\tau$$를 큰 값에서 점점 줄이는 커리큘럼으로 low·high·max effort 전문가를 각각 만든다 — "얼마나 생각할지"를 조절하는 장치이고, 추론 시 `reasoning_effort`(low/high/max)로 노출된다.
+- **Budget 기반 verbosity 제어**: Agentic GRM이 "길게 쓰면 이긴다"는 식으로 hacking되는 걸 막으려고, 초기 길이 $$\ell_0$$의 $$\sigma$$배를 넘는 후보는 binary comparison에서 자동으로 진다.
+
+참고로 self-critique rubric은 전신 K2(2025-07)가 처음 도입했고, K3의 Agentic GRM은 그 계보 위에서 "judge가 rubric을 생성해 채점"하는 형태로 발전한 것이다.
 
 ## Solar: 도메인마다 다른 reward 함수를 병렬로 쓴다
 
@@ -151,15 +158,15 @@ Solar는 다섯 모델 중 가장 명시적으로 "도메인별 reward"를 설�
 
 ## 마스터 비교표
 
-| 모델        | reward 조달처 (4분류)                    | RL 알고리즘                       | 검증 가능 도메인                   | 검증 불가능 도메인                     |
-| ----------- | ---------------------------------------- | --------------------------------- | ---------------------------------- | -------------------------------------- |
-| DeepSeek-V4 | ① 규칙 + ④ GRM (도메인별)                | GRPO → on-policy 증류로 통합      | 규칙 검증기: 정답 일치·테스트 통과 | **GRM (rubric-guided)**                |
-| Qwen3       | ① 규칙 + ③ reference judge + ② 스칼라 RM | GRPO (reasoning) + General RL     | 규칙 (query-verifier 쌍)           | ③ reference judge + ② 스칼라 RM        |
-| Llama 4     | 비공개 (online RL) + 선호 쌍             | lightweight SFT → online RL → DPO | 명시 안 됨 (난이도 커리큘럼 중심)  | DPO (가볍게) + online RL               |
-| Kimi K3     | ① 규칙(51.2M 샌드박스) + 전문가별 reward | 전문가별 RL → MOPD 증류           | 규칙 검증기: 대규모 샌드박스       | 도메인 전문가 + self-critique(K2 계보) |
-| Solar       | ① 규칙 + ② RM + 다차원 스코어링          | GSPO(GRPO 변형) + iterative DPO   | ① 검증 가능한 정오 판정            | ② RM 기반 평가                         |
+| 모델        | reward 조달처 (4분류)                    | RL 알고리즘                       | 검증 가능 도메인                   | 검증 불가능 도메인                 |
+| ----------- | ---------------------------------------- | --------------------------------- | ---------------------------------- | ---------------------------------- |
+| DeepSeek-V4 | ① 규칙 + ④ GRM (도메인별)                | GRPO → on-policy 증류로 통합      | 규칙 검증기: 정답 일치·테스트 통과 | **GRM (rubric-guided)**            |
+| Qwen3       | ① 규칙 + ③ reference judge + ② 스칼라 RM | GRPO (reasoning) + General RL     | 규칙 (query-verifier 쌍)           | ③ reference judge + ② 스칼라 RM    |
+| Llama 4     | 비공개 (online RL) + 선호 쌍             | lightweight SFT → online RL → DPO | 명시 안 됨 (난이도 커리큘럼 중심)  | DPO (가볍게) + online RL           |
+| Kimi K3     | ① 규칙(51.2M 샌드박스) + ④ Agentic GRM   | 전문가별 RL → MOPD 증류           | 규칙 검증기: 대규모 샌드박스       | Agentic GRM (rubric 생성→scorepad) |
+| Solar       | ① 규칙 + ② RM + 다차원 스코어링          | GSPO(GRPO 변형) + iterative DPO   | ① 검증 가능한 정오 판정            | ② RM 기반 평가                     |
 
-이 표가 이 글의 결론을 압축한다. 왼쪽 도메인(검증 가능)에서는 다섯 모델 모두 ①(규칙)을 포함한다. 오른쪽 도메인(검증 불가능)에서는 ②③④가 흩어지되, **④(생성형 reward)가 DeepSeek-V4(GRM)와 Kimi 계열(K2가 도입한 self-critique)에서 실제로 쓰이고, 나아가 "도메인 전문가를 따로 키워 증류로 합친다"는 구조가 DeepSeek-V4와 Kimi K3 두 곳에서 겹친다**는 점이 이전 세대와의 결정적 차이다.
+이 표가 이 글의 결론을 압축한다. 왼쪽 도메인(검증 가능)에서는 다섯 모델 모두 ①(규칙)을 포함한다. 오른쪽 도메인(검증 불가능)에서는 ②③④가 흩어지되, **④(생성형 reward)가 DeepSeek-V4의 GRM과 Kimi K3의 Agentic GRM 두 곳에서 실제로 쓰이고, 나아가 "도메인 전문가를 따로 키워 증류로 합친다"는 구조까지 두 모델이 겹친다**는 점이 이전 세대와의 결정적 차이다.
 
 ## 공통 수렴점: 검증 가능 도메인은 규칙이 표준이 됐다
 
@@ -171,13 +178,13 @@ DeepSeek-R1(2025-01)이 이 선택지를 대중화한 뒤, 이후 발표된 모�
 
 정답이 없는 도메인(글쓰기, 상담, 안전성 판단)으로 가면 다섯 모델은 서로 다른 답을 낸다. 이전 세대(DeepSeek-R1, Qwen2.5, Llama 3)를 비교했을 때 이 칸의 결론은 "연구 논문은 생성형 judge를 말하지만, 프로덕션 report는 아직 스칼라 RM이나 self-critique에 머문다"였다. **이번 세대에서 그 결론이 바뀐다.**
 
-| 접근                          | 채택 모델       | 조달처 | 관련 편                                                                                                     |
-| ----------------------------- | --------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
-| 사람 선호 쌍 + DPO            | Llama 4         | 선호   | [#18 DPO](/blog/2026/dpo/)                                                                                  |
-| 스칼라 RM                     | Qwen3, Solar    | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/))                            |
-| reference 기반 judge          | Qwen3           | ③      | [#22 Prometheus 2](/blog/2026/prometheus-2/)                                                                |
-| self-critique rubric          | Kimi (K2 계보)  | ④      | [#25 Self-Taught Evaluators](/blog/2026/self-taught-evaluators/), [#28 J1](/blog/2026/j1-thinking-judge/)   |
-| generative RM (rubric-guided) | **DeepSeek-V4** | ④      | [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/) |
+| 접근                        | 채택 모델                    | 조달처 | 관련 편                                                                                                     |
+| --------------------------- | ---------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| 사람 선호 쌍 + DPO          | Llama 4                      | 선호   | [#18 DPO](/blog/2026/dpo/)                                                                                  |
+| 스칼라 RM                   | Qwen3, Solar                 | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/))                            |
+| reference 기반 judge        | Qwen3                        | ③      | [#22 Prometheus 2](/blog/2026/prometheus-2/)                                                                |
+| self-critique rubric (전신) | Kimi K2 (2025)               | ④      | [#25 Self-Taught Evaluators](/blog/2026/self-taught-evaluators/), [#28 J1](/blog/2026/j1-thinking-judge/)   |
+| generative RM (rubric 생성) | **DeepSeek-V4**, **Kimi K3** | ④      | [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/) |
 
 마지막 두 행이 핵심이다. [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 실제 후처리 파이프라인에 넣었다.** Qwen3의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
 
@@ -211,13 +218,13 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 
 [#10](/blog/2026/reward-model-overoptimization/)\~[#13](/blog/2026/warm-weight-averaged-reward/)이 다룬 방어 기법들이 실제로 어떻게 쓰이는지 정리하면 이렇다.
 
-| 모델        | 방어 장치                                          | 원리                                                                                   |
-| ----------- | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| DeepSeek-V4 | 규칙 우선 + hard-to-verify에만 GRM, on-policy 증류 | 파라미터 없는 규칙으로 hacking 표면을 최소화, GRM은 근거 생성으로 판정을 검증 가능하게 |
-| Qwen3       | rule-based reward를 "hacking 예방" 목적으로 명시   | 검증 가능한 곳은 규칙으로 못박아 RM 근사 오차 자체를 없앰                              |
-| Llama 4     | advantage 0 프롬프트 제거, medium-hard 커리큘럼    | 신호 없는 구간에서의 편법 학습 차단, 탐색을 유의미한 난이도에 집중                     |
-| Kimi K3     | 도메인 전문가 분리 + MOPD 증류                     | 도메인별 reward를 떼어 학습해 도메인 간 간섭·편법을 줄이고 on-policy 증류로 통합       |
-| Solar       | DPO loss 안에 KL divergence regularization         | 참조 정책에서 과도하게 멀어지는 것을 막아 성능 저하 방지                               |
+| 모델        | 방어 장치                                          | 원리                                                                                        |
+| ----------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| DeepSeek-V4 | 규칙 우선 + hard-to-verify에만 GRM, on-policy 증류 | 파라미터 없는 규칙으로 hacking 표면을 최소화, GRM은 근거 생성으로 판정을 검증 가능하게      |
+| Qwen3       | rule-based reward를 "hacking 예방" 목적으로 명시   | 검증 가능한 곳은 규칙으로 못박아 RM 근사 오차 자체를 없앰                                   |
+| Llama 4     | advantage 0 프롬프트 제거, medium-hard 커리큘럼    | 신호 없는 구간에서의 편법 학습 차단, 탐색을 유의미한 난이도에 집중                          |
+| Kimi K3     | budget 기반 verbosity 제어                         | Agentic GRM이 장황한 출력으로 hacking되는 걸 막으려 초기 길이의 σ배를 넘는 후보를 자동 탈락 |
+| Solar       | DPO loss 안에 KL divergence regularization         | 참조 정책에서 과도하게 멀어지는 것을 막아 성능 저하 방지                                    |
 
 표현은 달라도 원리는 하나로 수렴한다 — **reward 신호와 "정책이 참조점에서 얼마나 벗어났는가"를 분리해서 다룬다.** DeepSeek·Solar는 KL을 손실 안에서 명시적으로 떼어놓고, Qwen·Llama는 애초에 노이즈가 크거나 신호가 없는 데이터를 걸러낸다. [#11 Length Correlations](/blog/2026/rlhf-length-correlations/)가 지적한 "성능 향상처럼 보이지만 실은 길이·문체 편향"이라는 함정을, 다섯 모델 모두 나름의 방식으로 피해 가려 한 흔적이다.
 
@@ -226,7 +233,7 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 31편에 걸쳐 쌓아온 재료를 다섯 개 프론티어 모델에 겹쳐보면 이렇게 정리된다.
 
 1. **검증 가능한 도메인은 규칙으로 수렴한다.** 다섯 모델 모두 수학·코드에서 ① 규칙 기반 verifiable reward를 1순위로 둔다. [#21](/blog/2026/deepseek-r1/)의 RLVR이 하나의 논문에서 그친 아이디어가 아니라 공통 문법이 됐다.
-2. **검증 불가능한 도메인에서 생성형 reward가 프로덕션에 진입했다.** DeepSeek-V4의 GRM과 Kimi 계열의 self-critique(K2 도입)가 [#26](/blog/2026/deepseek-grm-spct/)·[#28](/blog/2026/j1-thinking-judge/)의 연구 아이디어를 실제 학습에 얹었고, DeepSeek-V4와 Kimi K3는 "전문가를 따로 키워 증류로 합친다"는 구조까지 공유한다. 이전 세대 비교에서 "생성형 judge는 아직 논문 안에만 있다"던 결론은 이번 세대에서 갱신된다.
+2. **검증 불가능한 도메인에서 생성형 reward가 프로덕션에 진입했다.** DeepSeek-V4의 GRM과 Kimi K3의 Agentic GRM이 [#26](/blog/2026/deepseek-grm-spct/)·[#29](/blog/2026/rubrics-as-rewards/)의 연구 아이디어(judge가 원칙·rubric을 스스로 생성)를 실제 학습에 얹었고, 두 모델은 "전문가를 따로 키워 증류로 합친다"는 구조까지 공유한다. 이전 세대 비교에서 "생성형 judge는 아직 논문 안에만 있다"던 결론은 이번 세대에서 갱신된다.
 3. **reward 설계는 함수 선택 + 프롬프트 선택 + 오프라인/온라인 배분의 삼중 문제다.** Qwen의 분산 선별, Llama 4의 난이도 커리큘럼, DeepSeek-V4의 도메인 분리는 모두 "함수를 안 바꾸고 reward의 질을 올리는" 설계였다.
 4. **reward hacking 방어는 형태가 달라도 원리는 하나다.** reward 신호와 참조점 이탈 신호를 분리한다는 것 — DeepSeek·Solar의 손실 내 KL, Qwen·Llama의 데이터 큐레이션 모두 [#10](/blog/2026/reward-model-overoptimization/)\~[#12](/blog/2026/odin-disentangled-reward/)이 정량화한 문제에 대한 실무적 응답이다.
 
@@ -306,7 +313,7 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 - Shao et al. (DeepSeek-AI), 2024. [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) — GRPO 원 논문.
 - Qwen Team, 2025. [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388).
 - Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
-- Kimi Team, 2026. [Kimi K3: Open Frontier Intelligence](https://github.com/MoonshotAI/Kimi-K3) — 아홉 전문가 + MOPD(Multi-Teacher On-Policy Distillation).
+- Kimi Team, 2026. [Kimi K3: Open Frontier Intelligence](https://github.com/MoonshotAI/Kimi-K3) — 3단계(SFT→RL→MOPD) + Agentic GRM(rubric 생성) + reasoning-effort budget RL.
 - Kimi Team, 2025. [Kimi K2: Open Agentic Intelligence](https://arxiv.org/abs/2507.20534) — self-critique rubric reward를 도입한 전신.
 - Upstage AI, 2026. [Solar Open Technical Report](https://arxiv.org/abs/2601.07022).
 - Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#18](/blog/2026/dpo/)에서 다룬 DPO 원 논문.
