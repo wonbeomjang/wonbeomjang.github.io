@@ -112,6 +112,23 @@ rubric조차 명문화하기 어려운 주관적 품질(문체, 위트, 공감)�
 
 이때 [#5](/blog/2026/secrets-rlhf-reward-modeling/)·[#6](/blog/2026/skywork-reward/)의 교훈이 결정적이다 — **RM 성능은 아키텍처보다 데이터 큐레이션에서 갈린다.** 우열이 애매한 쌍은 노이즈이므로 버리고, 확실히 우열이 갈리는 쌍만 남긴다(Llama의 선택, [#32](/blog/2026/frontier-reward-design/)).
 
+### 5단계 보강 — 프롬프트 큐레이션: 어떤 문제에 reward를 먹일까
+
+5단계가 "어떤 선호 쌍을 학습에 쓸까"였다면, RL로 넘어가기 직전 하나가 더 있다 — **"어떤 프롬프트에 그 reward를 굴릴까".** GRPO·PPO는 한 프롬프트에 여러 응답을 뽑아 그 응답들의 **차이**로 학습하므로, 응답이 다 맞거나(정답률 100%) 다 틀리면(0%) advantage가 0이 되어 **그래디언트가 없다.** 즉 프롬프트 선택이 곧 신호의 유무를 정한다.
+
+문제는 "신호가 뚜렷한 프롬프트"가 **정책에 상대적**이라는 것이다. 초반에 어렵던 문제도 학습이 진행되면 다 맞게 돼 신호가 사라진다. 그래서 offline 한 번으로 끝나지 않고 online 보정이 필요하다.
+
+| 시점              | 방법                                                                             | 근거                         |
+| ----------------- | -------------------------------------------------------------------------------- | ---------------------------- |
+| offline (학습 전) | 현재 정책으로 pass@k를 재서 정답률 0%·100% 극단을 제외, 중간 밴드만 남김         | Llama 4의 pass@k 선별        |
+| offline           | judge로 easy 태깅 프루닝 / RM 점수 분산 큰 쿼리 우선                             | Llama 4 프루닝, Qwen2.5 분산 |
+| online (학습 중)  | 롤아웃 후 advantage=0(그룹 reward가 전부 같음) 프롬프트를 버리고 배치를 재충전   | DAPO의 dynamic sampling      |
+| online            | N 스텝마다 난이도 재추정 → 정답률 오른 문제를 빼고 더 어려운 문제 투입(커리큘럼) | Llama 4 medium-hard 유지     |
+
+실무 레시피는 계층적이다 — **offline로 굵게(검증 가능 문제만 + pass@k로 극단 제외) 후보군을 만들고, online로 매 스텝 죽은(advantage 0) 프롬프트를 쳐내며 난이도를 점증**시킨다. offline만으론 움직이는 표적을 못 따라가고, 매 스텝 전체를 online 판별하면 비싸기 때문이다.
+
+하이퍼파라미터 감각 하나: pass@k의 **밴드 폭**을 너무 좁히면(예 40\~60%) 데이터가 마르고, 너무 넓히면 신호 약한 게 섞인다. 보통 넓게(10\~90%) 시작해 학습이 진행되며 하한을 올린다.
+
 ### 6단계: 온라인이냐 오프라인이냐
 
 정책 업데이트 알고리즘은 **인프라와 비용**이 정한다.
@@ -128,7 +145,7 @@ rubric조차 명문화하기 어려운 주관적 품질(문체, 위트, 공감)�
 
 reward를 정하고 나면 곧바로 **"이 reward가 정말 품질과 상관하는가"**를 검증하는 장치를 붙인다. 이건 나중에 덧대는 게 아니라 설계의 일부다.
 
-- **프롬프트 큐레이션 = 숨은 reward 설계.** 응답 점수 분산이 큰(변별력 있는) 쿼리를 우선하고(Qwen2.5), advantage가 0인 프롬프트는 제거한다(Llama 4). 함수를 안 바꾸고도 신호의 질이 오른다([#32](/blog/2026/frontier-reward-design/)).
+- **프롬프트 큐레이션 = 숨은 reward 설계.** 신호 없는(advantage 0) 프롬프트를 offline 후보 선별 + online 실시간 제거로 걸러 함수를 안 바꾸고도 신호의 질을 올린다(위 '5단계 보강' 절 참고).
 - **reward와 KL을 분리.** length·format 같은 오염 신호는 reward에서 떼어내고([#12 ODIN](/blog/2026/odin-disentangled-reward/)), 참조점 이탈은 KL로 따로 관리한다.
 - **RM을 평가한다.** RM 자체를 [RewardBench 2](/blog/2026/rewardbench-2/)로, judge를 [CriticEval](/blog/2026/criticeval/)로 점검한다. "RM 정확도"와 "그 RM으로 학습한 정책의 품질"은 다르다.
 - **overoptimization을 모니터링.** [#10](/blog/2026/reward-model-overoptimization/)이 정량화했듯, RL을 오래 돌릴수록 reward는 오르는데 실제 품질은 어느 지점부터 꺾인다. proxy reward와 실제(사람·홀드아웃) 지표를 나란히 본다.
@@ -256,3 +273,4 @@ reward를 설계할 때, 이 순서대로 자문한다.
 - Chen et al., 2024. [ODIN: Disentangled Reward Mitigates Hacking in RLHF](https://arxiv.org/abs/2402.07319) — [#12](/blog/2026/odin-disentangled-reward/).
 - Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#22](/blog/2026/prometheus-2/).
 - Liu et al. (DeepSeek-AI), 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495) — [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/).
+- Yu et al. (ByteDance Seed·Tsinghua), 2025. [DAPO: An Open-Source LLM Reinforcement Learning System at Scale](https://arxiv.org/abs/2503.14476) — dynamic sampling(정답률 0/1 프롬프트 제거).
