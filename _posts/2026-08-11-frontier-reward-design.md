@@ -73,6 +73,25 @@ related_posts: true
 
 이 4분류를 머리에 넣고 보면, 열 모델의 선택이 한눈에 정렬된다. ①은 검증 가능 도메인의 표준이 됐고, ②·③·④는 검증 불가능 도메인을 두고 갈라진다.
 
+## RL 알고리즘 한눈에
+
+reward를 정책으로 옮기는 알고리즘도 이 글에 여럿 등장한다. 이름에 압도되지 않도록 미리 지도를 그려둔다.
+
+| 알고리즘 | 핵심 아이디어                                         | 이 글의 채택 모델                                 | 편                                   |
+| -------- | ----------------------------------------------------- | ------------------------------------------------- | ------------------------------------ |
+| PPO      | clipped surrogate + value network                     | (기준선)                                          | [#14](/blog/2026/ppo/)               |
+| GRPO     | value network를 버리고 그룹 상대 advantage            | DeepSeek-V4·Qwen3·Solar 2·GLM-4.5·Magistral(변형) | [#16](/blog/2026/grpo-deepseekmath/) |
+| DPO      | RM·RL 루프 없이 선호 쌍에서 직접 학습                 | Llama 4(가볍게)                                   | [#18](/blog/2026/dpo/)               |
+| CISPO    | token이 아니라 **IS 가중치**를 클립(결정적 토큰 보존) | MiniMax-M1(원조)·A.X K2                           | 본문                                 |
+| GSPO     | importance ratio를 **sequence-level**로               | (Solar 2는 명시적으로 회피)                       | 본문                                 |
+| GDPO     | 여러 reward를 **각각 정규화 후 결합**                 | A.X K2                                            | 본문                                 |
+| GrouPER  | 그룹 상대 선호(SimPER류)                              | K-EXAONE 2.0                                      | 본문                                 |
+| AGAPO    | off-policy PG, **오답 추론에 음의 보상**              | K-EXAONE 2.0                                      | 본문                                 |
+| MOPD     | 여러 전문가(teacher)를 on-policy 증류로 통합          | Kimi K3·Solar 2                                   | 본문                                 |
+| DAPO     | dynamic sampling(정답률 0/1 프롬프트 제거)            | ([#33](/blog/2026/reward-model-design/)에서 다룸) | #33                                  |
+
+두 축만 기억하면 된다 — **위 4분류가 "reward를 어디서 얻나", 이 표가 "그 reward를 정책으로 어떻게 옮기나"**다. 대부분은 GRPO의 변형이고, 갈리는 지점은 (a) 무엇을 클립하나(token vs IS 가중치 vs sequence), (b) 여러 reward를 어떻게 섞나(GDPO), (c) 전문가를 어떻게 합치나(MOPD)다.
+
 ## 비교 대상 열 모델
 
 | 모델         | 발표    | 공개 형태                                                                                    |
