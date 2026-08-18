@@ -112,19 +112,29 @@ Qwen3의 후처리는 네 단계로 정연하게 나뉜다.
 
 이 세 줄이 정확히 Background의 4분류 중 ①②③에 대응한다. Qwen3가 흥미로운 건, 하나의 모델이 도메인에 따라 **세 조달처를 동시에 운용**한다는 것이다 — 정답이 있으면 규칙, 정답 예시가 있으면 reference judge, 둘 다 없으면 스칼라 RM. 작은 모델은 이 비싼 RL을 직접 돌리지 않고 **strong-to-weak distillation**으로 큰 모델을 증류해 받는데, RL 대비 약 1/10 GPU 시간이면 된다고 밝힌다.
 
-## Llama 4: 탐색 여지를 남기려고 SFT·DPO를 가볍게 친다
+## Llama 4: 온라인 RL을 되살리고, SFT·DPO는 탐색을 막지 않을 만큼만
 
-Llama 3([#8 Llama 2](/blog/2026/llama2-rlhf/)의 후속 세대)의 레시피는 rejection sampling → SFT → DPO의 반복이었다. Llama 4는 이 순서를 **lightweight SFT → online RL → lightweight DPO**로 다시 짠다. 그리고 그 이유를 명시적으로 밝힌다.
+Llama 4에서 가장 눈에 띄는 건 reward 파이프라인의 **방향 전환**이다. [#8 Llama 2](/blog/2026/llama2-rlhf/) 이후 세대인 Llama 3와 나란히 놓아야 무엇이 바뀌었는지가 드러난다.
+
+| 축            | Llama 3 (2024, herd 논문)                                        | Llama 4 (2025, 공식 블로그)                                        |
+| ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 정책 최적화   | rejection sampling + DPO를 **6 라운드** 반복                     | **online RL이 중심**, 앞뒤로 lightweight SFT·DPO                   |
+| PPO/온라인 RL | **명시적으로 거부**("DPO가 대규모에서 연산이 적고 더 낫다")      | **온라인 RL을 되살림**                                             |
+| RM의 역할     | rejection sampling 필터 + 선호쌍 정제 (온라인 gradient엔 미사용) | online RL의 reward로 추정되나 **형태 비공개**                      |
+| SFT·DPO 강도  | DPO가 주 정렬 수단(formatting 토큰 마스킹, chosen에 NLL 0.2)     | **"over-constrain 방지"용 lightweight**                            |
+| 데이터        | 선호 4단계 등급 + 사람 edit 3-way, 유사 응답 제거                | easy 50\~95% 프루닝, medium-hard 커리큘럼, advantage-0 실시간 제거 |
+
+핵심은 **Llama 3가 스케일을 위해 온라인 RL(PPO)을 버리고 오프라인(rejection sampling + DPO)을 택했는데, Llama 4가 그 선택을 다시 뒤집었다**는 것이다. Llama 3 herd 논문은 PPO를 시도했다가 "DPO가 대규모 모델에서 연산이 적고 성능도 낫다"며 접었고, RM은 오직 rejection sampling의 필터로만 썼다 — 온라인 정책 업데이트에는 쓰지 않았다. Llama 4는 반대로 online RL을 파이프라인의 중심에 놓고, 그 이유를 이렇게 밝힌다.
 
 > SFT와 DPO가 모델을 과도하게 **제약(over-constrain)** 해서, 뒤이은 online RL 단계의 **탐색을 막고** 특히 추론·코딩·수학에서 정확도를 떨어뜨린다.
 
-즉 Llama 4의 설계 철학은 "정렬을 강하게 걸수록 좋다"가 아니라 **"RL이 탐색할 공간을 남겨두려면 앞 단계를 가볍게 쳐야 한다"**는 것이다. 구체적 장치는 세 가지다.
+즉 Llama 3에서 "주연"이던 DPO가 Llama 4에서는 "탐색을 죽이지 않을 만큼만" 가볍게 치는 조연으로 내려온다. 무게중심이 online RL로 옮겨가면서, 데이터 전략도 정적 선호쌍 큐레이션에서 **동적 난이도 관리**로 바뀐다.
 
 - **데이터 프루닝으로 어려운 것만 남긴다.** Llama 모델 자신을 judge로 써서 "쉬움"으로 태깅된 데이터를 걸러낸다. 작은 모델은 50% 이상, 2T 규모 Behemoth는 **95%**를 쳐낸다.
-- **continuous online RL.** 학습과 필터링을 번갈아 돌리며 **medium-to-hard 난이도 프롬프트만 남긴다.** 쉬운 프롬프트는 이미 풀리므로 신호가 없고, 너무 어려운 프롬프트는 advantage가 0이라 학습에 기여하지 못한다.
-- **hard-prompt 커리큘럼.** 정책 모델로 pass@k 분석을 해서 어려운 프롬프트를 골라 난이도를 점증시키고, advantage가 0인 프롬프트를 실시간으로 걸러내며, 여러 능력의 프롬프트를 섞어 배치를 구성한다.
+- **continuous online RL.** 학습과 필터링을 번갈아 돌리며 **medium-to-hard 난이도 프롬프트만 남긴다.** 쉬운 프롬프트는 신호가 없고, 너무 어려운 프롬프트는 advantage가 0이라 학습에 기여하지 못한다.
+- **hard-prompt 커리큘럼.** 정책 모델로 pass@k 분석을 해 어려운 프롬프트를 골라 난이도를 점증시키고, advantage가 0인 프롬프트를 실시간으로 걸러내며, 여러 능력의 프롬프트를 섞어 배치를 구성한다.
 
-다만 **online RL을 실제로 굴리는 reward 신호가 무엇인지는 블로그가 의도적으로 공개하지 않는다.** 규칙 기반 verifiable reward인지, 학습된 RM인지, 혼합인지 명시가 없다. 확인되는 건 파이프라인의 골격과 데이터 큐레이션 전략까지다.
+다만 **online RL을 실제로 굴리는 reward 신호가 무엇인지는 블로그가 의도적으로 공개하지 않는다.** 규칙 기반 verifiable reward인지, 학습된 RM인지, 혼합인지 명시가 없다. 특히 Llama 3에서 오프라인 필터로만 쓰이던 RM이 Llama 4의 온라인 루프 안으로 돌아왔는지조차 확인되지 않는다 — 확인되는 건 파이프라인의 골격과 데이터 큐레이션 전략까지다.
 
 ## Kimi K3: 도메인 전문가 아홉을 MOPD로 합친다
 
@@ -313,6 +323,7 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 - Shao et al. (DeepSeek-AI), 2024. [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) — GRPO 원 논문.
 - Qwen Team, 2025. [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388).
 - Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
+- Meta AI, 2024. [The Llama 3 Herd of Models](https://arxiv.org/abs/2407.21783) — 6라운드 rejection sampling + DPO, PPO 미사용(비교 기준).
 - Kimi Team, 2026. [Kimi K3: Open Frontier Intelligence](https://github.com/MoonshotAI/Kimi-K3) — 3단계(SFT→RL→MOPD) + Agentic GRM(rubric 생성) + reasoning-effort budget RL.
 - Kimi Team, 2025. [Kimi K2: Open Agentic Intelligence](https://arxiv.org/abs/2507.20534) — self-critique rubric reward를 도입한 전신.
 - Upstage AI, 2026. [Solar Open Technical Report](https://arxiv.org/abs/2601.07022).
