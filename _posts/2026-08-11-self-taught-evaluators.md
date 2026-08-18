@@ -220,7 +220,11 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
 31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 31편으로 구성된다.
+**8부. 실전 종합**
+
+32. [프론티어 모델의 reward 설계 (2024~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
+
+본 시리즈는 32편으로 구성된다.
 
 # 참고 문헌
 
