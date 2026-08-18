@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "GRPO: value network를 버리고 그룹 안에서 비교하다"
-date: 2026-08-11 09:16:00 +0900
-description: "RLHF Reward 설계 시리즈 #18 — critic 없이 그룹 상대 advantage로 PPO를 대체한 현재의 사실상 표준"
+date: 2026-08-11 09:21:00 +0900
+description: "RLHF Reward 설계 시리즈 #21 — critic 없이 그룹 상대 advantage로 PPO를 대체한 현재의 사실상 표준"
 categories: [paper]
 tags: [rlhf, grpo, ppo, reasoning, deepseek, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#16 PPO 글](/blog/2026/ppo/)에서는 clipped surrogate objective로 정책이 한 번에 너무 멀리 가지 않게 막는 방법을 봤고, [#17 Secrets of RLHF I 글](/blog/2026/secrets-rlhf-ppo/)에서는 그 PPO를 LLM 규모에서 실제로 굴리려면 얼마나 많은 트릭 — advantage whitening, reward scaling, critic warmup — 이 필요한지를 봤다. 그런데 그 트릭들이 왜 필요했는지 한 걸음 물러서서 보면, 원인은 하나로 좁혀진다. **PPO는 policy와 별도로 critic(value network)을 하나 더 학습시켜야 한다.** 이 글이 다루는 DeepSeekMath 논문은 이 원인 자체를 없애버리는 방향을 택한다.
+[#19 PPO 글](/blog/2026/ppo/)에서는 clipped surrogate objective로 정책이 한 번에 너무 멀리 가지 않게 막는 방법을 봤고, [#20 Secrets of RLHF I 글](/blog/2026/secrets-rlhf-ppo/)에서는 그 PPO를 LLM 규모에서 실제로 굴리려면 얼마나 많은 트릭 — advantage whitening, reward scaling, critic warmup — 이 필요한지를 봤다. 그런데 그 트릭들이 왜 필요했는지 한 걸음 물러서서 보면, 원인은 하나로 좁혀진다. **PPO는 policy와 별도로 critic(value network)을 하나 더 학습시켜야 한다.** 이 글이 다루는 DeepSeekMath 논문은 이 원인 자체를 없애버리는 방향을 택한다.
 
 DeepSeekMath는 표면적으로는 수학 전용 언어모델(DeepSeekMath 7B) 논문이다. Common Crawl에서 걸러낸 120B 토큰 규모의 수학 코퍼스로 DeepSeek-Coder-Base-v1.5 7B를 계속 사전학습시키고, 외부 도구나 투표(voting) 없이 MATH 벤치마크에서 51.7%를 찍는다. 하지만 이 시리즈가 주목하는 건 사전학습 파이프라인이 아니라, 이 논문이 RL 단계에서 제안한 **GRPO(Group Relative Policy Optimization)** 다. 지금 오픈소스 reasoning 모델 학습 파이프라인 대부분 — DeepSeek-R1 계열은 물론 그 이후 나온 상당수의 reasoning 모델 — 이 PPO 대신 GRPO나 그 변형을 쓴다. 이 시리즈에서 실무 적중률이 가장 높은 글이 이 글이라고 봐도 무방하다.
 
@@ -25,13 +25,13 @@ GRPO의 답은 급진적일 정도로 단순하다. **critic을 통째로 들어
 2. **KL penalty는 왜 reward가 아니라 loss로 옮겨갔나**: 위치를 바꾼 이유와 그 결과.
 3. **왜 하필 수학·코드 같은 도메인에서 유독 잘 맞나**: 그룹 비교와 rule-based reward의 궁합.
 
-미리 말해두면 GRPO는 이 시리즈의 [#19 RLOO 글](/blog/2026/rloo-back-to-basics/)과 사상적으로 매우 가깝다. 둘 다 "critic 없이 그룹 안에서 baseline을 만든다"는 아이디어를 공유한다. 다만 표준편차로 나누는지, 평균을 어떻게 잡는지에서 갈라지는데, 이 차이는 뒤에서 토이 예제로 직접 짚는다.
+미리 말해두면 GRPO는 이 시리즈의 [#22 RLOO 글](/blog/2026/rloo-back-to-basics/)과 사상적으로 매우 가깝다. 둘 다 "critic 없이 그룹 안에서 baseline을 만든다"는 아이디어를 공유한다. 다만 표준편차로 나누는지, 평균을 어떻게 잡는지에서 갈라지는데, 이 차이는 뒤에서 토이 예제로 직접 짚는다.
 
 # Background
 
 ## PPO의 critic: 무엇을 위해 필요했나
 
-[#16 PPO 글](/blog/2026/ppo/)에서 다뤘듯, PPO의 advantage 추정은 GAE(Generalized Advantage Estimation)를 쓴다. GAE는 매 타임스텝마다 상태 가치 $$V(s_t)$$가 필요하고, 이 $$V$$는 policy와는 별도로 학습되는 신경망 — 즉 critic이다. LLM RLHF에서 이 critic은 보통 policy와 비슷한 크기의 또 다른 언어모델로 초기화된다. DeepSeekMath 논문은 이 지점을 정확히 지적한다.
+[#19 PPO 글](/blog/2026/ppo/)에서 다뤘듯, PPO의 advantage 추정은 GAE(Generalized Advantage Estimation)를 쓴다. GAE는 매 타임스텝마다 상태 가치 $$V(s_t)$$가 필요하고, 이 $$V$$는 policy와는 별도로 학습되는 신경망 — 즉 critic이다. LLM RLHF에서 이 critic은 보통 policy와 비슷한 크기의 또 다른 언어모델로 초기화된다. DeepSeekMath 논문은 이 지점을 정확히 지적한다.
 
 > "As the value function employed in PPO is typically another model of comparable size as the policy model, it brings a substantial memory and computational burden."
 
@@ -43,7 +43,7 @@ critic이 무겁다는 것만이 문제가 아니다. 더 근본적인 문제는
 
 > "Usually only the last token is assigned a reward score by the reward model, which may complicate the training of a value function that is accurate at each token."
 
-reward model은 보통 응답 전체가 끝난 시점(EOS 토큰)에서만 스칼라 점수 하나를 낸다. 그런데 critic은 그 응답을 만드는 도중의 **모든 토큰마다** "지금부터 끝까지 얼마나 좋은 보상을 받을지"를 추정해야 한다. 비유하자면, 한 학기 내내 숙제에는 점수를 전혀 매기지 않다가 기말고사 한 번으로 성적을 확정한 뒤 "9월 셋째 주 수업 태도가 최종 성적에 얼마나 기여했는지" 역산하라는 것과 비슷하다. 원리적으로 풀 수야 있지만, 신호가 시퀀스 끝에만 존재하는데 중간 지점마다 정확한 값을 요구하니 추정이 흔들리기 쉽다. [#17 Secrets of RLHF I 글](/blog/2026/secrets-rlhf-ppo/)에서 봤던 advantage whitening, critic warmup 같은 안정화 트릭들의 상당수는 결국 이 불안정한 critic을 억지로 붙잡아두기 위한 장치였다.
+reward model은 보통 응답 전체가 끝난 시점(EOS 토큰)에서만 스칼라 점수 하나를 낸다. 그런데 critic은 그 응답을 만드는 도중의 **모든 토큰마다** "지금부터 끝까지 얼마나 좋은 보상을 받을지"를 추정해야 한다. 비유하자면, 한 학기 내내 숙제에는 점수를 전혀 매기지 않다가 기말고사 한 번으로 성적을 확정한 뒤 "9월 셋째 주 수업 태도가 최종 성적에 얼마나 기여했는지" 역산하라는 것과 비슷하다. 원리적으로 풀 수야 있지만, 신호가 시퀀스 끝에만 존재하는데 중간 지점마다 정확한 값을 요구하니 추정이 흔들리기 쉽다. [#20 Secrets of RLHF I 글](/blog/2026/secrets-rlhf-ppo/)에서 봤던 advantage whitening, critic warmup 같은 안정화 트릭들의 상당수는 결국 이 불안정한 critic을 억지로 붙잡아두기 위한 장치였다.
 
 ## 질문: critic 없이 baseline을 만들 수 있을까
 
@@ -97,7 +97,7 @@ $$
 \hat{A}_{i,t} = \sum_{\mathrm{index}(j) \ge t} \widetilde{r}_i^{\,\mathrm{index}(j)}
 $$
 
-이건 "지금 이 토큰 이후에 잘한 단계들만 이 토큰의 공로로 친다"는 뜻이다. process reward는 이후 [#25](/blog/2026/lets-verify-step-by-step/), [#26](/blog/2026/math-shepherd/) 글에서 본격적으로 다룬다. DeepSeekMath 실험 자체는 outcome supervision 버전을 주로 쓴다.
+이건 "지금 이 토큰 이후에 잘한 단계들만 이 토큰의 공로로 친다"는 뜻이다. process reward는 이후 [#28](/blog/2026/lets-verify-step-by-step/), [#29](/blog/2026/math-shepherd/) 글에서 본격적으로 다룬다. DeepSeekMath 실험 자체는 outcome supervision 버전을 주로 쓴다.
 
 ## 토이 예제: 응답 4개, 보상 (0.8, 0.2, 0.5, 0.9)
 
@@ -136,11 +136,11 @@ $$
 
 로, 응답 하나(위 표의 "응답 1" 하나)의 매 토큰마다 critic이 추정한 $$V(s_t)$$가 필요하고, 그 값들을 시간축을 따라 bootstrap하며 누적해야 advantage가 나온다. 응답 하나에 토큰이 200개면 critic이 200번 값을 추정해야 하고, 그 추정치들이 부정확하면 advantage 전체가 흔들린다. GRPO는 이 과정을 통째로 "그룹 안에서 평균과 표준편차 구하기"로 대체한 것이다.
 
-이 예제의 보상 $$(0.8, 0.2, 0.5, 0.9)$$는 [#19 RLOO 글](/blog/2026/rloo-back-to-basics/)에서 같은 그룹으로 leave-one-out baseline을 계산할 때 다시 등장한다. 표준편차로 나누는 GRPO와, 평균만 쓰되 자기 자신을 뺀 나머지로 baseline을 잡는 RLOO가 같은 숫자에서 얼마나 다른 advantage를 내는지 그 글에서 직접 비교할 수 있다.
+이 예제의 보상 $$(0.8, 0.2, 0.5, 0.9)$$는 [#22 RLOO 글](/blog/2026/rloo-back-to-basics/)에서 같은 그룹으로 leave-one-out baseline을 계산할 때 다시 등장한다. 표준편차로 나누는 GRPO와, 평균만 쓰되 자기 자신을 뺀 나머지로 baseline을 잡는 RLOO가 같은 숫자에서 얼마나 다른 advantage를 내는지 그 글에서 직접 비교할 수 있다.
 
 ## KL penalty: reward에서 손실로
 
-PPO 계열 RLHF([#17 글](/blog/2026/secrets-rlhf-ppo/) 참고)는 보통 KL penalty를 **reward에 섞는다.** 매 토큰마다 $$r_t - \beta \log(\pi_\theta / \pi_{ref})$$ 형태로 보상 자체를 깎아서, 참조 모델에서 멀어질수록 실질 보상이 줄어들게 만드는 방식이다. GRPO는 이걸 reward에 섞지 않고, 목적함수(손실)에 별도의 항으로 직접 더한다. KL divergence 자체는 Schulman이 제안한 비음수(non-negative) unbiased estimator를 쓴다(논문 식 4).
+PPO 계열 RLHF([#20 글](/blog/2026/secrets-rlhf-ppo/) 참고)는 보통 KL penalty를 **reward에 섞는다.** 매 토큰마다 $$r_t - \beta \log(\pi_\theta / \pi_{ref})$$ 형태로 보상 자체를 깎아서, 참조 모델에서 멀어질수록 실질 보상이 줄어들게 만드는 방식이다. GRPO는 이걸 reward에 섞지 않고, 목적함수(손실)에 별도의 항으로 직접 더한다. KL divergence 자체는 Schulman이 제안한 비음수(non-negative) unbiased estimator를 쓴다(논문 식 4).
 
 $$
 \mathbb{D}_{KL}[\pi_\theta \Vert \pi_{ref}] = \frac{\pi_{ref}(o_{i,t} \mid q, o_{i,<t})}{\pi_\theta(o_{i,t} \mid q, o_{i,<t})} - \log \frac{\pi_{ref}(o_{i,t} \mid q, o_{i,<t})}{\pi_\theta(o_{i,t} \mid q, o_{i,<t})} - 1
@@ -212,13 +212,13 @@ $$G = 64$$라는 숫자가 중요하다. PPO였다면 critic 하나로 응답 �
 
 GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는 방법**을 바꾼 논문이다. critic이 학습으로 추정하던 baseline을, 같은 프롬프트에서 뽑은 $$G$$개 응답의 평균·표준편차로 대체했다. 그 결과 PPO가 짊어졌던 policy 크기만 한 critic의 메모리·연산 부담이 사라졌고, KL penalty를 reward에서 손실로 옮겨 그룹 비교 신호를 순수하게 유지했다. GSM8K +5.3%p, MATH +4.9%p라는 개선폭보다, Pass@K는 그대로인데 Maj@K만 오른다는 관찰이 더 중요한 메시지다. GRPO는 새 능력을 만드는 게 아니라 이미 있는 능력의 출력 분포를 정답 쪽으로 재정렬한다.
 
-다만 이 방식에는 뚜렷한 한계가 있다. 그룹 내 $$G$$개 응답이 **모두 정답이거나 모두 오답**이면, $$r_i - \mathrm{mean}(r)$$이 모든 $$i$$에 대해 0이 되어 advantage 자체가 사라진다. 표준편차로 나누기 이전에 이미 학습 신호가 0인 것이다. 너무 쉬운 문제(항상 맞음)나 너무 어려운 문제(항상 틀림)에 대해서는 $$G$$개를 샘플링하고 채점하는 연산을 쓰고도 gradient가 전혀 나오지 않는다는 뜻이다. 또한 표준편차로 나누는 정규화가 정말 필요한지, 오히려 편향을 만드는 건 아닌지도 뒤따르는 논쟁의 대상이 된다 — [#19 RLOO 글](/blog/2026/rloo-back-to-basics/)이 이 지점을 정면으로 파고든다. 그리고 reward를 학습된 모델이 아니라 정답 여부를 판정하는 규칙(rule-based reward)으로 완전히 대체하면 어떻게 되는지는 [#27 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다룬다.
+다만 이 방식에는 뚜렷한 한계가 있다. 그룹 내 $$G$$개 응답이 **모두 정답이거나 모두 오답**이면, $$r_i - \mathrm{mean}(r)$$이 모든 $$i$$에 대해 0이 되어 advantage 자체가 사라진다. 표준편차로 나누기 이전에 이미 학습 신호가 0인 것이다. 너무 쉬운 문제(항상 맞음)나 너무 어려운 문제(항상 틀림)에 대해서는 $$G$$개를 샘플링하고 채점하는 연산을 쓰고도 gradient가 전혀 나오지 않는다는 뜻이다. 또한 표준편차로 나누는 정규화가 정말 필요한지, 오히려 편향을 만드는 건 아닌지도 뒤따르는 논쟁의 대상이 된다 — [#22 RLOO 글](/blog/2026/rloo-back-to-basics/)이 이 지점을 정면으로 파고든다. 그리고 reward를 학습된 모델이 아니라 정답 여부를 판정하는 규칙(rule-based reward)으로 완전히 대체하면 어떻게 되는지는 [#30 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다룬다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열여덟 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물한 번째 글이다.
 
 **1부. 지형도**
 
@@ -253,11 +253,14 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><strong>(현재 글)</strong> GRPO / DeepSeekMath (2024) — value network를 버리다</li>
@@ -271,7 +274,7 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -279,7 +282,7 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -289,7 +292,7 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -299,12 +302,12 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

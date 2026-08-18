@@ -124,7 +124,7 @@ $$\text{Acc} = \frac{1}{N} \sum_{i=1}^{N} \mathbb{1}\left[ r_\theta(x_i, y_i^{ch
 
 18점이 빠졌다. 그런데 흥미롭게도 이 모델의 후속작 **Skywork-Reward-V2-Llama-3.1-8B는 RewardBench 2에서도 84.1점으로 1위**를 지켰다(Factuality 84.6 / IF 66.3 / Math 77.6 / Safety 96.7 / Focus 98.4 / Ties 81.2). 즉 [#6 글](/blog/2026/skywork-reward/)이 강조하는 "아키텍처보다 데이터 큐레이션"이라는 메시지는 더 어려운 벤치마크에서도 유지된다 — 다만 그 "1위"가 어느 버전 벤치마크에서의 1위인지는 반드시 확인해야 한다는 게 이 표가 주는 실무적 교훈이다.
 
-Table 3 상위권을 조금 더 들여다보면 스칼라 RM과 생성형(LM-as-judge) RM이 나란히 채점된다. ContextualAI의 LMUnit-qwen2.5-72b(82.1)나 Gemini-2.5-Pro(79.5), Claude-Opus-4(76.5) 같은 생성형 모델이 상위권에 있지만, 논문은 이들을 "4개 중 최선 고르기"와 "개별 절대 평가" 두 프롬프팅 방식으로 각각 채점한 뒤 **더 잘 나온 쪽 점수를 채택**했다고 밝힌다. 스칼라 RM은 입력을 한 번 통과시키면 결정론적으로 점수 하나가 나오지만, 생성형 RM은 프롬프팅 방식에 따라 점수가 갈리고 그중 유리한 쪽이 보고된다 — 리더보드에서 스칼라 RM과 생성형 RM을 같은 줄에 놓고 비교할 때 이 비대칭을 감안해야 한다. 생성형 RM 자체의 구조와 한계는 이 시리즈 7부([#29 Generative Verifiers](/blog/2026/generative-verifiers/))에서 본격적으로 다룬다.
+Table 3 상위권을 조금 더 들여다보면 스칼라 RM과 생성형(LM-as-judge) RM이 나란히 채점된다. ContextualAI의 LMUnit-qwen2.5-72b(82.1)나 Gemini-2.5-Pro(79.5), Claude-Opus-4(76.5) 같은 생성형 모델이 상위권에 있지만, 논문은 이들을 "4개 중 최선 고르기"와 "개별 절대 평가" 두 프롬프팅 방식으로 각각 채점한 뒤 **더 잘 나온 쪽 점수를 채택**했다고 밝힌다. 스칼라 RM은 입력을 한 번 통과시키면 결정론적으로 점수 하나가 나오지만, 생성형 RM은 프롬프팅 방식에 따라 점수가 갈리고 그중 유리한 쪽이 보고된다 — 리더보드에서 스칼라 RM과 생성형 RM을 같은 줄에 놓고 비교할 때 이 비대칭을 감안해야 한다. 생성형 RM 자체의 구조와 한계는 이 시리즈 7부([#32 Generative Verifiers](/blog/2026/generative-verifiers/))에서 본격적으로 다룬다.
 
 ## Best-of-N과는 강하게 상관된다
 
@@ -223,11 +223,14 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -241,7 +244,7 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -249,7 +252,7 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -259,7 +262,7 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -269,12 +272,12 @@ Tulu 3 8B SFT를 정책으로 놓고, 17개의 서로 다른 RM으로 PPO를 돌
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

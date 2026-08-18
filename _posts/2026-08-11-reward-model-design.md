@@ -1,24 +1,24 @@
 ---
 layout: post
 title: "reward를 어떻게 설계할 것인가 — RM 설계 실무"
-date: 2026-08-11 09:28:00 +0900
-description: "RLHF Reward 설계 시리즈 #39 — 시리즈 38편을 관통한 reward 시스템 설계 절차를 한 장의 실무 가이드로"
+date: 2026-08-11 09:42:00 +0900
+description: "RLHF Reward 설계 시리즈 #42 — 시리즈 41편을 관통한 reward 시스템 설계 절차를 한 장의 실무 가이드로"
 categories: [paper]
 tags: [rlhf, reward-model, rlvr, genrm, dpo, reward-hacking, paper]
 giscus_comments: true
 related_posts: true
 ---
 
-> 이 글은 특정 논문 한 편이 아니라, 이 시리즈 38편이 쌓은 결론을 **"내가 reward를 설계한다면 어떤 순서로 결정할까"**라는 하나의 절차로 압축한다. 각 결정마다 근거가 된 편으로 링크를 건다.
+> 이 글은 특정 논문 한 편이 아니라, 이 시리즈 41편이 쌓은 결론을 **"내가 reward를 설계한다면 어떤 순서로 결정할까"**라는 하나의 절차로 압축한다. 각 결정마다 근거가 된 편으로 링크를 건다.
 
 # Introduction
 
-[#38](/blog/2026/frontier-reward-design/)가 프론티어 모델들이 **실제로 무엇을 골랐는지**를 관찰했다면, 이 글은 반대 방향이다 — **내가 처음부터 reward 시스템을 설계한다면 어떤 순서로 결정을 내려야 하는가.** 앞의 37편이 부품(논문 한 편이 문제 하나에 답한 것)이고 #38이 사례집이라면, 이 글은 그 둘을 겹쳐 만든 **설계 절차서**다.
+[#41](/blog/2026/frontier-reward-design/)가 프론티어 모델들이 **실제로 무엇을 골랐는지**를 관찰했다면, 이 글은 반대 방향이다 — **내가 처음부터 reward 시스템을 설계한다면 어떤 순서로 결정을 내려야 하는가.** 앞의 40편이 부품(논문 한 편이 문제 하나에 답한 것)이고 #41이 사례집이라면, 이 글은 그 둘을 겹쳐 만든 **설계 절차서**다.
 
 reward 설계에서 초심자가 가장 자주 하는 실수는 "좋은 reward model을 학습시키자"부터 시작하는 것이다. 하지만 시리즈 전체가 반복해서 보여준 교훈은 정반대다.
 
 - **학습된 RM은 근사이고, 근사에는 반드시 hacking당하는 지점이 있다**([#10](/blog/2026/reward-model-overoptimization/)).
-- 그래서 **"굳이 RM을 학습시키지 않아도 되는 경우"를 먼저 걸러내는 것**이 설계의 1단계다([#27](/blog/2026/deepseek-r1/)).
+- 그래서 **"굳이 RM을 학습시키지 않아도 되는 경우"를 먼저 걸러내는 것**이 설계의 1단계다([#30](/blog/2026/deepseek-r1/)).
 - RM이 꼭 필요한 경우에도, **reward의 질은 함수보다 데이터와 프롬프트 선택에서 더 크게 갈린다**([#5](/blog/2026/secrets-rlhf-reward-modeling/), [#6](/blog/2026/skywork-reward/)).
 
 이 글은 다음을 순서대로 다룬다.
@@ -32,14 +32,14 @@ reward 설계에서 초심자가 가장 자주 하는 실수는 "좋은 reward m
 
 ## reward 조달처 네 가지
 
-[#38](/blog/2026/frontier-reward-design/)에서 세운 4분류를, 이번엔 **"내가 고를 때의 비용과 위험"** 관점으로 다시 본다.
+[#41](/blog/2026/frontier-reward-design/)에서 세운 4분류를, 이번엔 **"내가 고를 때의 비용과 위험"** 관점으로 다시 본다.
 
 | 조달처                          | 언제 쓰나                                 | 장점                                   | 비용·위험                          | 근거 편                                                                          |
 | ------------------------------- | ----------------------------------------- | -------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
-| ① 규칙 기반 verifiable reward   | 정답을 프로그램으로 판정 가능 (수학·코드) | 파라미터 0 → hacking 불가, 학습 비용 0 | 검증 가능한 도메인에만 적용        | [#27](/blog/2026/deepseek-r1/)                                                   |
+| ① 규칙 기반 verifiable reward   | 정답을 프로그램으로 판정 가능 (수학·코드) | 파라미터 0 → hacking 불가, 학습 비용 0 | 검증 가능한 도메인에만 적용        | [#30](/blog/2026/deepseek-r1/)                                                   |
 | ② 스칼라 RM (reference 없음)    | 선호 쌍만 있고 채점 기준이 흐릿할 때      | 어떤 도메인이든 적용, 빠른 추론        | 근사 오차 → overoptimization, 편향 | [#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)      |
-| ③ reference 기반 judge          | 정답 예시 + 채점 기준(rubric)이 있을 때   | 해석 가능, 기준을 명시적으로 주입      | 판정 모델 추론 비용, judge 편향    | [#28](/blog/2026/prometheus-2/)                                                  |
-| ④ generative RM (self-critique) | 기준은 있으나 정답 예시가 없을 때         | 근거를 생성 → 검증·디버깅 가능         | 추론 비용 큼, judge도 뚫릴 수 있음 | [#32](/blog/2026/deepseek-grm-spct/), [#37](/blog/2026/one-token-to-fool-judge/) |
+| ③ reference 기반 judge          | 정답 예시 + 채점 기준(rubric)이 있을 때   | 해석 가능, 기준을 명시적으로 주입      | 판정 모델 추론 비용, judge 편향    | [#31](/blog/2026/prometheus-2/)                                                  |
+| ④ generative RM (self-critique) | 기준은 있으나 정답 예시가 없을 때         | 근거를 생성 → 검증·디버깅 가능         | 추론 비용 큼, judge도 뚫릴 수 있음 | [#35](/blog/2026/deepseek-grm-spct/), [#40](/blog/2026/one-token-to-fool-judge/) |
 
 핵심 직관은 위에서 아래로 갈수록 **표현력은 커지지만 hacking 표면도 커진다**는 것이다. ①은 파라미터가 없어 뚫을 대상 자체가 없고, ②③④는 신경망이므로 정책이 그 근사 오차를 파고들 수 있다. 그래서 설계의 대원칙은 **"가능한 한 위쪽(①)을 쓰고, 어쩔 수 없을 때만 아래로 내려간다"**이다.
 
@@ -57,7 +57,7 @@ $$
 - $$r_\theta$$: 학습되는 스칼라 RM
 - 의미: 선택된 응답의 점수가 탈락 응답보다 **높아지도록** 밀되, $$\sigma$$(시그모이드) 때문에 차이가 이미 충분히 벌어지면 더는 세게 밀지 않는다.
 
-**정책 최적화(KL 정규화, [#16](/blog/2026/ppo/)):**
+**정책 최적화(KL 정규화, [#19](/blog/2026/ppo/)):**
 
 $$
 \max_{\pi}\ \mathbb{E}_{y \sim \pi}\big[r(x, y)\big] - \beta\, \mathrm{KL}\big(\pi \,\|\, \pi_{\text{ref}}\big)
@@ -89,7 +89,7 @@ $$
 
 ### 1~2단계: 검증 가능하면 무조건 규칙부터
 
-"정답을 프로그램으로 판정 가능한가"가 첫 갈림길이다. 가능하다면 학습된 RM을 **쓰지 않는 것**이 정답이다([#27](/blog/2026/deepseek-r1/)). 규칙 기반 reward를 짤 때 실무 포인트는 두 가지다.
+"정답을 프로그램으로 판정 가능한가"가 첫 갈림길이다. 가능하다면 학습된 RM을 **쓰지 않는 것**이 정답이다([#30](/blog/2026/deepseek-r1/)). 규칙 기반 reward를 짤 때 실무 포인트는 두 가지다.
 
 - **accuracy와 format을 분리한다.** 정답 여부만 보상하면 모델은 "정답만 찍는" 최단 경로로 붕괴한다. 사고 과정을 `<think>` 태그나 `\boxed{}` 형식으로 강제하는 format reward를 따로 둔다.
 - **파서를 견고하게.** 규칙 reward의 취약점은 함수가 아니라 **파서**다. 답 추출 정규식이 허술하면 그 틈이 곧 hacking 표면이 된다.
@@ -98,19 +98,19 @@ $$
 
 검증이 불가능해도 포기하지 않는다. **채점 기준을 문장으로 쓸 수 있는지**를 묻는다. "정확성 40%, 안전성 40%, 친절함 20%, 각 항목 1~5점" 같은 rubric을 정의할 수 있다면, 스칼라 RM으로 내려가기 전에 **judge**를 고려한다.
 
-- **정답 예시가 있으면 ③ reference judge** ([#28](/blog/2026/prometheus-2/)): judge에게 "이 rubric과 이 모범답안에 비추어 채점하라"고 시킨다. Qwen3가 General RL에서 쓴 model-based-with-reference가 정확히 이것이다([#38](/blog/2026/frontier-reward-design/)).
-- **예시가 없으면 ④ GRM / self-critique** ([#32](/blog/2026/deepseek-grm-spct/), [#34](/blog/2026/j1-thinking-judge/)): judge가 채점 근거를 스스로 생성하며 점수를 낸다. 근거가 남으므로 **왜 그 점수인지 사후 검증이 가능**하다는 게 스칼라 RM 대비 결정적 장점이다.
+- **정답 예시가 있으면 ③ reference judge** ([#31](/blog/2026/prometheus-2/)): judge에게 "이 rubric과 이 모범답안에 비추어 채점하라"고 시킨다. Qwen3가 General RL에서 쓴 model-based-with-reference가 정확히 이것이다([#41](/blog/2026/frontier-reward-design/)).
+- **예시가 없으면 ④ GRM / self-critique** ([#35](/blog/2026/deepseek-grm-spct/), [#37](/blog/2026/j1-thinking-judge/)): judge가 채점 근거를 스스로 생성하며 점수를 낸다. 근거가 남으므로 **왜 그 점수인지 사후 검증이 가능**하다는 게 스칼라 RM 대비 결정적 장점이다.
 
-judge를 쓸 때 주의: judge도 신경망이라 뚫린다. [#37 One Token to Fool](/blog/2026/one-token-to-fool-judge/)이 보였듯, "정답입니다" 같은 껍데기 토큰에 속는 사례가 실재한다. judge를 도입하면 judge 자체의 견고성 평가([#36 CriticEval](/blog/2026/criticeval/))가 새 숙제로 따라온다.
+judge를 쓸 때 주의: judge도 신경망이라 뚫린다. [#40 One Token to Fool](/blog/2026/one-token-to-fool-judge/)이 보였듯, "정답입니다" 같은 껍데기 토큰에 속는 사례가 실재한다. judge를 도입하면 judge 자체의 견고성 평가([#39 CriticEval](/blog/2026/criticeval/))가 새 숙제로 따라온다.
 
 ### 5단계: 기준도 흐릿하면 선호 쌍
 
 rubric조차 명문화하기 어려운 주관적 품질(문체, 위트, 공감)은 결국 **사람의 선호 쌍**으로 돌아온다. 여기서 두 갈래다.
 
 - **② 스칼라 RM 학습 후 RL**: 표현력이 크지만 overoptimization 위험.
-- **DPO([#20](/blog/2026/dpo/))**: RM 없이 선호 쌍에서 바로 정책 학습. 온라인 인프라가 없을 때 특히 매력적.
+- **DPO([#23](/blog/2026/dpo/))**: RM 없이 선호 쌍에서 바로 정책 학습. 온라인 인프라가 없을 때 특히 매력적.
 
-이때 [#5](/blog/2026/secrets-rlhf-reward-modeling/)·[#6](/blog/2026/skywork-reward/)의 교훈이 결정적이다 — **RM 성능은 아키텍처보다 데이터 큐레이션에서 갈린다.** 우열이 애매한 쌍은 노이즈이므로 버리고, 확실히 우열이 갈리는 쌍만 남긴다(Llama의 선택, [#38](/blog/2026/frontier-reward-design/)).
+이때 [#5](/blog/2026/secrets-rlhf-reward-modeling/)·[#6](/blog/2026/skywork-reward/)의 교훈이 결정적이다 — **RM 성능은 아키텍처보다 데이터 큐레이션에서 갈린다.** 우열이 애매한 쌍은 노이즈이므로 버리고, 확실히 우열이 갈리는 쌍만 남긴다(Llama의 선택, [#41](/blog/2026/frontier-reward-design/)).
 
 ### 5단계 보강 — 프롬프트 큐레이션: 어떤 문제에 reward를 먹일까
 
@@ -135,11 +135,11 @@ rubric조차 명문화하기 어려운 주관적 품질(문체, 위트, 공감)�
 
 | 상황                               | 선택                    | 근거                                                                                                 |
 | ---------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| 온라인 롤아웃 인프라 있음          | PPO / GRPO / RLOO       | [#16](/blog/2026/ppo/), [#18](/blog/2026/grpo-deepseekmath/), [#19](/blog/2026/rloo-back-to-basics/) |
-| 인프라 없음, 선호 쌍만 있음        | DPO                     | [#20](/blog/2026/dpo/)                                                                               |
-| 그 중간(싸게 다지고 비싸게 마무리) | offline DPO → online RL | Qwen2.5 ([#38](/blog/2026/frontier-reward-design/))                                                  |
+| 온라인 롤아웃 인프라 있음          | PPO / GRPO / RLOO       | [#19](/blog/2026/ppo/), [#21](/blog/2026/grpo-deepseekmath/), [#22](/blog/2026/rloo-back-to-basics/) |
+| 인프라 없음, 선호 쌍만 있음        | DPO                     | [#23](/blog/2026/dpo/)                                                                               |
+| 그 중간(싸게 다지고 비싸게 마무리) | offline DPO → online RL | Qwen2.5 ([#41](/blog/2026/frontier-reward-design/))                                                  |
 
-주의점 하나: **오프라인 정렬(SFT·DPO)을 너무 세게 걸면 뒤이은 RL의 탐색을 죽인다**(Llama 4의 교훈, [#38](/blog/2026/frontier-reward-design/)). 온라인 RL을 쓸 계획이라면 앞 단계를 "가볍게" 치는 편이 낫다.
+주의점 하나: **오프라인 정렬(SFT·DPO)을 너무 세게 걸면 뒤이은 RL의 탐색을 죽인다**(Llama 4의 교훈, [#41](/blog/2026/frontier-reward-design/)). 온라인 RL을 쓸 계획이라면 앞 단계를 "가볍게" 치는 편이 낫다.
 
 ### 7단계: 검증과 방어를 처음부터 설계에 넣는다
 
@@ -155,7 +155,7 @@ reward를 정하고 나면 곧바로 **"이 reward가 정말 품질과 상관하
 
 ## 예제: 안전성 정렬 어시스턴트의 reward 설계
 
-절차를 구체적 예제로 따라가 본다. 목표는 "도움이 되면서도 위험 요청은 적절히 거절하는 대화 어시스턴트"다. 도메인이 뒤섞여 있으므로 **한 개의 reward가 아니라 도메인별로 조달처를 나눈다** — 이것이 Solar·DeepSeek-V4가 보여준 패턴이다([#38](/blog/2026/frontier-reward-design/)).
+절차를 구체적 예제로 따라가 본다. 목표는 "도움이 되면서도 위험 요청은 적절히 거절하는 대화 어시스턴트"다. 도메인이 뒤섞여 있으므로 **한 개의 reward가 아니라 도메인별로 조달처를 나눈다** — 이것이 Solar·DeepSeek-V4가 보여준 패턴이다([#41](/blog/2026/frontier-reward-design/)).
 
 | 하위 도메인         | 1단계 진단          | 선택한 조달처                      | 이유                                                      |
 | ------------------- | ------------------- | ---------------------------------- | --------------------------------------------------------- |
@@ -195,15 +195,15 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 ## 한계: reward는 끝내 프록시다
 
-이 모든 절차를 거쳐도 남는 사실이 하나 있다 — **어떤 reward도 결국 "품질"이라는 것의 프록시일 뿐이다.** 규칙은 검증 가능한 것만 보고, RM은 근사하며, judge도 뚫린다([#37](/blog/2026/one-token-to-fool-judge/)). 그래서 잘 설계된 reward 시스템일수록 역설적으로 **"reward를 언제 믿지 말아야 하는가"를 함께 설계한다** — 홀드아웃 사람 평가, overoptimization 조기 경보, 여러 신호의 교차검증이 그 안전장치다.
+이 모든 절차를 거쳐도 남는 사실이 하나 있다 — **어떤 reward도 결국 "품질"이라는 것의 프록시일 뿐이다.** 규칙은 검증 가능한 것만 보고, RM은 근사하며, judge도 뚫린다([#40](/blog/2026/one-token-to-fool-judge/)). 그래서 잘 설계된 reward 시스템일수록 역설적으로 **"reward를 언제 믿지 말아야 하는가"를 함께 설계한다** — 홀드아웃 사람 평가, overoptimization 조기 경보, 여러 신호의 교차검증이 그 안전장치다.
 
-[#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)에서 시작해 [#38](/blog/2026/frontier-reward-design/)의 프론티어 사례까지, 이 시리즈가 39편에 걸쳐 도달한 결론은 한 문장이다. **reward 설계란 완벽한 보상 함수를 찾는 일이 아니라, 내 도메인을 정확히 진단하고 그 진단에 맞는 조달처를 고른 뒤, 그 선택이 틀렸을 때를 대비하는 일이다.**
+[#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)에서 시작해 [#41](/blog/2026/frontier-reward-design/)의 프론티어 사례까지, 이 시리즈가 42편에 걸쳐 도달한 결론은 한 문장이다. **reward 설계란 완벽한 보상 함수를 찾는 일이 아니라, 내 도메인을 정확히 진단하고 그 진단에 맞는 조달처를 고른 뒤, 그 선택이 틀렸을 때를 대비하는 일이다.**
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른아홉 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔두 번째 글이다.
 
 **1부. 지형도**
 
@@ -238,11 +238,14 @@ reward를 설계할 때, 이 순서대로 자문한다.
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -256,7 +259,7 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -264,7 +267,7 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -274,7 +277,7 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -284,20 +287,20 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><strong>(현재 글)</strong> reward를 어떻게 설계할 것인가 — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 
 - 이 글은 시리즈 전체를 종합한 설계 가이드로, 각 결정의 근거는 본문에 링크한 편들에 있다.
 - Lambert et al., 2024. [RewardBench: Evaluating Reward Models](https://arxiv.org/abs/2403.13787) — [#9](/blog/2026/rewardbench-2/) 참고.
-- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#20](/blog/2026/dpo/).
+- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#23](/blog/2026/dpo/).
 - Gao et al., 2022. [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760) — [#10](/blog/2026/reward-model-overoptimization/).
 - Chen et al., 2024. [ODIN: Disentangled Reward Mitigates Hacking in RLHF](https://arxiv.org/abs/2402.07319) — [#12](/blog/2026/odin-disentangled-reward/).
-- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#28](/blog/2026/prometheus-2/).
-- Liu et al. (DeepSeek-AI), 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495) — [#32 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/).
+- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#31](/blog/2026/prometheus-2/).
+- Liu et al. (DeepSeek-AI), 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495) — [#35 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/).
 - Yu et al. (ByteDance Seed·Tsinghua), 2025. [DAPO: An Open-Source LLM Reinforcement Learning System at Scale](https://arxiv.org/abs/2503.14476) — dynamic sampling(정답률 0/1 프롬프트 제거).

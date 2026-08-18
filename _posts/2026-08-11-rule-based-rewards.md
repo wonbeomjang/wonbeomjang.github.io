@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Rule-Based Rewards: 안전 규칙을 reward로 직접 번역한다"
-date: 2026-08-11 09:16:30 +0900
+date: 2026-08-11 09:15:00 +0900
 description: "RLHF Reward 설계 시리즈 #15 — 명제와 LLM grader로 over-refusal을 줄이는 OpenAI의 안전 reward"
 categories: [paper]
 tags: [rlhf, safety, reward-model, over-refusal, rule-based-reward, paper]
@@ -125,9 +125,9 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 이 시리즈에서 안전 정렬 문제를 다룬 세 편을 나란히 놓으면 답이 점점 더 명시적인 규칙 쪽으로 옮겨가는 흐름이 보인다. [#8 Llama 2](/blog/2026/llama2-rlhf/)는 helpfulness RM과 safety RM을 분리하는 것으로 시작했고, [#14 Safe RLHF](/blog/2026/safe-rlhf/)는 안전을 학습된 cost model과 제약 최적화로 다시 정식화했다. RBR은 그 cost model마저 사람이 쓴 규칙과 LLM grader로 대체했다. 매번 사람의 판단이 사라진 것이 아니라, 사람의 판단이 놓이는 위치가 데이터 라벨링에서 규칙 작성으로 옮겨간 것이다.
 
-이 규칙 기반 판정 방식은 [#27 DeepSeek-R1](/blog/2026/deepseek-r1/)의 RLVR과 닮았다. RLVR이 "정답인가"라는 명확한 기준을 규칙으로 판정한다면, RBR은 "안전한가"라는 기준을 규칙으로 판정한다. 두 경우 모두 판정 규칙 자체에는 학습 가능한 파라미터가 없다. 그래서 [#10 Overoptimization](/blog/2026/reward-model-overoptimization/)에서 다룬, 학습된 RM이 근사이기 때문에 생기는 reward hacking 표면이 훨씬 작다.
+이 규칙 기반 판정 방식은 [#30 DeepSeek-R1](/blog/2026/deepseek-r1/)의 RLVR과 닮았다. RLVR이 "정답인가"라는 명확한 기준을 규칙으로 판정한다면, RBR은 "안전한가"라는 기준을 규칙으로 판정한다. 두 경우 모두 판정 규칙 자체에는 학습 가능한 파라미터가 없다. 그래서 [#10 Overoptimization](/blog/2026/reward-model-overoptimization/)에서 다룬, 학습된 RM이 근사이기 때문에 생기는 reward hacking 표면이 훨씬 작다.
 
-이런 흐름은 최근 프론티어 모델의 reward 설계로 이어진다. [#38 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, A.X K2는 거절 자체가 아니라 안전한 완수를 보상하는 방향을 취하고, K-EXAONE 2.0은 별도의 safety-aware 단계를 둔다. 안전성을 사람의 이진 선호가 아니라 rubric과 judge로 명시적으로 판정하는 설계가 점점 표준이 되어가는 중이다.
+이런 흐름은 최근 프론티어 모델의 reward 설계로 이어진다. [#41 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, A.X K2는 거절 자체가 아니라 안전한 완수를 보상하는 방향을 취하고, K-EXAONE 2.0은 별도의 safety-aware 단계를 둔다. 안전성을 사람의 이진 선호가 아니라 rubric과 judge로 명시적으로 판정하는 설계가 점점 표준이 되어가는 중이다.
 
 ---
 
@@ -168,11 +168,14 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><strong>(현재 글)</strong> Rule-Based Rewards (2024) — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -186,7 +189,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -194,7 +197,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -204,7 +207,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -214,12 +217,12 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

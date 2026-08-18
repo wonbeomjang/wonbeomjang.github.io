@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "One Token to Fool: GenRM도 결국 뚫린다"
-date: 2026-08-11 09:26:00 +0900
-description: "RLHF Reward 설계 시리즈 #37 — 무의미한 토큰 하나로 무너지는 생성형 judge, 그리고 32편의 결론"
+date: 2026-08-11 09:40:00 +0900
+description: "RLHF Reward 설계 시리즈 #40 — 무의미한 토큰 하나로 무너지는 생성형 judge, 그리고 35편의 결론"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, reward-hacking, llm-as-a-judge, paper]
 giscus_comments: true
@@ -13,23 +13,23 @@ related_posts: true
 
 # Introduction
 
-[#29 Generative Verifiers](/blog/2026/generative-verifiers/)에서 시작해 [#30 Generative Reward Models](/blog/2026/generative-reward-models/), [#32 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/), [#35 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)까지, 7부는 하나의 이야기를 밀어붙였다. "스칼라 reward model은 [#10](/blog/2026/reward-model-overoptimization/)~[#13](/blog/2026/warm-weight-averaged-reward/)에서 봤듯 길이·스타일 같은 표면적 신호에 쉽게 낚인다. 그러니 reward를 하나의 스칼라로 압축하지 말고, LLM이 직접 근거를 생성(generate)하며 판정하게 하자." Generative Reward Model(GenRM)은 그 답이었다. 판정 이유를 CoT로 풀어내고, 필요하면 추론 시점에 여러 번 채점해 다수결을 취하고([#32](/blog/2026/deepseek-grm-spct/)), 정답이 없는 글쓰기·안전성 도메인까지 rubric으로 확장했다([#35](/blog/2026/rubrics-as-rewards/)).
+[#32 Generative Verifiers](/blog/2026/generative-verifiers/)에서 시작해 [#33 Generative Reward Models](/blog/2026/generative-reward-models/), [#35 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/), [#38 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)까지, 7부는 하나의 이야기를 밀어붙였다. "스칼라 reward model은 [#10](/blog/2026/reward-model-overoptimization/)~[#13](/blog/2026/warm-weight-averaged-reward/)에서 봤듯 길이·스타일 같은 표면적 신호에 쉽게 낚인다. 그러니 reward를 하나의 스칼라로 압축하지 말고, LLM이 직접 근거를 생성(generate)하며 판정하게 하자." Generative Reward Model(GenRM)은 그 답이었다. 판정 이유를 CoT로 풀어내고, 필요하면 추론 시점에 여러 번 채점해 다수결을 취하고([#35](/blog/2026/deepseek-grm-spct/)), 정답이 없는 글쓰기·안전성 도메인까지 rubric으로 확장했다([#38](/blog/2026/rubrics-as-rewards/)).
 
 이번 글, 시리즈의 마지막 26번째 논문 **"One Token to Fool LLM-as-a-Judge"**는 이 서사에 마침표 대신 물음표를 찍는다. 저자들은 GenRM 앞에 의미 없는 토큰 하나 — 콜론(":") 하나, 마침표 하나, 혹은 "Thought process:"라는 상투구 하나 — 를 붙이는 것만으로 최신 GenRM들이 무더기로 오판한다는 것을 보였다. 이런 토큰을 논문은 **"master key"**라 부른다. 자물쇠(잠긴 문제)의 내용과 무관하게 아무 문이나 열어버리는 만능열쇠라는 뜻이다. GPT-4o는 "Thought process:"라는 다섯 글자 앞에서 28.9%의 false positive rate(FPR)를 기록했고, LLaMA3-70B-Instruct는 콜론 하나에 77.2%가 뚫렸다. 심지어 실제 RLVR(Reinforcement Learning with Verifiable Rewards) 파이프라인에서 정책이 이 취약점을 스스로 찾아내 학습이 통째로 무너지는 사례까지 논문은 직접 재현했다.
 
 이 결과가 중요한 이유는 단순히 "GenRM에도 버그가 있다"가 아니다. **reward를 스칼라에서 생성으로 바꾼다고 reward hacking이 사라지는 게 아니라, 공격이 붙는 축이 옮겨갈 뿐이라는 것**을 보여주기 때문이다. 스칼라 RM은 길이에, PRM은 스텝 개수에 낚였다면, GenRM은 "그럴듯한 판정 서두"에 낚인다. Goodhart의 법칙 — 목표가 되는 순간 proxy는 무너진다 — 은 reward 설계 방식을 아무리 바꿔도 그대로 따라온다.
 
-이 글은 두 가지 일을 한다. 전반부는 이 논문 자체 — master key 공격의 메커니즘, RLVR 붕괴 사례, 저자들이 제안한 방어책 Master-RM, 그리고 judge가 뚫리는 또 다른 방식들(S2J, Crowd Comparative Reasoning)을 다룬다. 후반부는 32편 전체를 관통하는 결론이다. 도메인별로 어떤 reward를 골라야 하는지, 자신의 reward 파이프라인을 점검할 때 무엇을 확인해야 하는지를 정리한다.
+이 글은 두 가지 일을 한다. 전반부는 이 논문 자체 — master key 공격의 메커니즘, RLVR 붕괴 사례, 저자들이 제안한 방어책 Master-RM, 그리고 judge가 뚫리는 또 다른 방식들(S2J, Crowd Comparative Reasoning)을 다룬다. 후반부는 35편 전체를 관통하는 결론이다. 도메인별로 어떤 reward를 골라야 하는지, 자신의 reward 파이프라인을 점검할 때 무엇을 확인해야 하는지를 정리한다.
 
 # Background
 
 ## RLVR과 judge의 역할
 
-[#27 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 다뤘듯 RLVR은 정답이 명확한 문제(수학, 코드)에서 규칙 기반 verifier로 정답 여부를 판정해 reward를 준다. 문제는 실전 데이터가 규칙으로 깔끔히 처리되지 않는다는 점이다. 최종 답이 $$\frac{1}{2}$$인지 $$0.5$$인지, 단위가 있는지 없는지, 서술형 증명을 어떻게 채점할지 — 규칙 기반 파서는 이런 변주에 취약하다. 그래서 최근 파이프라인은 규칙 대신 LLM 자체를 verifier로 쓴다. 질문 $$q$$, 참조 정답 $$a^*$$, 정책이 생성한 응답 $$r$$을 GenRM에 넣고 "이 응답의 최종 답이 참조 정답과 일치하는가"를 YES/OK 아니면 NO로 답하게 한다. GenRM의 출력은
+[#30 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 다뤘듯 RLVR은 정답이 명확한 문제(수학, 코드)에서 규칙 기반 verifier로 정답 여부를 판정해 reward를 준다. 문제는 실전 데이터가 규칙으로 깔끔히 처리되지 않는다는 점이다. 최종 답이 $$\frac{1}{2}$$인지 $$0.5$$인지, 단위가 있는지 없는지, 서술형 증명을 어떻게 채점할지 — 규칙 기반 파서는 이런 변주에 취약하다. 그래서 최근 파이프라인은 규칙 대신 LLM 자체를 verifier로 쓴다. 질문 $$q$$, 참조 정답 $$a^*$$, 정책이 생성한 응답 $$r$$을 GenRM에 넣고 "이 응답의 최종 답이 참조 정답과 일치하는가"를 YES/OK 아니면 NO로 답하게 한다. GenRM의 출력은
 
 $$y = \mathbb{1}[\text{judge}(q, a^*, r) = \text{YES}]$$
 
-이고, 이 $$y \in \{0, 1\}$$가 그대로 RLVR의 reward가 되어 정책 $$\pi_\theta$$를 업데이트한다. [#29](/blog/2026/generative-verifiers/)에서 본 것처럼 이 방식의 장점은 명확하다 — 규칙 파서보다 훨씬 유연하고, free-form 서술형 답도 채점할 수 있다.
+이고, 이 $$y \in \{0, 1\}$$가 그대로 RLVR의 reward가 되어 정책 $$\pi_\theta$$를 업데이트한다. [#32](/blog/2026/generative-verifiers/)에서 본 것처럼 이 방식의 장점은 명확하다 — 규칙 파서보다 훨씬 유연하고, free-form 서술형 답도 채점할 수 있다.
 
 ## 이게 왜 뚫리는가 — 3부의 재림
 
@@ -157,25 +157,25 @@ Master key는 judge가 뚫리는 여러 방식 중 하나일 뿐이다. 같은 �
 
 이 논문 자체의 결론은 명확하다. **생성형 reward model은 스칼라 RM이 가졌던 취약점(길이, 형식 편향)에서 자유롭지 않다. 다만 공격의 표적이 "얼마나 길게 말하는가"에서 "얼마나 정답처럼 말을 시작하는가"로 옮겨갔을 뿐이다.** 저자들은 잘린 응답을 negative 샘플로 쓰는 간단한 증강으로 이 특정 축의 취약점을 평균 FPR 0.1%까지 낮췄지만, 새로 생성한 master key에는 여전히 뚫린다는 것도 함께 보였다. 완전한 해법이 아니라 첫 걸음이다.
 
-## 32편을 관통하는 하나의 문장
+## 35편을 관통하는 하나의 문장
 
-지형도([#1](/blog/2026/deep-rl-human-preferences/)~[#3](/blog/2026/anthropic-hh-rlhf/))에서 시작해 스칼라 RM(2부), reward hacking의 발견(3부), 정책 최적화 알고리즘(5부), 검증 가능한 reward(6부), 생성형 reward model(7부)까지 32편을 관통하는 문장은 하나다.
+지형도([#1](/blog/2026/deep-rl-human-preferences/)~[#3](/blog/2026/anthropic-hh-rlhf/))에서 시작해 스칼라 RM(2부), reward hacking의 발견(3부), 정책 최적화 알고리즘(5부), 검증 가능한 reward(6부), 생성형 reward model(7부)까지 35편을 관통하는 문장은 하나다.
 
 **Reward 설계의 역사는 "무엇을 최적화 대상으로 삼을 것인가"를 계속 다시 묻는 과정이었고, 어떤 형태의 proxy든 그것이 실제로 최적화 압력을 받는 순간 어딘가에서 반드시 무너진다.**
 
-Bradley-Terry 스칼라 RM은 길이·톤 같은 표면 신호에 무너졌다([#10](/blog/2026/reward-model-overoptimization/), [#11](/blog/2026/rlhf-length-correlations/)). PRM은 스텝을 잘게 쪼갤수록 불필요하게 긴 chain을 보상하는 방향으로 새어나갔다([#25](/blog/2026/lets-verify-step-by-step/), [#26](/blog/2026/math-shepherd/)). 규칙 기반 verifier는 파싱 규칙의 빈틈을 파고드는 정책 앞에서 깨졌다([#27](/blog/2026/deepseek-r1/)). 그리고 이번 글에서 본 것처럼, 그 모든 걸 우회하겠다고 등장한 GenRM조차 형식적 서두 하나에 무너졌다. Goodhart의 법칙은 reward를 스칼라로 두든, 과정으로 쪼개든, 규칙으로 굳히든, 생성으로 풀어내든 예외를 두지 않는다. **RM의 형태를 바꾸는 것은 문제를 푸는 게 아니라 공격 표면을 옮기는 것이다.** 그래서 실무에서 중요한 질문은 "어떤 reward가 안 뚫리는가"가 아니라 "이 도메인에서 어떤 축의 hacking이 가장 위험하고, 그것을 어떻게 계속 감시할 것인가"다.
+Bradley-Terry 스칼라 RM은 길이·톤 같은 표면 신호에 무너졌다([#10](/blog/2026/reward-model-overoptimization/), [#11](/blog/2026/rlhf-length-correlations/)). PRM은 스텝을 잘게 쪼갤수록 불필요하게 긴 chain을 보상하는 방향으로 새어나갔다([#28](/blog/2026/lets-verify-step-by-step/), [#29](/blog/2026/math-shepherd/)). 규칙 기반 verifier는 파싱 규칙의 빈틈을 파고드는 정책 앞에서 깨졌다([#30](/blog/2026/deepseek-r1/)). 그리고 이번 글에서 본 것처럼, 그 모든 걸 우회하겠다고 등장한 GenRM조차 형식적 서두 하나에 무너졌다. Goodhart의 법칙은 reward를 스칼라로 두든, 과정으로 쪼개든, 규칙으로 굳히든, 생성으로 풀어내든 예외를 두지 않는다. **RM의 형태를 바꾸는 것은 문제를 푸는 게 아니라 공격 표면을 옮기는 것이다.** 그래서 실무에서 중요한 질문은 "어떤 reward가 안 뚫리는가"가 아니라 "이 도메인에서 어떤 축의 hacking이 가장 위험하고, 그것을 어떻게 계속 감시할 것인가"다.
 
 ## 도메인별 reward 선택 가이드
 
-32편의 논의를 실무 의사결정으로 압축하면 아래 표가 된다.
+35편의 논의를 실무 의사결정으로 압축하면 아래 표가 된다.
 
 | 도메인            | 권장 reward 방식                                                         | 근거 편                                                                                                                                                                                                                   | 주의할 hacking 축                                                                          |
 | ----------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 수학·코드         | 규칙 기반 verifier(정답 매칭/실행 결과) 우선, GenRM은 보조 채점자로 한정 | [#25](/blog/2026/lets-verify-step-by-step/), [#26](/blog/2026/math-shepherd/), [#27](/blog/2026/deepseek-r1/), #37(본 글)                                                                                                 | 참조 답과의 표기 불일치 우회, PRM의 불필요한 step 증식, GenRM 사용 시 master key           |
+| 수학·코드         | 규칙 기반 verifier(정답 매칭/실행 결과) 우선, GenRM은 보조 채점자로 한정 | [#28](/blog/2026/lets-verify-step-by-step/), [#29](/blog/2026/math-shepherd/), [#30](/blog/2026/deepseek-r1/), #40(본 글)                                                                                                 | 참조 답과의 표기 불일치 우회, PRM의 불필요한 step 증식, GenRM 사용 시 master key           |
 | 일반 대화         | Bradley-Terry 스칼라 RM + 길이 통제(length-controlled) 평가              | [#4](/blog/2026/bradley-terry-rethinking/)~[#6](/blog/2026/skywork-reward/), [#9 RewardBench 2](/blog/2026/rewardbench-2/), [#11](/blog/2026/rlhf-length-correlations/), [#12 ODIN](/blog/2026/odin-disentangled-reward/) | 길이·톤 과최적화, verbosity bias                                                           |
-| 안전성·모더레이션 | 다목적 RM(helpful/safety 분리) + rubric 기반 GenRM 병행                  | [#7 ArmoRM](/blog/2026/armorm/), [#8 Llama 2](/blog/2026/llama2-rlhf/), [#35 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)                                                                                          | over-refusal, rubric 우회, self-enhancement bias                                           |
-| 글쓰기·창작       | Rubric 기반 GenRM(비검증 도메인)                                         | [#29](/blog/2026/generative-verifiers/), [#30](/blog/2026/generative-reward-models/), [#35](/blog/2026/rubrics-as-rewards/)                                                                                               | verbosity/position bias, rubric 자체의 자의성, S2J류 solve-judge gap                       |
-| 에이전트 태스크   | 트래젝토리/스텝 단위 검증 가능 reward + REINFORCE 계열                   | [#18 GRPO](/blog/2026/grpo-deepseekmath/), [#19 RLOO](/blog/2026/rloo-back-to-basics/), [#25](/blog/2026/lets-verify-step-by-step/)                                                                                       | sparse reward로 인한 credit assignment 실패, 중간 단계 hacking, tool 실행 결과의 검증 우회 |
+| 안전성·모더레이션 | 다목적 RM(helpful/safety 분리) + rubric 기반 GenRM 병행                  | [#7 ArmoRM](/blog/2026/armorm/), [#8 Llama 2](/blog/2026/llama2-rlhf/), [#38 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)                                                                                          | over-refusal, rubric 우회, self-enhancement bias                                           |
+| 글쓰기·창작       | Rubric 기반 GenRM(비검증 도메인)                                         | [#32](/blog/2026/generative-verifiers/), [#33](/blog/2026/generative-reward-models/), [#38](/blog/2026/rubrics-as-rewards/)                                                                                               | verbosity/position bias, rubric 자체의 자의성, S2J류 solve-judge gap                       |
+| 에이전트 태스크   | 트래젝토리/스텝 단위 검증 가능 reward + REINFORCE 계열                   | [#21 GRPO](/blog/2026/grpo-deepseekmath/), [#22 RLOO](/blog/2026/rloo-back-to-basics/), [#28](/blog/2026/lets-verify-step-by-step/)                                                                                       | sparse reward로 인한 credit assignment 실패, 중간 단계 hacking, tool 실행 결과의 검증 우회 |
 
 이 표는 정답표가 아니라 **출발점**이다. 실제로는 도메인이 섞이는 경우가 대부분이고(예: 코딩 에이전트는 수학·코드와 에이전트 태스크가 겹친다), 무엇보다 위 권장안 자체도 시간이 지나면 새로운 hacking 축 앞에서 갱신되어야 한다.
 
@@ -193,7 +193,7 @@ Bradley-Terry 스칼라 RM은 길이·톤 같은 표면 신호에 무너졌다([
 
 ## 남은 문제
 
-이 시리즈가 끝나도 열린 문제는 남는다. **추론 비용** — GenRM은 판정마다 CoT를 생성해야 하므로 스칼라 RM보다 훨씬 비싸고, [#32](/blog/2026/deepseek-grm-spct/)의 inference-time scaling은 이 비용을 더 늘린다. **Rationale 품질 감독** — judge가 내놓는 판정 근거(CoT) 자체가 맞는 근거인지 검증하는 것은 메타 검증 문제로, Crowd Comparative Reasoning이 건드렸을 뿐 아직 일반해는 없다. **긴 컨텍스트** — 이 논문의 master key는 짧은 응답에 대한 것이었는데, 수만 토큰짜리 긴 응답 안에 숨은 hacking 패턴을 judge가 놓치지 않을지는 별도로 검증되어야 한다. **다국어** — 논문은 영어 외에 중국어("解")·일본어("かいせつ")·스페인어("Respuesta") master key도 유효함을 보였다. 언어마다 취약점의 형태가 다를 수 있고, 방어책이 언어 간에 얼마나 전이되는지도 미해결이다.
+이 시리즈가 끝나도 열린 문제는 남는다. **추론 비용** — GenRM은 판정마다 CoT를 생성해야 하므로 스칼라 RM보다 훨씬 비싸고, [#35](/blog/2026/deepseek-grm-spct/)의 inference-time scaling은 이 비용을 더 늘린다. **Rationale 품질 감독** — judge가 내놓는 판정 근거(CoT) 자체가 맞는 근거인지 검증하는 것은 메타 검증 문제로, Crowd Comparative Reasoning이 건드렸을 뿐 아직 일반해는 없다. **긴 컨텍스트** — 이 논문의 master key는 짧은 응답에 대한 것이었는데, 수만 토큰짜리 긴 응답 안에 숨은 hacking 패턴을 judge가 놓치지 않을지는 별도로 검증되어야 한다. **다국어** — 논문은 영어 외에 중국어("解")·일본어("かいせつ")·스페인어("Respuesta") master key도 유효함을 보였다. 언어마다 취약점의 형태가 다를 수 있고, 방어책이 언어 간에 얼마나 전이되는지도 미해결이다.
 
 Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없다. 이 시리즈가 보여준 건 26개의 서로 다른 시도와, 그 시도들이 하나같이 자신만의 방식으로 뚫렸다는 기록이다. 다음에 새로운 reward 설계 방법이 나온다면, 물어야 할 첫 질문은 "이게 얼마나 좋은가"가 아니라 "이게 뚫린다면 어느 축에서 뚫릴 것인가"다.
 
@@ -201,7 +201,7 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른일곱 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔 번째 글이다.
 
 **1부. 지형도**
 
@@ -236,11 +236,14 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -254,7 +257,7 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -262,7 +265,7 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -272,7 +275,7 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -282,12 +285,12 @@ Reward를 어떻게 설계할 것인가라는 질문에 마지막 정답은 없�
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

@@ -228,7 +228,7 @@ MMLU, Lambada, HellaSwag, OpenBookQA, ARC-Easy/Challenge, TriviaQA 7개 벤치�
 
 ## $$\sqrt{D_{KL}}$$과 reward의 선형 관계
 
-부가적인 발견 하나: RLHF 학습 곡선을 $$\sqrt{D_{KL}(\pi \Vert \pi_0)}$$ 대 reward 평면에 그리면, 학습의 상당 구간에서 거의 **직선**이 나온다. KL은 정책이 초기 정책에서 얼마나 멀어졌는지를 재는 값이니, 이 관계는 "reward를 더 뽑아내려면 정책을 얼마나 바꿔야 하는가"에 대한 예산표 같은 역할을 한다. 비유하자면 헬스장에서 벤치프레스 중량을 늘릴 때, 초반에는 자세(KL)를 조금만 바꿔도 중량이 쉽게 오르지만, 어느 순간부터는 자세를 더 크게 바꿔야 같은 폭의 중량 증가를 얻는 것과 비슷하다. 다만 저자들은 이 구간에서는 오히려 거의 선형이라는 점 자체를 강조하며, 이 관계가 모델 크기 간 RLHF의 "실효 크기 이득"을 설명한다고 본다 — 그림 1에서 RLHF 곡선과 context-distilled 곡선이 거의 평행한 이유도 이 선형 관계 때문이다. 자세한 RL 최적화 메커니즘은 [#16 PPO 글](/blog/2026/ppo/)에서 더 다룬다.
+부가적인 발견 하나: RLHF 학습 곡선을 $$\sqrt{D_{KL}(\pi \Vert \pi_0)}$$ 대 reward 평면에 그리면, 학습의 상당 구간에서 거의 **직선**이 나온다. KL은 정책이 초기 정책에서 얼마나 멀어졌는지를 재는 값이니, 이 관계는 "reward를 더 뽑아내려면 정책을 얼마나 바꿔야 하는가"에 대한 예산표 같은 역할을 한다. 비유하자면 헬스장에서 벤치프레스 중량을 늘릴 때, 초반에는 자세(KL)를 조금만 바꿔도 중량이 쉽게 오르지만, 어느 순간부터는 자세를 더 크게 바꿔야 같은 폭의 중량 증가를 얻는 것과 비슷하다. 다만 저자들은 이 구간에서는 오히려 거의 선형이라는 점 자체를 강조하며, 이 관계가 모델 크기 간 RLHF의 "실효 크기 이득"을 설명한다고 본다 — 그림 1에서 RLHF 곡선과 context-distilled 곡선이 거의 평행한 이유도 이 선형 관계 때문이다. 자세한 RL 최적화 메커니즘은 [#19 PPO 글](/blog/2026/ppo/)에서 더 다룬다.
 
 # Conclusion
 
@@ -282,11 +282,14 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -300,7 +303,7 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -308,7 +311,7 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -318,7 +321,7 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -328,12 +331,12 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

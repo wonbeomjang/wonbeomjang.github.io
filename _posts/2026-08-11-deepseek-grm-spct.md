@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "DeepSeek-GRM: reward model이 평가 기준을 스스로 만든다"
-date: 2026-08-11 09:24:00 +0900
-description: "RLHF Reward 설계 시리즈 #32 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
+date: 2026-08-11 09:35:00 +0900
+description: "RLHF Reward 설계 시리즈 #35 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, inference-time-scaling, deepseek, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [27편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 규칙(rule)이 그대로 reward가 되는 경우를 다뤘다. 수학 문제는 정답이 하나뿐이라, 최종 답만 정답 파서로 확인하면 완벽하게 검증 가능한 reward를 공짜로 얻는다. [29편 Generative Verifiers](/blog/2026/generative-verifiers/)는 이 reward를 "next-token prediction"으로 표현하는 법을, [30편 Generative Reward Models](/blog/2026/generative-reward-models/)는 GenRM을 선호 학습과 결합하는 법을 각각 보여줬다. 세 글 모두 공통된 전제가 있다. **"무엇이 좋은 응답인가"를 판정할 기준이 이미 존재하거나, 최소한 사람이 미리 정해줄 수 있다**는 전제다.
+이 시리즈 [30편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 규칙(rule)이 그대로 reward가 되는 경우를 다뤘다. 수학 문제는 정답이 하나뿐이라, 최종 답만 정답 파서로 확인하면 완벽하게 검증 가능한 reward를 공짜로 얻는다. [32편 Generative Verifiers](/blog/2026/generative-verifiers/)는 이 reward를 "next-token prediction"으로 표현하는 법을, [33편 Generative Reward Models](/blog/2026/generative-reward-models/)는 GenRM을 선호 학습과 결합하는 법을 각각 보여줬다. 세 글 모두 공통된 전제가 있다. **"무엇이 좋은 응답인가"를 판정할 기준이 이미 존재하거나, 최소한 사람이 미리 정해줄 수 있다**는 전제다.
 
 일반 도메인(general domain) — instruction-following, 상담, 코딩 리뷰, 창작 — 에는 이 전제가 무너진다. 논문은 이 문제를 다음과 같이 짚는다.
 
@@ -68,7 +68,7 @@ pointwise GRM을 택했다는 것과, principle을 **누가 만드는가**는 �
 | 해석가능성     | 축별 점수는 보이지만, 게이팅 가중치 자체는 블랙박스                    | critique 텍스트가 왜 그 principle을 썼는지 자연어로 설명 |
 | 축을 늘리려면  | 사람이 새 축을 정의하고 재학습                                         | 이미 생성 과정의 일부라 별도 재설계 불필요               |
 
-**정답이 있는 도메인은 사람이 기준을 정해도 된다.** 수학 문제의 "정답과 일치하는가"([27편](/blog/2026/deepseek-r1/))처럼 기준 자체가 자명하기 때문이다. 하지만 일반 도메인처럼 기준 자체가 입력마다 달라지는 상황에서는, 고정된 19개 축(ArmoRM)이든 몇 개의 rubric 문항이든 사람이 미리 정한 기준은 항상 "이 입력엔 안 맞는 축이 섞여 있거나, 필요한 축이 빠져 있다"는 문제를 겪는다. SPCT는 이 문제를 아예 "기준을 정하는 일도 모델의 출력으로 만들어서" 피해간다. 이 선택이 [35편 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)가 다시 반대 방향(사람이 rubric을 준다)으로 돌아가는 이유이기도 하다 — principle을 모델이 만들면 유연하지만, 그 principle 자체가 틀렸을 때 검증할 방법이 없다는 대가가 따른다.
+**정답이 있는 도메인은 사람이 기준을 정해도 된다.** 수학 문제의 "정답과 일치하는가"([30편](/blog/2026/deepseek-r1/))처럼 기준 자체가 자명하기 때문이다. 하지만 일반 도메인처럼 기준 자체가 입력마다 달라지는 상황에서는, 고정된 19개 축(ArmoRM)이든 몇 개의 rubric 문항이든 사람이 미리 정한 기준은 항상 "이 입력엔 안 맞는 축이 섞여 있거나, 필요한 축이 빠져 있다"는 문제를 겪는다. SPCT는 이 문제를 아예 "기준을 정하는 일도 모델의 출력으로 만들어서" 피해간다. 이 선택이 [38편 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)가 다시 반대 방향(사람이 rubric을 준다)으로 돌아가는 이유이기도 하다 — principle을 모델이 만들면 유연하지만, 그 principle 자체가 틀렸을 때 검증할 방법이 없다는 대가가 따른다.
 
 # Method
 
@@ -95,7 +95,7 @@ SPCT는 이름 그대로 "원칙에 기반한 스스로의 critique"를 **튜닝
 
 **1단계 — Rejective Fine-Tuning (cold start).** 목표는 GRM이 정확한 형식으로 principle과 critique를 생성하고, 다양한 입력 형태($$n=1,2,\dots$$)를 다루도록 만드는 것이다. 여기서 "rejective"는 거부 샘플링을 뜻한다 — 예측 점수가 정답과 어긋나는 궤적, 그리고 모든 샘플이 이미 정답을 맞히는(너무 쉬운) 궤적을 학습 데이터에서 제거한다. 너무 쉬운 문제만 남으면 모델이 principle을 진지하게 만들 유인이 없어지기 때문이다. 어려운 케이스에는 정답 응답을 힌트로 살짝 흘려주는 hinted sampling도 함께 쓴다.
 
-**2단계 — Rule-Based Online RL.** [18편 GRPO](/blog/2026/grpo-deepseekmath/)와 같은 알고리즘을 그대로 가져온다. 다만 18편에서 GRPO는 수학 풀이 정책을 학습하는 데 쓰였다면, 여기서는 **reward를 매기는 모델 자신**을 학습하는 데 쓰인다. reward 함수는 규칙 기반이며 단순하다.
+**2단계 — Rule-Based Online RL.** [21편 GRPO](/blog/2026/grpo-deepseekmath/)와 같은 알고리즘을 그대로 가져온다. 다만 21편에서 GRPO는 수학 풀이 정책을 학습하는 데 쓰였다면, 여기서는 **reward를 매기는 모델 자신**을 학습하는 데 쓰인다. reward 함수는 규칙 기반이며 단순하다.
 
 $$
 r_i =
@@ -239,13 +239,13 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 3. **추론**: 단순 다수결이 아니라 meta RM이 저품질 샘플을 걸러낸 뒤 투표한다. 27B 모델의 Voting@32+MetaRM(Overall 72.8)이 GPT-4o(71.3)를 넘고, RewardBench 90.4점은 671B 모델을 training-time scaling으로 키운 것과 맞먹는다.
 4. **일관성**: 네 종류의 이질적인 벤치마크에서 Avg. Rank 2.75로 가장 고르게 상위권을 유지한다 — 특정 벤치마크에만 강한 편향이 상대적으로 적다.
 
-한계도 분명하다. 32개 샘플을 병렬로 뽑고 meta RM까지 추가로 돌리는 구조는 **추론 비용이 그리디 대비 수십 배**로 뛴다. RLHF 학습 루프 안에서 매 스텝 reward를 계산해야 하는 상황이라면 이 비용은 그대로 학습 시간에 얹힌다. 그리고 저자들 스스로도 인정하듯, principle과 critique가 "그럴듯하지만 실제로는 왜곡된" 방향으로 생성될 가능성(unfaithful principles and critiques)은 여전히 무시할 수 없다 — 모델이 스스로 기준을 만드는 유연성은, 그 기준 자체를 유리하게 왜곡해 hacking하는 새로운 경로를 열어놓는다는 뜻이기도 하다. 이 hacking 가능성은 [37편 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)에서 정면으로 다룬다.
+한계도 분명하다. 32개 샘플을 병렬로 뽑고 meta RM까지 추가로 돌리는 구조는 **추론 비용이 그리디 대비 수십 배**로 뛴다. RLHF 학습 루프 안에서 매 스텝 reward를 계산해야 하는 상황이라면 이 비용은 그대로 학습 시간에 얹힌다. 그리고 저자들 스스로도 인정하듯, principle과 critique가 "그럴듯하지만 실제로는 왜곡된" 방향으로 생성될 가능성(unfaithful principles and critiques)은 여전히 무시할 수 없다 — 모델이 스스로 기준을 만드는 유연성은, 그 기준 자체를 유리하게 왜곡해 hacking하는 새로운 경로를 열어놓는다는 뜻이기도 하다. 이 hacking 가능성은 [40편 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)에서 정면으로 다룬다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른두 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -280,11 +280,14 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -298,7 +301,7 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -306,7 +309,7 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -316,7 +319,7 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -326,12 +329,12 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 

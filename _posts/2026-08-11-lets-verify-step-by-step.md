@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Let's Verify Step by Step: 결과가 아니라 과정에 보상을 주다"
-date: 2026-08-11 09:19:00 +0900
-description: "RLHF Reward 설계 시리즈 #25 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
+date: 2026-08-11 09:28:00 +0900
+description: "RLHF Reward 설계 시리즈 #28 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
 categories: [paper]
 tags: [rlhf, reward-model, prm, process-supervision, reasoning, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[20편 DPO](/blog/2026/dpo/)까지 5부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([18편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([19편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 5부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
+[23편 DPO](/blog/2026/dpo/)까지 5부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([21편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([22편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 5부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
 
 이번 글부터 시작하는 6부 "Process & Verifiable Reward"는 정확히 반대 방향으로 간다. reward를 없애는 게 아니라 **훨씬 더 촘촘하게 쪼갠다**. 지금까지 다룬 reward model(2부, 3부)은 전부 하나의 응답 전체에 스칼라 하나를 매기는 outcome-level reward였다. 수학 문제를 20단계로 풀어낸 chain-of-thought든, 한 줄짜리 답변이든 reward model은 마지막에 딱 한 번 점수를 준다. 이 글이 다루는 **Let's Verify Step by Step**(OpenAI, ICLR 2024)은 "그 한 번의 점수로 충분한가?"라는 질문에 정면으로 "아니다"라고 답한 논문이다.
 
@@ -83,7 +83,7 @@ $$
 | credit assignment        | 불가능 — 오류 위치를 모른다         | 가능 — 첫 오류 스텝을 특정 |
 | 학습에 필요한 base model | GPT-4 base(사전학습만, RLHF 이전)   | GPT-4 base(동일)           |
 
-실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [29편 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
+실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [32편 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
 
 # Method
 
@@ -231,13 +231,13 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 2. **해법**: 스텝마다 사람이 positive/negative/neutral 라벨을 매긴 PRM800K(80만 라벨, 7만 5천 solution, 1만 2천 문제)로 process reward model을 학습한다. 여러 스텝 점수는 곱(또는 최솟값)으로 합쳐 solution 하나의 점수로 만든다.
 3. **비용**: active learning으로 2.6배 효율을 얻었어도, 결국 800K 라벨은 사람이 직접 매긴 것이다. 이 사람 라벨링 비용이 이 접근법 전체의 병목이다.
 
-이 병목이 바로 다음 글의 존재 이유다. [26편 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [10편](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [27편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
+이 병목이 바로 다음 글의 존재 이유다. [29편 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [10편](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [30편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물다섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물여덟 번째 글이다.
 
 **1부. 지형도**
 
@@ -272,11 +272,14 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 <ol start="14">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
 </ol>
 
 **5부. reward를 정책으로**
 
-<ol start="16">
+<ol start="19">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -290,7 +293,7 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 
 **6부. Process & Verifiable Reward**
 
-<ol start="25">
+<ol start="28">
   <li><strong>(현재 글)</strong> Let's Verify Step by Step (2023) — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -298,7 +301,7 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 
 **7부. Generative Reward Model**
 
-<ol start="28">
+<ol start="31">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -308,7 +311,7 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="33">
+<ol start="36">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -318,12 +321,12 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 
 **9부. 실전 종합**
 
-<ol start="38">
+<ol start="41">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 39편으로 구성된다.
+본 시리즈는 42편으로 구성된다.
 
 # 참고 문헌
 
