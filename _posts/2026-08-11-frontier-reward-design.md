@@ -89,6 +89,18 @@ reward 관점에서 V4의 결정적 변화는 **조달처를 도메인마다 갈
 
 다만 report는 각 도메인이 정확히 어떤 reward 함수를 썼는지까지는 상세히 공개하지 않는다. "reward models tailored to specific success criteria"라는 표현과 GRM 도입 사실이 확인되는 수준이며, 도메인별 세부 레시피는 R1만큼 투명하지 않다.
 
+**R1 → V4로 무엇이 바뀌었나.** 바뀐 건 두 가지 — 정책 구조와 "규칙이 안 통하는 도메인"의 reward다.
+
+| 축               | DeepSeek-R1 (2025-01)                               | DeepSeek-V4 (2026-06)                  |
+| ---------------- | --------------------------------------------------- | -------------------------------------- |
+| 정책 구조        | **하나의 통합 정책**에 RL                           | **N개 도메인 전문가 → 증류로 통합**    |
+| 검증 가능 reward | 규칙(accuracy + format)                             | 규칙(그대로 계승)                      |
+| 검증 불가 reward | all-scenario 단계에서 **학습된 스칼라 RM**으로 복귀 | **④ GRM**(rubric-guided, 생성형)       |
+| 전문가 통합      | (단일 정책이라 불필요)                              | **on-policy distillation**(reverse-KL) |
+| PRM              | **명시적으로 포기**(단계 정의·중간 판정·hacking)    | 전문가별 outcome reward + GRM          |
+
+R1의 메시지는 "검증 가능한 도메인에선 학습된 RM을 규칙으로 걷어낼 수 있다"였다. 그러나 R1도 정답이 없는 일반 대화에서는 all-scenario RL 단계에서 결국 **학습된 스칼라 RM을 다시 불러왔다.** V4는 바로 그 지점을 스칼라 RM에서 **생성형 GRM**으로 갈아끼웠고, 동시에 단일 정책을 전문가+증류 구조로 바꿨다. 규칙 reward는 그대로 두되, "규칙이 안 통하는 곳"의 답이 R1의 스칼라 RM → V4의 GRM으로 업그레이드된 셈이다.
+
 ## Qwen3: 4단계 파이프라인과 reward 3분류
 
 Qwen3의 후처리는 네 단계로 정연하게 나뉜다.
@@ -111,6 +123,18 @@ Qwen3의 후처리는 네 단계로 정연하게 나뉜다.
 | Model-based Reward **without reference** | 사람 선호 데이터로 학습한 RM이 스칼라 점수를 부여             | ② 2부 스칼라 RM                                |
 
 이 세 줄이 정확히 Background의 4분류 중 ①②③에 대응한다. Qwen3가 흥미로운 건, 하나의 모델이 도메인에 따라 **세 조달처를 동시에 운용**한다는 것이다 — 정답이 있으면 규칙, 정답 예시가 있으면 reference judge, 둘 다 없으면 스칼라 RM. 작은 모델은 이 비싼 RL을 직접 돌리지 않고 **strong-to-weak distillation**으로 큰 모델을 증류해 받는데, RL 대비 약 1/10 GPU 시간이면 된다고 밝힌다.
+
+**Qwen2.5 → Qwen3로 무엇이 바뀌었나.** reward가 "잘 고른 RM 하나"에서 "도메인별 3분류"로 분화했다.
+
+| 축          | Qwen2.5 (2024-12)                                       | Qwen3 (2025-05)                                            |
+| ----------- | ------------------------------------------------------- | ---------------------------------------------------------- |
+| RL 단계     | offline DPO → online GRPO (2단계)                       | **4단계**(cold start → reasoning RL → fusion → general RL) |
+| reward 종류 | RM 기반 (단일 계열)                                     | **3분류**(규칙 / reference judge / 스칼라 RM)              |
+| 쿼리 전략   | RM=RL 쿼리셋, **분산 큰 쿼리 우선**(8 샘플, batch 2048) | reasoning RL에 verifier + off-policy rollout 재활용        |
+| 작은 모델   | —                                                       | **strong-to-weak distillation**(RL 대비 약 1/10 GPU)       |
+| 사고량      | —                                                       | **thinking budget**으로 생각량 제어                        |
+
+Qwen2.5의 설계 포인트는 "RM 하나를 두되, 학습 쿼리를 분산 큰(변별력 있는) 것으로 골라 신호의 질을 올린다"였다. Qwen3는 그 위에서 **reward를 도메인에 따라 세 갈래로 쪼갰다** — 검증 가능하면 규칙, 정답 예시가 있으면 reference judge(Qwen2.5-72B-Instruct가 채점), 둘 다 없으면 스칼라 RM. 즉 "잘 고른 하나의 RM"에서 "도메인마다 다른 조달처"로 넘어가며, DeepSeek-V4·Solar가 보여준 도메인별 조달처 분화와 같은 흐름에 합류했다.
 
 ## Llama 4: 온라인 RL을 되살리고, SFT·DPO는 탐색을 막지 않을 만큼만
 
