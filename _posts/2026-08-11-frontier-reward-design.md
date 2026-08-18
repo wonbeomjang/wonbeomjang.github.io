@@ -296,15 +296,14 @@ DeepSeek-R1(2025-01)이 이 선택지를 대중화한 뒤, 이후 발표된 모�
 
 정답이 없는 도메인(글쓰기, 상담, 안전성 판단)으로 가면 열 모델은 서로 다른 답을 낸다. 이전 세대(DeepSeek-R1, Qwen2.5, Llama 3)를 비교했을 때 이 칸의 결론은 "연구 논문은 생성형 judge를 말하지만, 프로덕션 report는 아직 스칼라 RM이나 self-critique에 머문다"였다. **이번 세대에서 그 결론이 바뀐다.**
 
-| 접근                        | 채택 모델                                                                         | 조달처 | 관련 편                                                                                                     |
-| --------------------------- | --------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
-| 사람 선호 쌍 + DPO          | Llama 4                                                                           | 선호   | [#18 DPO](/blog/2026/dpo/)                                                                                  |
-| 스칼라 RM                   | Qwen3                                                                             | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/))                            |
-| reference 기반 judge        | Qwen3, A.X K2                                                                     | ③      | [#22 Prometheus 2](/blog/2026/prometheus-2/)                                                                |
-| self-critique rubric (전신) | Kimi K2 (2025)                                                                    | ④      | [#25 Self-Taught Evaluators](/blog/2026/self-taught-evaluators/), [#28 J1](/blog/2026/j1-thinking-judge/)   |
-| generative RM·rubric judge  | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/) |
+| 접근                       | 채택 모델                                                                         | 조달처 | 관련 편                                                                                                     |
+| -------------------------- | --------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| 사람 선호 쌍 + DPO         | Llama 4                                                                           | 선호   | [#18 DPO](/blog/2026/dpo/)                                                                                  |
+| 스칼라 RM                  | Qwen3                                                                             | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/))                            |
+| reference 기반 judge       | Qwen3, A.X K2                                                                     | ③      | [#22 Prometheus 2](/blog/2026/prometheus-2/)                                                                |
+| generative RM·rubric judge | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/) |
 
-마지막 두 행이 핵심이다. [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 실제 후처리 파이프라인에 넣었다.** Qwen3의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
+마지막 행이 핵심이다. [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 프로덕션에 넣었고, Kimi K3·MiniMax-M1·Solar Open 2·K-EXAONE 2.0·GLM-4.5까지 여섯 모델이 생성형 rubric judge를 쓴다.** Qwen3·A.X K2의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. (그 씨앗은 전신 Kimi K2의 self-critique였다 — 위 Kimi K3 절 참고.) 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
 
 ## 숨은 reward 설계: 프롬프트를 고르는 것도 reward다
 
@@ -327,12 +326,12 @@ reward 설계를 "어떤 함수로 점수를 매기나"로만 보면 절반만 �
 
 [#18 DPO](/blog/2026/dpo/)는 reward model과 온라인 RL 루프를 통째로 없애고 선호 쌍에서 바로 정책을 학습하는 방법이었다. 열 모델을 이 스펙트럼 위에 놓으면 이렇게 갈린다.
 
-| 위치                          | 모델                                                                       | 특징                                                             |
-| ----------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| DPO를 가볍게 + online RL 중심 | Llama 4                                                                    | SFT·DPO는 "탐색을 막지 않을 만큼만", 정렬의 무게중심은 online RL |
-| DPO → RL 순차                 | Qwen2.5                                                                    | offline DPO로 큰 방향을 잡고 online GRPO로 미세조정              |
-| RL 중심(순수 온라인)          | DeepSeek-V4, Kimi K3, Solar Open 2, A.X K2, MiniMax-M1, GLM-4.5, Magistral | GRPO/CISPO 기반 온라인 RL이 정책 업데이트를 전담(DPO 없음)       |
-| off-policy + 선호 최적화      | K-EXAONE 2.0                                                               | AGAPO(off-policy PG) + GrouPER(SimPER류 그룹 선호)               |
+| 위치                          | 모델                                                                       | 특징                                                              |
+| ----------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| DPO를 가볍게 + online RL 중심 | Llama 4                                                                    | SFT·DPO는 "탐색을 막지 않을 만큼만", 정렬의 무게중심은 online RL  |
+| RL 다단계 (off-policy 섞음)   | Qwen3                                                                      | 4단계 GRPO RL, reasoning RL은 off-policy rollout 재활용(DPO 없음) |
+| RL 중심(순수 온라인)          | DeepSeek-V4, Kimi K3, Solar Open 2, A.X K2, MiniMax-M1, GLM-4.5, Magistral | GRPO/CISPO 기반 온라인 RL이 정책 업데이트를 전담(DPO 없음)        |
+| off-policy + 선호 최적화      | K-EXAONE 2.0                                                               | AGAPO(off-policy PG) + GrouPER(SimPER류 그룹 선호)                |
 
 Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO를 너무 세게 걸면 RL의 탐색을 죽인다"**는 반대 방향의 교훈을 얹었다. 오프라인 정렬은 싸지만 모델을 좁은 분포에 가둘 수 있고, 온라인 RL은 비싸지만 탐색을 통해 새 능력을 끌어낸다. 열 모델의 선택은 결국 **"오프라인으로 얼마나 다지고, 온라인에 얼마나 탐색을 맡길 것인가"**의 배분 문제로 수렴한다.
 
