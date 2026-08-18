@@ -2,7 +2,7 @@
 layout: post
 title: "ReasonGRM: judge에게 추론 능력을 이식하다"
 date: 2026-08-11 09:24:20 +0900
-description: "RLHF Reward 설계 시리즈 #27 — Large Reasoning Model로 generative reward model을 강화하는 법"
+description: "RLHF Reward 설계 시리즈 #33 — Large Reasoning Model로 generative reward model을 강화하는 법"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, reasoning, llm-as-a-judge, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [#23 Generative Verifiers](/blog/2026/generative-verifiers/)는 judge에게 CoT를 쓰게 하면 정답 토큰 확률이 더 잘 몰린다는 것을 보였다. reward를 next-token prediction으로 재정의하고, 판정 앞에 추론을 붙이기만 해도 성능이 오른다는 게 그 글의 결론이었다. 이후 [#24 GenRM](/blog/2026/generative-reward-models/), [#25 Self-Taught Evaluators](/blog/2026/self-taught-evaluators/), [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)까지, 6부는 일관되게 "reward를 어떻게 생성 형태로 만들 것인가"를 다뤘다.
+이 시리즈 [#29 Generative Verifiers](/blog/2026/generative-verifiers/)는 judge에게 CoT를 쓰게 하면 정답 토큰 확률이 더 잘 몰린다는 것을 보였다. reward를 next-token prediction으로 재정의하고, 판정 앞에 추론을 붙이기만 해도 성능이 오른다는 게 그 글의 결론이었다. 이후 [#30 GenRM](/blog/2026/generative-reward-models/), [#31 Self-Taught Evaluators](/blog/2026/self-taught-evaluators/), [#32 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)까지, 7부는 일관되게 "reward를 어떻게 생성 형태로 만들 것인가"를 다뤘다.
 
-그런데 이 흐름 전체가 암묵적으로 깔고 가는 전제가 하나 있다. **추론을 시키면 좋아진다는 것.** 정말 그런가? 그냥 "생각해봐"라고 프롬프트에 한 줄 붙인다고 judge가 갑자기 논리적으로 사고하게 되는 건 아니다. [#21 DeepSeek-R1](/blog/2026/deepseek-r1/)이 수학·코드 도메인에서 보여준 것처럼, 추론 능력 자체는 명시적으로 길러야 하는 별개의 역량이다. 이번 글이 여는 7부 "생각하는 Judge, 그리고 그 신뢰"는 바로 이 지점을 파고든다. **judge에게 어떻게 추론 능력을 길러 넣고, 그렇게 만든 판정을 얼마나 믿을 수 있는가.**
+그런데 이 흐름 전체가 암묵적으로 깔고 가는 전제가 하나 있다. **추론을 시키면 좋아진다는 것.** 정말 그런가? 그냥 "생각해봐"라고 프롬프트에 한 줄 붙인다고 judge가 갑자기 논리적으로 사고하게 되는 건 아니다. [#27 DeepSeek-R1](/blog/2026/deepseek-r1/)이 수학·코드 도메인에서 보여준 것처럼, 추론 능력 자체는 명시적으로 길러야 하는 별개의 역량이다. 이번 글이 여는 8부 "생각하는 Judge, 그리고 그 신뢰"는 바로 이 지점을 파고든다. **judge에게 어떻게 추론 능력을 길러 넣고, 그렇게 만든 판정을 얼마나 믿을 수 있는가.**
 
 ReasonGRM은 그 첫 번째 시도다. Qihoo360이 2025년 6월 공개한 이 논문은 세 가지 질문에 답한다.
 
@@ -36,7 +36,7 @@ GenRM은 판정을 스칼라 하나로 압축하는 대신 자연어 rationale�
 - **사후 정당화(post-hoc rationalization)**: 결론을 먼저 정해놓고 그럴듯한 문장을 뒤에 붙이는 경우. 추론처럼 보이지만 실제로는 결론과 인과관계가 없다.
 - **산만한 탐색(overly speculative reasoning)**: 결론에 도달하긴 하지만 "그런데, 잠깐만, 사실은..." 하며 여러 갈래를 헤매다가 우연히 맞는 길을 찾는 경우. 중간 단계가 결론과 무관하거나 서로 모순된다.
 
-이 문제는 낯설지 않다. [#20 Math-Shepherd](/blog/2026/math-shepherd/)에서 이미 같은 계열의 문제를 다뤘다 — "정답으로 이어졌다 ≠ 그 단계가 논리적으로 옳다." Math-Shepherd는 수학 풀이의 중간 스텝에 대해 이 간극을 지적했다면, ReasonGRM은 판정(judgment)의 추론 경로에 대해 같은 간극을 지적한다. **"결론이 맞았다 ≠ 그 추론이 신뢰할 만하다."**
+이 문제는 낯설지 않다. [#26 Math-Shepherd](/blog/2026/math-shepherd/)에서 이미 같은 계열의 문제를 다뤘다 — "정답으로 이어졌다 ≠ 그 단계가 논리적으로 옳다." Math-Shepherd는 수학 풀이의 중간 스텝에 대해 이 간극을 지적했다면, ReasonGRM은 판정(judgment)의 추론 경로에 대해 같은 간극을 지적한다. **"결론이 맞았다 ≠ 그 추론이 신뢰할 만하다."**
 
 ## 좋은 추론의 두 조건: Validity와 Self-Consistency
 
@@ -174,15 +174,15 @@ RewardBench 종합 점수 기준으로 Zero-RL이 base 대비 +1.55%p, $$R^\star
 
 논문이 스스로 인정하는 한계는 두 가지다. 첫째, ReasonGRM은 정답이 명확히 존재하는 QA형 벤치마크에서만 검증됐고, 더 열린 실제 시나리오나 다중 홉 추론까지 일반화되는지는 확인되지 않았다. 둘째, 더 근본적으로 — $$R^\star$$의 Validity 항은 정답 $$a_g$$가 있어야 계산할 수 있다. 즉 **정답이 없는 open-ended 선호 데이터에는 이 메트릭을 그대로 적용할 수 없다.** 창작, 일반 대화, 코드 스타일처럼 "이게 정답이다"라고 못 박기 어려운 영역에서는 Validity를 무엇으로 잴지부터 다시 정의해야 한다.
 
-여기에 비용 문제가 더해진다. [#23 Generative Verifiers](/blog/2026/generative-verifiers/)에서 짚었던 문제 — judge가 CoT를 쓰면 채점이 forward pass 한 번에서 autoregressive 생성으로 바뀌어 지연시간이 늘어난다 — 가 ReasonGRM에서는 훨씬 커진다. base 모델 자체가 QwQ-32B라는 Large Reasoning Model이고, 응답 길이 상한이 57,344 토큰이다. 판정 한 건을 내리는 데 이 정도 규모의 추론 사슬을 매번 생성해야 할 수 있다는 뜻이다. 학습 비용도 만만치 않다 — 3단계 파이프라인 중 두 단계(Zero-RL, hard-case GRPO)가 GRPO이고, GRPO는 질문 하나당 여러 개의 롤아웃을 생성해야 그래디언트를 계산할 수 있다. 실제로 32장의 A800-80G GPU가 필요했다. 요컨대 judge를 더 잘 생각하게 만드는 대가는, 판정 1건당 지연시간과 학습 파이프라인의 복잡도 양쪽에서 함께 돌아온다.
+여기에 비용 문제가 더해진다. [#29 Generative Verifiers](/blog/2026/generative-verifiers/)에서 짚었던 문제 — judge가 CoT를 쓰면 채점이 forward pass 한 번에서 autoregressive 생성으로 바뀌어 지연시간이 늘어난다 — 가 ReasonGRM에서는 훨씬 커진다. base 모델 자체가 QwQ-32B라는 Large Reasoning Model이고, 응답 길이 상한이 57,344 토큰이다. 판정 한 건을 내리는 데 이 정도 규모의 추론 사슬을 매번 생성해야 할 수 있다는 뜻이다. 학습 비용도 만만치 않다 — 3단계 파이프라인 중 두 단계(Zero-RL, hard-case GRPO)가 GRPO이고, GRPO는 질문 하나당 여러 개의 롤아웃을 생성해야 그래디언트를 계산할 수 있다. 실제로 32장의 A800-80G GPU가 필요했다. 요컨대 judge를 더 잘 생각하게 만드는 대가는, 판정 1건당 지연시간과 학습 파이프라인의 복잡도 양쪽에서 함께 돌아온다.
 
 # Conclusion
 
 핵심을 한 줄로 요약하면: **GenRM에게 무작정 추론을 시키는 것으로는 부족하다. 정답에 도달했는가(Validity)와 그 경로가 확신에 차 있는가(Self-Consistency)를 함께 측정하는 $$R^\star$$로 추론 경로를 선별해야, 판정의 신뢰도가 실제로 오른다.** ReasonGRM은 이를 Zero-RL(결과 기반 초기 판별력) → $$R^\star$$ SFT(고품질 추론만 선별) → hard-case GRPO(어려운 경계 사례 강화)의 3단계로 구현했고, RewardBench·RM-Bench·RMB 평균 83.3점으로 GPT-4o와 기존 최고 GenRM을 넘어섰다.
 
-남은 문제는 두 가지다. 정답이 없는 open-ended 데이터에는 $$R^\star$$를 그대로 못 쓴다는 것, 그리고 그 대가로 판정 비용과 학습 비용이 함께 커진다는 것. 다음 글 [#28 J1](/blog/2026/j1-thinking-judge/)은 같은 목표 — judge에게 사고력을 심는다 — 를 정반대 방향에서 접근한다. ReasonGRM이 후보 추론을 생성한 뒤 $$R^\star$$로 사후 선별해 정적인 SFT 데이터셋을 만드는 2단계짜리 데이터 파이프라인을 거친다면, J1은 처음부터 검증 가능한 reward로 RL을 직접 돌려 "생각하는 judge"를 한 번에 길러낸다. 특히 J1은 검증 가능/불가능한 프롬프트를 하나의 통일된 포맷으로 변환해 보상을 부여하는데, 이는 ReasonGRM이 스스로 인정한 "open-ended 데이터에는 못 쓴다"는 한계를 정면으로 다루려는 시도로 읽힌다.
+남은 문제는 두 가지다. 정답이 없는 open-ended 데이터에는 $$R^\star$$를 그대로 못 쓴다는 것, 그리고 그 대가로 판정 비용과 학습 비용이 함께 커진다는 것. 다음 글 [#34 J1](/blog/2026/j1-thinking-judge/)은 같은 목표 — judge에게 사고력을 심는다 — 를 정반대 방향에서 접근한다. ReasonGRM이 후보 추론을 생성한 뒤 $$R^\star$$로 사후 선별해 정적인 SFT 데이터셋을 만드는 2단계짜리 데이터 파이프라인을 거친다면, J1은 처음부터 검증 가능한 reward로 RL을 직접 돌려 "생각하는 judge"를 한 번에 길러낸다. 특히 J1은 검증 가능/불가능한 프롬프트를 하나의 통일된 포맷으로 변환해 보상을 부여하는데, 이는 ReasonGRM이 스스로 인정한 "open-ended 데이터에는 못 쓴다"는 한계를 정면으로 다루려는 시도로 읽힌다.
 
-| 항목                         | ReasonGRM (#27)                                                          | J1 (#28, 예고)                                                            |
+| 항목                         | ReasonGRM (#33)                                                          | J1 (#34, 예고)                                                            |
 | ---------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | 학습 절차                    | Zero-RL → $$R^\star$$로 선별한 SFT → hard-case GRPO (3단계)              | 검증 가능한 reward로 RL을 한 번에 적용해 "생각하는 judge"를 직접 학습     |
 | 추론 데이터 확보 방식        | 여러 후보를 생성한 뒤 $$R^\star$$로 사후 선별해 정적 SFT 데이터셋 구성   | 별도의 정적 데이터셋 없이 학습 중 reward로 직접 최적화                    |
@@ -195,7 +195,7 @@ RewardBench 종합 점수 기준으로 Zero-RL이 base 대비 +1.55%p, $$R^\star
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물일곱 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른세 번째 글이다.
 
 **1부. 지형도**
 
@@ -219,42 +219,51 @@ RewardBench 종합 점수 기준으로 Zero-RL이 base 대비 +1.55%p, $$R^\star
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. **(현재 글)** ReasonGRM (2025) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. **(현재 글)** ReasonGRM (2025) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

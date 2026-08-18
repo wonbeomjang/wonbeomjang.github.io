@@ -2,7 +2,7 @@
 layout: post
 title: "Self-Taught Evaluators: 사람 라벨 없이 judge를 키우다"
 date: 2026-08-11 09:23:30 +0900
-description: "RLHF Reward 설계 시리즈 #25 — 합성 데이터만으로 LLM judge를 반복 자기개선시키는 법"
+description: "RLHF Reward 설계 시리즈 #31 — 합성 데이터만으로 LLM judge를 반복 자기개선시키는 법"
 categories: [paper]
 tags: [rlhf, reward-model, llm-as-a-judge, synthetic-data, self-improvement, paper]
 giscus_comments: true
@@ -22,16 +22,16 @@ related_posts: true
 이 글에서 답할 질문은 세 가지다.
 
 1. **핵심 루프**: 라벨 없는 지시문에서 시작해 judge를 반복 개선하는 4단계 사이클은 정확히 어떻게 도는가.
-2. **트릭의 정체**: "정답을 이미 아는 대조 쌍"을 사람 없이 어떻게 만드는가. 그리고 이게 [#20 Math-Shepherd](/blog/2026/math-shepherd/)의 자동 라벨링과 왜 같은 발상인가.
+2. **트릭의 정체**: "정답을 이미 아는 대조 쌍"을 사람 없이 어떻게 만드는가. 그리고 이게 [#26 Math-Shepherd](/blog/2026/math-shepherd/)의 자동 라벨링과 왜 같은 발상인가.
 3. **대가**: 자기가 만든 데이터로 자기를 학습시키는 이 구조는 편향을 증폭시키지 않는가. 논문은 이 위험을 어디까지 막았고, 어디를 열어뒀는가.
 
 # Background
 
-## LLM-as-a-Judge와 이 시리즈의 6부
+## LLM-as-a-Judge와 이 시리즈의 7부
 
-[#22 Prometheus 2](/blog/2026/prometheus-2/)부터 [#24 Generative Reward Models](/blog/2026/generative-reward-models/)까지, 이 시리즈 6부는 "reward를 스칼라 하나가 아니라 텍스트 생성으로 뽑자"는 흐름을 다뤘다. judge 모델에게 두 응답 $$y_1, y_2$$를 보여주고, 어느 쪽이 지시문 $$x$$를 더 잘 만족하는지 자연어 추론(reasoning trace)을 거쳐 최종 판정(verdict)을 내리게 하는 방식이다. 이 판정 방식 자체는 [Zheng et al.(2023)의 LLM-as-a-Judge](https://arxiv.org/abs/2306.05685) 이후 표준으로 자리 잡았고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 다루는 평가 벤치마크도 이 판정 형식을 전제로 만들어졌다.
+[#28 Prometheus 2](/blog/2026/prometheus-2/)부터 [#30 Generative Reward Models](/blog/2026/generative-reward-models/)까지, 이 시리즈 7부는 "reward를 스칼라 하나가 아니라 텍스트 생성으로 뽑자"는 흐름을 다뤘다. judge 모델에게 두 응답 $$y_1, y_2$$를 보여주고, 어느 쪽이 지시문 $$x$$를 더 잘 만족하는지 자연어 추론(reasoning trace)을 거쳐 최종 판정(verdict)을 내리게 하는 방식이다. 이 판정 방식 자체는 [Zheng et al.(2023)의 LLM-as-a-Judge](https://arxiv.org/abs/2306.05685) 이후 표준으로 자리 잡았고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 다루는 평가 벤치마크도 이 판정 형식을 전제로 만들어졌다.
 
-문제는 이 judge를 **학습**시키려면 여전히 "어느 쪽이 나은지" 알려주는 선호 데이터가 필요하다는 점이었다. 6부의 앞선 글들도 이 지도 신호를 사람 선호 데이터([HelpSteer2](https://arxiv.org/abs/2406.08673) 등)에서 가져왔다. 이 논문이 6부의 흐름에서 갖는 위치는 명확하다 — **판정 형식(reasoning trace + verdict)은 그대로 두고, 그 형식을 학습시키는 지도 신호만 사람에서 합성으로 바꾼다.**
+문제는 이 judge를 **학습**시키려면 여전히 "어느 쪽이 나은지" 알려주는 선호 데이터가 필요하다는 점이었다. 7부의 앞선 글들도 이 지도 신호를 사람 선호 데이터([HelpSteer2](https://arxiv.org/abs/2406.08673) 등)에서 가져왔다. 이 논문이 7부의 흐름에서 갖는 위치는 명확하다 — **판정 형식(reasoning trace + verdict)은 그대로 두고, 그 형식을 학습시키는 지도 신호만 사람에서 합성으로 바꾼다.**
 
 ## 자기 학습(self-training)의 오래된 위험
 
@@ -85,9 +85,9 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 
 ## Math-Shepherd와 같은 발상, 다른 메커니즘
 
-[#20 Math-Shepherd](/blog/2026/math-shepherd/)는 이 논문과 전혀 다른 대상(스텝 단위 process reward)을 다루지만, "사람에게 순위를 묻지 않고 정답을 이미 아는 상태에서 데이터를 만든다"는 발상은 정확히 같다.
+[#26 Math-Shepherd](/blog/2026/math-shepherd/)는 이 논문과 전혀 다른 대상(스텝 단위 process reward)을 다루지만, "사람에게 순위를 묻지 않고 정답을 이미 아는 상태에서 데이터를 만든다"는 발상은 정확히 같다.
 
-| 항목                   | Self-Taught Evaluators                                                            | Math-Shepherd (#20)                                                |
+| 항목                   | Self-Taught Evaluators                                                            | Math-Shepherd (#26)                                                |
 | ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | 라벨이 필요한 지점     | 응답 쌍 중 어느 쪽이 나은가                                                       | 추론 각 스텝이 좋은가 나쁜가                                       |
 | 사람 라벨 대신 쓰는 것 | 지시문을 변형해 "정답을 이미 아는" 대조쌍을 구성                                  | 각 스텝에서 여러 번 rollout해 최종 정답 도달 비율로 스텝 품질 추정 |
@@ -147,7 +147,7 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 | 평가 범위   | pairwise 비교만 다뤘고, 단일 응답 채점(pointwise)은 향후 과제로 남김                                                |
 | 추론 비용   | reasoning trace를 생성하는 만큼 단순 스칼라 judge보다 추론 비용이 크다                                              |
 
-**논문이 직접 다루지 않은 부분**도 있다. 3단계의 "정답"은 결국 "변형된 지시문에 대한 좋은 응답은 원래 지시문에는 나쁜 응답일 것"이라는 **구성적 가정**에 기대고 있다. 이 가정은 대부분 성립하지만 항상 성립한다는 보장은 없다 — 변형 폭이 작으면 두 지시문의 요구사항이 실제로 겹칠 수 있고, 그 경우 "정답"이라고 필터링한 라벨 자체가 조용히 틀린다. [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 지적한 "사람 라벨의 25%가 뒤집혀 있다"는 문제를, 이 논문은 사람 대신 **구성 과정의 가정**이라는 형태로 남겨둔 셈이다. 다만 사람 라벨과 달리 이 가정은 저렴하게 반복 검증하고 고칠 수 있다는 점이 실질적인 차이다. 또한 reasoning trace가 진짜로 그 추론을 거쳐 정답에 도달했는지, 아니면 정답을 먼저 맞히고 그럴듯한 설명을 사후에 붙였는지(post-hoc rationalization)는 이 논문의 필터링 방식으로는 구분되지 않는다 — 이 지점은 뒤에 [#27 ReasonGRM](/blog/2026/reasongrm/), [#28 J1](/blog/2026/j1-thinking-judge/)이 정면으로 다룬다.
+**논문이 직접 다루지 않은 부분**도 있다. 3단계의 "정답"은 결국 "변형된 지시문에 대한 좋은 응답은 원래 지시문에는 나쁜 응답일 것"이라는 **구성적 가정**에 기대고 있다. 이 가정은 대부분 성립하지만 항상 성립한다는 보장은 없다 — 변형 폭이 작으면 두 지시문의 요구사항이 실제로 겹칠 수 있고, 그 경우 "정답"이라고 필터링한 라벨 자체가 조용히 틀린다. [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 지적한 "사람 라벨의 25%가 뒤집혀 있다"는 문제를, 이 논문은 사람 대신 **구성 과정의 가정**이라는 형태로 남겨둔 셈이다. 다만 사람 라벨과 달리 이 가정은 저렴하게 반복 검증하고 고칠 수 있다는 점이 실질적인 차이다. 또한 reasoning trace가 진짜로 그 추론을 거쳐 정답에 도달했는지, 아니면 정답을 먼저 맞히고 그럴듯한 설명을 사후에 붙였는지(post-hoc rationalization)는 이 논문의 필터링 방식으로는 구분되지 않는다 — 이 지점은 뒤에 [#33 ReasonGRM](/blog/2026/reasongrm/), [#34 J1](/blog/2026/j1-thinking-judge/)이 정면으로 다룬다.
 
 # Conclusion
 
@@ -160,13 +160,13 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 3. **결과**: 사람 라벨 없이 사람 라벨 기반 모델(85.6)과 GPT-4(84.3)를 모두 넘어섰다. 다만 개선폭은 iteration이 반복될수록 빠르게 줄어든다.
 4. **한계**: 필터 기준을 모델 밖에 두어 순수 자기강화 루프는 피했지만, 그 외부 기준 자체가 구성 시점의 가정에 의존한다. reasoning trace의 신뢰성(진짜 추론인지 사후 합리화인지)도 이 논문만으로는 검증되지 않는다.
 
-다음 글([#26 DeepSeek-GRM / SPCT](/blog/2026/deepseek-grm-spct/))은 이 논문이 남긴 "지시문 변형이라는 하나의 트릭에 의존한다"는 지점을 다른 각도에서 밀고 나간다. judge가 대조쌍을 외부에서 받는 대신 **스스로 평가 원칙(principle)을 생성**하고, 그 원칙에 따라 스스로를 채점하도록 inference-time에 확장하는 방식이다. 사람 라벨을 치운 이 논문의 다음 단계는, judge가 무엇을 기준으로 판정하는지까지 스스로 정하게 만드는 것이다.
+다음 글([#32 DeepSeek-GRM / SPCT](/blog/2026/deepseek-grm-spct/))은 이 논문이 남긴 "지시문 변형이라는 하나의 트릭에 의존한다"는 지점을 다른 각도에서 밀고 나간다. judge가 대조쌍을 외부에서 받는 대신 **스스로 평가 원칙(principle)을 생성**하고, 그 원칙에 따라 스스로를 채점하도록 inference-time에 확장하는 방식이다. 사람 라벨을 치운 이 논문의 다음 단계는, judge가 무엇을 기준으로 판정하는지까지 스스로 정하게 만드는 것이다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물다섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른한 번째 글이다.
 
 **1부. 지형도**
 
@@ -190,42 +190,51 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. **(현재 글)** Self-Taught Evaluators (2024) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. **(현재 글)** Self-Taught Evaluators (2024) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

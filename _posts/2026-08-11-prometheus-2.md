@@ -2,7 +2,7 @@
 layout: post
 title: "Prometheus 2: 평가 기준을 입력으로 받는 judge"
 date: 2026-08-11 09:21:30 +0900
-description: "RLHF Reward 설계 시리즈 #22 — 오픈 평가자 모델, rubric 조건부 평가, 그리고 절대 점수와 쌍대 비교의 통합"
+description: "RLHF Reward 설계 시리즈 #28 — 오픈 평가자 모델, rubric 조건부 평가, 그리고 절대 점수와 쌍대 비교의 통합"
 categories: [paper]
 tags: [rlhf, reward-model, llm-as-a-judge, evaluation, rubric, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-지금까지 5부에 걸쳐 다룬 reward는 전부 같은 모양이었다. 프롬프트와 응답을 넣으면 스칼라 하나가 나오는 **판별 모델(discriminative model)**. [#4 Rethinking Bradley-Terry](/blog/2026/bradley-terry-rethinking/)의 $$r_\theta(x,y)$$든, [#7 ArmoRM](/blog/2026/armorm/)의 다목적 벡터든, [#21 DeepSeek-R1](/blog/2026/deepseek-r1/)의 규칙 기반 RLVR이든, 결국 숫자 하나(혹은 벡터 하나)로 응답의 좋고 나쁨을 압축했다. 그리고 R1이 남긴 질문은 이거였다 — 수학·코드처럼 정답을 규칙으로 검증할 수 있는 도메인은 RLVR로 풀리는데, **정답이 없는 도메인(글쓰기, 대화, 요약)은 어떻게 하나?**
+지금까지 6부에 걸쳐 다룬 reward는 전부 같은 모양이었다. 프롬프트와 응답을 넣으면 스칼라 하나가 나오는 **판별 모델(discriminative model)**. [#4 Rethinking Bradley-Terry](/blog/2026/bradley-terry-rethinking/)의 $$r_\theta(x,y)$$든, [#7 ArmoRM](/blog/2026/armorm/)의 다목적 벡터든, [#27 DeepSeek-R1](/blog/2026/deepseek-r1/)의 규칙 기반 RLVR이든, 결국 숫자 하나(혹은 벡터 하나)로 응답의 좋고 나쁨을 압축했다. 그리고 R1이 남긴 질문은 이거였다 — 수학·코드처럼 정답을 규칙으로 검증할 수 있는 도메인은 RLVR로 풀리는데, **정답이 없는 도메인(글쓰기, 대화, 요약)은 어떻게 하나?**
 
-6부는 이 질문에 다른 각도로 답한다. reward를 스칼라로 뱉는 대신, **언어모델이 직접 평가문을 쓰게 하자**는 것이다. "이 응답은 3점이다"가 아니라 "이 응답은 이런 이유로 3점이다"를 자연어로 생성하고, 그 생성 과정 자체가 판별 모델보다 더 풍부한 신호를 준다는 발상이다. 이 전환의 첫 논문이 오늘 다룰 **Prometheus 2**다.
+7부는 이 질문에 다른 각도로 답한다. reward를 스칼라로 뱉는 대신, **언어모델이 직접 평가문을 쓰게 하자**는 것이다. "이 응답은 3점이다"가 아니라 "이 응답은 이런 이유로 3점이다"를 자연어로 생성하고, 그 생성 과정 자체가 판별 모델보다 더 풍부한 신호를 준다는 발상이다. 이 전환의 첫 논문이 오늘 다룰 **Prometheus 2**다.
 
 Prometheus 2가 던지는 핵심 발상은 단순하지만 근본적이다. 기존 reward model은 "무엇이 좋은 응답인가"를 학습 과정에서 가중치 안에 굳혀 넣는다. RM 하나를 학습시키면 그 RM은 helpfulness면 helpfulness, safety면 safety라는 고정된 기준으로만 채점한다. Prometheus는 이 기준 자체를 **런타임 입력**으로 받는다. 같은 모델 하나가 "전문 용어를 정확히 썼는가"로 채점할 수도 있고, 다음 순간 "초보자가 이해하기 쉬운가"로 채점할 수도 있다. 평가 기준(score rubric)이 프롬프트의 일부가 되는 순간, 판별 모델은 조건부 생성 모델이 된다.
 
@@ -176,15 +176,15 @@ $$\text{gap} = \rho_{\text{GPT-4, human}} - \rho_{\text{model, human}}$$
 
 Prometheus 2가 남긴 한 줄은 이거다. **평가 기준을 모델 가중치가 아니라 프롬프트로 옮기고, 절대 점수와 쌍대 비교를 따로 학습한 뒤 가중치 병합으로 합치면, 오픈소스 모델도 GPT-4·사람의 판정 그룹에 가까워질 수 있다.** rubric-조건부 평가라는 발상 자체는 전작 Prometheus 1에서 왔지만, 두 평가 형식의 통합과 weight merging이라는 구체적 레시피는 이 논문에서 완성됐다.
 
-다만 이 접근은 빚을 하나 남긴다. rubric은 여전히 **사람이 손으로 써줘야 한다.** Feedback Collection과 Preference Collection의 1,000개 rubric은 GPT-4의 도움을 받았다 해도 결국 사람이 설계한 틀 안에서 만들어졌다. 채점 기준을 자동으로, 그것도 태스크에 맞게 스스로 생성할 수 있다면 어떨까? 이 질문은 뒤에서 두 갈래로 이어진다 — [#29 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)는 비검증 도메인에 rubric 기반 reward를 직접 적용하는 방향으로, [#26 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)은 원칙(principle) 자체를 모델이 스스로 생성하게 만드는 방향으로 이 빚을 갚으려 한다.
+다만 이 접근은 빚을 하나 남긴다. rubric은 여전히 **사람이 손으로 써줘야 한다.** Feedback Collection과 Preference Collection의 1,000개 rubric은 GPT-4의 도움을 받았다 해도 결국 사람이 설계한 틀 안에서 만들어졌다. 채점 기준을 자동으로, 그것도 태스크에 맞게 스스로 생성할 수 있다면 어떨까? 이 질문은 뒤에서 두 갈래로 이어진다 — [#35 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)는 비검증 도메인에 rubric 기반 reward를 직접 적용하는 방향으로, [#32 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)은 원칙(principle) 자체를 모델이 스스로 생성하게 만드는 방향으로 이 빚을 갚으려 한다.
 
-그리고 더 근본적인 질문도 남는다. Prometheus 2는 여전히 "점수 또는 승패"라는 이산적 출력을 생성한다. 만약 reward 자체를 **다음 토큰 예측**의 연장선으로 다룰 수 있다면? 이 물음이 다음 글, [#23 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
+그리고 더 근본적인 질문도 남는다. Prometheus 2는 여전히 "점수 또는 승패"라는 이산적 출력을 생성한다. 만약 reward 자체를 **다음 토큰 예측**의 연장선으로 다룰 수 있다면? 이 물음이 다음 글, [#29 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물두 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물여덟 번째 글이다.
 
 **1부. 지형도**
 
@@ -208,42 +208,51 @@ Prometheus 2가 남긴 한 줄은 이거다. **평가 기준을 모델 가중치
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. **(현재 글)** Prometheus 2 (2024) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. **(현재 글)** Prometheus 2 (2024) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

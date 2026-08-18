@@ -2,7 +2,7 @@
 layout: post
 title: "Secrets of RLHF I: PPO 학습은 왜 터지는가"
 date: 2026-08-11 09:15:00 +0900
-description: "RLHF Reward 설계 시리즈 #15 — reward scaling, advantage normalization, policy 제약까지 PPO-max 안정화 레시피"
+description: "RLHF Reward 설계 시리즈 #17 — reward scaling, advantage normalization, policy 제약까지 PPO-max 안정화 레시피"
 categories: [paper]
 tags: [rlhf, ppo, training-stability, implementation, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-[#14 PPO 글](/blog/2026/ppo/)에서는 clipped surrogate objective가 왜 안전한지를 수식으로 증명했다. 비율 $$\pi_\theta / \pi_{\theta_{\text{old}}}$$ 를 $$[1-\epsilon, 1+\epsilon]$$ 로 묶어두면, 한 스텝의 정책 변화가 신뢰 구간을 벗어나지 않는다는 게 핵심이었다. 이 논리는 advantage 추정이 정확하고 보상 신호가 믿을 만하다는 전제 위에서 성립한다.
+[#16 PPO 글](/blog/2026/ppo/)에서는 clipped surrogate objective가 왜 안전한지를 수식으로 증명했다. 비율 $$\pi_\theta / \pi_{\theta_{\text{old}}}$$ 를 $$[1-\epsilon, 1+\epsilon]$$ 로 묶어두면, 한 스텝의 정책 변화가 신뢰 구간을 벗어나지 않는다는 게 핵심이었다. 이 논리는 advantage 추정이 정확하고 보상 신호가 믿을 만하다는 전제 위에서 성립한다.
 
-문제는 RLHF에서 이 전제가 둘 다 깨진다는 점이다. 이 글이 다루는 [Secrets of RLHF in Large Language Models Part I: PPO](https://arxiv.org/abs/2307.04964)(Fudan NLP Group·ByteDance, 2023)는 그 깨짐을 정면으로 파고든 논문이다. 저자들은 "policy constraints가 PPO를 제대로 작동시키는 핵심 요인"이라고 결론 내리고, vanilla PPO 위에 십여 개의 안정화 트릭을 얹은 **PPO-max**를 제안한다. 14편이 PPO의 이론이었다면 이 글은 "그 이론을 LLM에 그대로 붙이면 왜 폭발하고, 무엇을 더해야 살아남는가"다.
+문제는 RLHF에서 이 전제가 둘 다 깨진다는 점이다. 이 글이 다루는 [Secrets of RLHF in Large Language Models Part I: PPO](https://arxiv.org/abs/2307.04964)(Fudan NLP Group·ByteDance, 2023)는 그 깨짐을 정면으로 파고든 논문이다. 저자들은 "policy constraints가 PPO를 제대로 작동시키는 핵심 요인"이라고 결론 내리고, vanilla PPO 위에 십여 개의 안정화 트릭을 얹은 **PPO-max**를 제안한다. 16편이 PPO의 이론이었다면 이 글은 "그 이론을 LLM에 그대로 붙이면 왜 폭발하고, 무엇을 더해야 살아남는가"다.
 
 RLHF 학습이 불안정한 이유는 구조적이다.
 
@@ -29,7 +29,7 @@ RLHF 학습이 불안정한 이유는 구조적이다.
 
 ## RLHF 3단계와 PPO의 자리
 
-RLHF는 SFT → Reward Modeling → PPO 세 단계로 진행된다. 이 시리즈에서 [InstructGPT](/blog/2026/instructgpt/), [Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 각각 첫 두 단계를 다뤘다. 이 글이 보는 세 번째 단계에서 정책 $$\pi_\theta$$ 는 reward model $$r(x,y)$$ 를 최대화하도록 업데이트된다. [#14](/blog/2026/ppo/)에서 정리한 PPO의 핵심 목적함수를 다시 적으면 다음과 같다.
+RLHF는 SFT → Reward Modeling → PPO 세 단계로 진행된다. 이 시리즈에서 [InstructGPT](/blog/2026/instructgpt/), [Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 각각 첫 두 단계를 다뤘다. 이 글이 보는 세 번째 단계에서 정책 $$\pi_\theta$$ 는 reward model $$r(x,y)$$ 를 최대화하도록 업데이트된다. [#16](/blog/2026/ppo/)에서 정리한 PPO의 핵심 목적함수를 다시 적으면 다음과 같다.
 
 $$\mathcal{L}_{\text{ppo-clip}}(\theta) = \hat{\mathbb{E}}_t\left[\min\left(\frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}\hat{A}_t,\ \text{clip}\left(\frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, 1-\epsilon, 1+\epsilon\right)\hat{A}_t\right)\right]$$
 
@@ -233,13 +233,13 @@ PPO-max가 어떤 트릭을 쓰라고 알려줘도, 그 트릭을 코드 레벨�
 2. **PPO-max**: reward normalization+clip($$\delta=0.3$$), token-level KL penalty($$\eta=0.05$$), value function clip($$\lambda_{vf}=0.2$$), critic pretraining, PPO-ptx까지 묶은 조합. 이 중 KL 페널티만이 "일시적"이 아니라 "장기적" 안정성을 준다.
 3. **구현 디테일이 재현성을 가른다**: dropout, EOS 처리, reward whitening 같은 코드 레벨 디테일이 논문에 적힌 하이퍼파라미터 값 못지않게 중요하다.
 
-다만 이 레시피 자체가 다음 문제를 예고한다. PPO-max를 온전히 굴리려면 정책 모델과 별개로 critic(value network)을 통째로 하나 더 학습·서빙해야 하고, 그 위에 KL 계수·clip 폭·warmup 전략까지 십여 개의 하이퍼파라미터를 맞춰야 한다. 이 복잡성 자체가 다음 글들의 동기가 된다 — [#16 GRPO/DeepSeekMath](/blog/2026/grpo-deepseekmath/)는 "critic을 아예 버리고 그룹 상대 보상으로 advantage를 대체하자"고 나오고, [#17 RLOO](/blog/2026/rloo-back-to-basics/)는 "REINFORCE로도 충분하지 않냐"고 되묻는다. 두 글 모두 이 글이 공들여 쌓은 안정화 트릭들을 정면으로 걷어내는 시도라는 점에서, 이 글은 그 논쟁의 출발점이다. reward model 자체의 한계를 더 깊이 파고드는 이야기는 [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)로 이어진다.
+다만 이 레시피 자체가 다음 문제를 예고한다. PPO-max를 온전히 굴리려면 정책 모델과 별개로 critic(value network)을 통째로 하나 더 학습·서빙해야 하고, 그 위에 KL 계수·clip 폭·warmup 전략까지 십여 개의 하이퍼파라미터를 맞춰야 한다. 이 복잡성 자체가 다음 글들의 동기가 된다 — [#18 GRPO/DeepSeekMath](/blog/2026/grpo-deepseekmath/)는 "critic을 아예 버리고 그룹 상대 보상으로 advantage를 대체하자"고 나오고, [#19 RLOO](/blog/2026/rloo-back-to-basics/)는 "REINFORCE로도 충분하지 않냐"고 되묻는다. 두 글 모두 이 글이 공들여 쌓은 안정화 트릭들을 정면으로 걷어내는 시도라는 점에서, 이 글은 그 논쟁의 출발점이다. reward model 자체의 한계를 더 깊이 파고드는 이야기는 [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)로 이어진다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열다섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 열일곱 번째 글이다.
 
 **1부. 지형도**
 
@@ -263,42 +263,51 @@ PPO-max가 어떤 트릭을 쓰라고 알려줘도, 그 트릭을 코드 레벨�
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. **(현재 글)** Secrets of RLHF I (2023) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. **(현재 글)** Secrets of RLHF I (2023) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

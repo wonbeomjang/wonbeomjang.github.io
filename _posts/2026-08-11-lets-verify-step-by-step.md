@@ -2,7 +2,7 @@
 layout: post
 title: "Let's Verify Step by Step: 결과가 아니라 과정에 보상을 주다"
 date: 2026-08-11 09:19:00 +0900
-description: "RLHF Reward 설계 시리즈 #19 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
+description: "RLHF Reward 설계 시리즈 #25 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
 categories: [paper]
 tags: [rlhf, reward-model, prm, process-supervision, reasoning, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-[18편 DPO](/blog/2026/dpo/)까지 4부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([16편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([17편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 4부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
+[20편 DPO](/blog/2026/dpo/)까지 5부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([18편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([19편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 5부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
 
-이번 글부터 시작하는 5부 "Process & Verifiable Reward"는 정확히 반대 방향으로 간다. reward를 없애는 게 아니라 **훨씬 더 촘촘하게 쪼갠다**. 지금까지 다룬 reward model(2부, 3부)은 전부 하나의 응답 전체에 스칼라 하나를 매기는 outcome-level reward였다. 수학 문제를 20단계로 풀어낸 chain-of-thought든, 한 줄짜리 답변이든 reward model은 마지막에 딱 한 번 점수를 준다. 이 글이 다루는 **Let's Verify Step by Step**(OpenAI, ICLR 2024)은 "그 한 번의 점수로 충분한가?"라는 질문에 정면으로 "아니다"라고 답한 논문이다.
+이번 글부터 시작하는 6부 "Process & Verifiable Reward"는 정확히 반대 방향으로 간다. reward를 없애는 게 아니라 **훨씬 더 촘촘하게 쪼갠다**. 지금까지 다룬 reward model(2부, 3부)은 전부 하나의 응답 전체에 스칼라 하나를 매기는 outcome-level reward였다. 수학 문제를 20단계로 풀어낸 chain-of-thought든, 한 줄짜리 답변이든 reward model은 마지막에 딱 한 번 점수를 준다. 이 글이 다루는 **Let's Verify Step by Step**(OpenAI, ICLR 2024)은 "그 한 번의 점수로 충분한가?"라는 질문에 정면으로 "아니다"라고 답한 논문이다.
 
 문제는 단순하다. 최종 답만 채점하면 **틀린 풀이 과정으로 우연히 맞은 답**에도 만점을 준다. 부호를 두 번 틀렸는데 우연히 상쇄돼서 답이 맞아버리는 경우, sign 실수를 알아채지 못하고 대충 찍은 값이 그대로 정답과 일치하는 경우 — 이런 solution은 reasoning으로서는 명백히 불량인데 outcome reward는 이를 구분하지 못한다. 논문은 이를 outcome-supervised reward model(ORM)의 **false positive** 문제라고 부른다. 저자들은 이 문제를 정면으로 겨냥해 매 추론 스텝마다 사람이 정오를 채점한 **PRM800K**(80만 개 스텝 라벨)를 구축하고, 이 라벨로 학습한 process-supervised reward model(PRM)이 MATH 데이터셋에서 ORM을 확실히 앞선다는 것을 보였다. best-of-1860 검색 기준으로 ORM 72.4%, PRM **78.2%**다.
 
@@ -83,7 +83,7 @@ $$
 | credit assignment        | 불가능 — 오류 위치를 모른다         | 가능 — 첫 오류 스텝을 특정 |
 | 학습에 필요한 base model | GPT-4 base(사전학습만, RLHF 이전)   | GPT-4 base(동일)           |
 
-실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [22편 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
+실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [29편 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
 
 # Method
 
@@ -231,13 +231,13 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 2. **해법**: 스텝마다 사람이 positive/negative/neutral 라벨을 매긴 PRM800K(80만 라벨, 7만 5천 solution, 1만 2천 문제)로 process reward model을 학습한다. 여러 스텝 점수는 곱(또는 최솟값)으로 합쳐 solution 하나의 점수로 만든다.
 3. **비용**: active learning으로 2.6배 효율을 얻었어도, 결국 800K 라벨은 사람이 직접 매긴 것이다. 이 사람 라벨링 비용이 이 접근법 전체의 병목이다.
 
-이 병목이 바로 다음 글의 존재 이유다. [20편 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [10편](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [21편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
+이 병목이 바로 다음 글의 존재 이유다. [26편 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [10편](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [27편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열아홉 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 스물다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -261,42 +261,51 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. **(현재 글)** Let's Verify Step by Step (2023) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. **(현재 글)** Let's Verify Step by Step (2023) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

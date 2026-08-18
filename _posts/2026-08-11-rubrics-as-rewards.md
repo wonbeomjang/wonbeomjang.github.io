@@ -2,7 +2,7 @@
 layout: post
 title: "Rubrics as Rewards: 정답이 없는 도메인에 reward를 만드는 법"
 date: 2026-08-11 09:25:00 +0900
-description: "RLHF Reward 설계 시리즈 #29 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
+description: "RLHF Reward 설계 시리즈 #35 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
 categories: [paper]
 tags: [rlhf, reward-model, rubric, rlvr, llm-as-a-judge, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [#21 DeepSeek-R1 글](/blog/2026/deepseek-r1/)은 "규칙이 reward가 될 때" 무슨 일이 벌어지는지를 다뤘다. 정답이 명확한 수학·코드 문제라면 채점 함수 하나로 충분했다. $$\boxed{42}$$가 맞았는지, 테스트 케이스를 통과했는지는 프로그램이 판단할 수 있다. 그런데 그 글의 끝에는 대답하지 않은 질문이 하나 남았다. **의료 상담, 과학 설명, 글쓰기, 그리고 이 시리즈의 독자층이 매일 마주하는 안전성 판단처럼 "정답 문자열"이 아예 없는 도메인은 어떻게 하나?**
+이 시리즈 [#27 DeepSeek-R1 글](/blog/2026/deepseek-r1/)은 "규칙이 reward가 될 때" 무슨 일이 벌어지는지를 다뤘다. 정답이 명확한 수학·코드 문제라면 채점 함수 하나로 충분했다. $$\boxed{42}$$가 맞았는지, 테스트 케이스를 통과했는지는 프로그램이 판단할 수 있다. 그런데 그 글의 끝에는 대답하지 않은 질문이 하나 남았다. **의료 상담, 과학 설명, 글쓰기, 그리고 이 시리즈의 독자층이 매일 마주하는 안전성 판단처럼 "정답 문자열"이 아예 없는 도메인은 어떻게 하나?**
 
 RLVR(Reinforcement Learning with Verifiable Rewards)은 강력하지만 근본적으로 이분법적이다. 맞았거나 틀렸거나. 하지만 "이 응답이 응급 상황을 적절히 안내했는가", "이 설명이 과학적으로 타당하면서도 이해하기 쉬운가" 같은 질문에는 $$\text{match}(y, \hat y) \in \{0,1\}$$ 같은 함수가 없다. 그렇다고 다시 사람이 라벨링한 선호 데이터로 스칼라 reward model을 학습시키는 길로 돌아가면, 이번엔 이 시리즈 3부에서 다룬 문제 — 길이·형식 같은 표면적 특징에 편승하는 reward hacking(11~13편)과 overoptimization([10편](/blog/2026/reward-model-overoptimization/)) — 이 그대로 재발한다. RLVR의 신뢰성과 선호 기반 RM의 표현력, 둘 다 원하는데 둘 다 완전히는 가질 수 없는 딜레마다.
 
@@ -30,7 +30,7 @@ RLVR(Reinforcement Learning with Verifiable Rewards)은 강력하지만 근본�
 
 ## RLVR이 멈추는 지점
 
-[#21 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다뤘듯, RLVR은 $$r(x, \hat y) = \text{match}(y, \hat y)$$ 형태의 규칙 기반 reward로 수학·코드 도메인에서 학습된 reward model 없이도 강한 추론 능력을 끌어낸다. 문제는 이 정식화가 "유일한 정답 $$y$$가 존재한다"는 전제에 강하게 의존한다는 점이다. 의료 상담에는 유일한 정답이 없다. 같은 증상이라도 안전하게 답하는 방식은 여러 가지이고, 무엇이 "충분히 안전한 답"인지는 텍스트 일치로 판단할 수 없다.
+[#27 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다뤘듯, RLVR은 $$r(x, \hat y) = \text{match}(y, \hat y)$$ 형태의 규칙 기반 reward로 수학·코드 도메인에서 학습된 reward model 없이도 강한 추론 능력을 끌어낸다. 문제는 이 정식화가 "유일한 정답 $$y$$가 존재한다"는 전제에 강하게 의존한다는 점이다. 의료 상담에는 유일한 정답이 없다. 같은 증상이라도 안전하게 답하는 방식은 여러 가지이고, 무엇이 "충분히 안전한 답"인지는 텍스트 일치로 판단할 수 없다.
 
 그렇다고 선호 데이터로 학습된 스칼라 reward model(2부에서 다룬 Bradley-Terry 기반 RM들)을 쓰면, 이 RM은 다시 사람의 편향과 데이터의 노이즈를 그대로 흡수한다. 논문은 이 지점을 정확히 짚는다. 학습된 preference RM은 "응답 길이, 형식, 라벨러 편향 같은 표면적 artifact에 overfit하는 경향"이 있고, 대량의 pairwise 비교 데이터를 요구한다. RLVR의 신뢰성과 선호 기반 RM의 유연성 사이, 그 중간 지대가 비어 있었다.
 
@@ -133,7 +133,7 @@ $$r(B) = \frac{1.0\cdot 1 + 1.0\cdot 1 + 0.7\cdot 0 + 0.9\cdot 0 + 0.3\cdot 0}{3
 
 ## 학습 설정
 
-정책 모델은 Qwen2.5-7B(base)를 GRPO([#16 GRPO/DeepSeekMath 글](/blog/2026/grpo-deepseekmath/) 참고)로 학습한다. reward 계산에는 gpt-4o-mini를 judge로 쓴다.
+정책 모델은 Qwen2.5-7B(base)를 GRPO([#18 GRPO/DeepSeekMath 글](/blog/2026/grpo-deepseekmath/) 참고)로 학습한다. reward 계산에는 gpt-4o-mini를 judge로 쓴다.
 
 | 하이퍼파라미터              | 값                                                  |
 | --------------------------- | --------------------------------------------------- |
@@ -193,9 +193,9 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 ## RaR을 시리즈 지형도 위에 놓기
 
-이 시리즈에서 "원칙(principle)을 어디서 가져오는가"라는 질문에 답한 글이 이미 하나 있었다. [#26 DeepSeek-GRM/SPCT 글](/blog/2026/deepseek-grm-spct/)이다. 두 방법은 겉보기엔 비슷해 보이지만 원칙의 출처가 정반대다.
+이 시리즈에서 "원칙(principle)을 어디서 가져오는가"라는 질문에 답한 글이 이미 하나 있었다. [#32 DeepSeek-GRM/SPCT 글](/blog/2026/deepseek-grm-spct/)이다. 두 방법은 겉보기엔 비슷해 보이지만 원칙의 출처가 정반대다.
 
-| 축                | DeepSeek-GRM / SPCT (#26)                                      | Rubrics as Rewards (본편)                                   |
+| 축                | DeepSeek-GRM / SPCT (#32)                                      | Rubrics as Rewards (본편)                                   |
 | ----------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
 | 채점 기준의 출처  | judge 모델이 강화학습으로 스스로 원칙을 생성                   | 강한 LLM(GPT-4o/o3-mini)이 참조 답안을 근거로 사전 생성     |
 | 생성 시점         | 추론 시점, 응답마다 즉석 생성                                  | 학습 전 오프라인, 프롬프트당 한 번 생성 후 재사용           |
@@ -217,13 +217,13 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 한계도 논문이 직접 인정한다. 실험이 의료·과학 두 도메인에 한정돼 대화나 도구 사용 같은 더 개방적인 세팅으로의 일반화는 검증되지 않았고, 집계 전략도 explicit·implicit 두 가지만 탐색했다. 더 근본적인 문제는 따로 있다 — RaR이 여전히 **각 항목을 독립적으로 pointwise 스칼라화**한다는 점이다. Open Rubric System(OpenRS, arXiv:2602.14069, Alibaba Qwen 팀)은 바로 이 지점을 정조준한다. OpenRS는 RaR을 포함한 "정적 rubric을 강한 LLM으로 합성해 가중합으로 집계하는" 계열의 방법들이 "discriminability에 내재적 한계(ceiling)를 만들고 reward gaming에 취약하며, 개방형 세팅에서 collapse에 가까운 동역학으로 이어질 수 있다"고 정면으로 지적한다. 대안으로 제시하는 **Pairwise Adaptive Meta-Rubric (PAMR)**은 rubric을 프롬프트마다 미리 고정하는 대신, **비교 대상 두 응답의 의미적 차이에 조건부로** 그때그때 rubric을 생성하고, 항목별로 두 응답을 pairwise 비교한 뒤 그 결과를 judge 내부가 아니라 **외부에서** 집계한다. 정적인 체크리스트를 판 채로 반복 사용하지 않고 비교할 응답 쌍에 맞춰 rubric 자체를 적응시키기 때문에, 정책이 고정된 채점 기준을 미리 파악해 거기에 맞춰 응답을 최적화하기가 훨씬 어려워진다는 논리다. OpenRS는 이 구조로 RM-Bench·JudgeBench·RewardBench v2·PPE Preference 네 개의 reward-modeling 벤치마크에서 스칼라 RM baseline들을 제치고 최상위 결과를 보고한다.
 
-그런데 rubric이든 pairwise adaptive rubric이든, 결국 판정을 내리는 건 여전히 LLM judge라는 사실은 바뀌지 않는다. 항목을 아무리 잘게 쪼개고 비교 방식을 아무리 정교하게 다듬어도, judge 자체가 속는다면 이 모든 구조는 무의미해진다. [#31 One Token to Fool LLM-as-a-Judge 글](/blog/2026/one-token-to-fool-judge/)이 바로 이 지점 — judge를 단 하나의 토큰으로 속일 수 있다는 사실 — 을 다룬다.
+그런데 rubric이든 pairwise adaptive rubric이든, 결국 판정을 내리는 건 여전히 LLM judge라는 사실은 바뀌지 않는다. 항목을 아무리 잘게 쪼개고 비교 방식을 아무리 정교하게 다듬어도, judge 자체가 속는다면 이 모든 구조는 무의미해진다. [#37 One Token to Fool LLM-as-a-Judge 글](/blog/2026/one-token-to-fool-judge/)이 바로 이 지점 — judge를 단 하나의 토큰으로 속일 수 있다는 사실 — 을 다룬다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물아홉 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -247,42 +247,51 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. **(현재 글)** Rubrics as Rewards (2025) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. **(현재 글)** Rubrics as Rewards (2025) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 

@@ -228,7 +228,7 @@ MMLU, Lambada, HellaSwag, OpenBookQA, ARC-Easy/Challenge, TriviaQA 7개 벤치�
 
 ## $$\sqrt{D_{KL}}$$과 reward의 선형 관계
 
-부가적인 발견 하나: RLHF 학습 곡선을 $$\sqrt{D_{KL}(\pi \Vert \pi_0)}$$ 대 reward 평면에 그리면, 학습의 상당 구간에서 거의 **직선**이 나온다. KL은 정책이 초기 정책에서 얼마나 멀어졌는지를 재는 값이니, 이 관계는 "reward를 더 뽑아내려면 정책을 얼마나 바꿔야 하는가"에 대한 예산표 같은 역할을 한다. 비유하자면 헬스장에서 벤치프레스 중량을 늘릴 때, 초반에는 자세(KL)를 조금만 바꿔도 중량이 쉽게 오르지만, 어느 순간부터는 자세를 더 크게 바꿔야 같은 폭의 중량 증가를 얻는 것과 비슷하다. 다만 저자들은 이 구간에서는 오히려 거의 선형이라는 점 자체를 강조하며, 이 관계가 모델 크기 간 RLHF의 "실효 크기 이득"을 설명한다고 본다 — 그림 1에서 RLHF 곡선과 context-distilled 곡선이 거의 평행한 이유도 이 선형 관계 때문이다. 자세한 RL 최적화 메커니즘은 [#14 PPO 글](/blog/2026/ppo/)에서 더 다룬다.
+부가적인 발견 하나: RLHF 학습 곡선을 $$\sqrt{D_{KL}(\pi \Vert \pi_0)}$$ 대 reward 평면에 그리면, 학습의 상당 구간에서 거의 **직선**이 나온다. KL은 정책이 초기 정책에서 얼마나 멀어졌는지를 재는 값이니, 이 관계는 "reward를 더 뽑아내려면 정책을 얼마나 바꿔야 하는가"에 대한 예산표 같은 역할을 한다. 비유하자면 헬스장에서 벤치프레스 중량을 늘릴 때, 초반에는 자세(KL)를 조금만 바꿔도 중량이 쉽게 오르지만, 어느 순간부터는 자세를 더 크게 바꿔야 같은 폭의 중량 증가를 얻는 것과 비슷하다. 다만 저자들은 이 구간에서는 오히려 거의 선형이라는 점 자체를 강조하며, 이 관계가 모델 크기 간 RLHF의 "실효 크기 이득"을 설명한다고 본다 — 그림 1에서 RLHF 곡선과 context-distilled 곡선이 거의 평행한 이유도 이 선형 관계 때문이다. 자세한 RL 최적화 메커니즘은 [#16 PPO 글](/blog/2026/ppo/)에서 더 다룬다.
 
 # Conclusion
 
@@ -271,42 +271,51 @@ HH-RLHF의 메시지를 한 줄로 요약하면 이렇다. **helpfulness와 harm
 12. [ODIN (2024)](/blog/2026/odin-disentangled-reward/) — 길이를 reward에서 분리
 13. [WARM (2024)](/blog/2026/warm-weight-averaged-reward/) — weight averaging으로 hacking 방어
 
-**4부. reward를 정책으로**
+**4부. 안전성 정렬**
 
-14. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
-15. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
-16. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
-17. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
-18. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+14. [Safe RLHF (2023)](/blog/2026/safe-rlhf/) — 안전성을 reward가 아니라 제약으로
+15. [Rule-Based Rewards (2024)](/blog/2026/rule-based-rewards/) — 안전 규칙을 reward로 직접 번역
 
-**5부. Process & Verifiable Reward**
+**5부. reward를 정책으로**
 
-19. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
-20. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
-21. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
+16. [PPO (2017)](/blog/2026/ppo/) — clipped surrogate objective
+17. [Secrets of RLHF I (2023)](/blog/2026/secrets-rlhf-ppo/) — PPO 학습 안정화 트릭
+18. [GRPO / DeepSeekMath (2024)](/blog/2026/grpo-deepseekmath/) — value network를 버리다
+19. [RLOO (2024)](/blog/2026/rloo-back-to-basics/) — REINFORCE로 충분한가
+20. [DPO (2023)](/blog/2026/dpo/) — reward를 없애면 어떻게 되는가
+21. [SimPO (2024)](/blog/2026/simpo/) — reference-free + 길이 정규화
+22. [KTO (2024)](/blog/2026/kto/) — 선호 쌍 없이 이진 신호만으로
+23. [GSPO (2025)](/blog/2026/gspo/) — importance ratio를 시퀀스 단위로
+24. [DAPO (2025)](/blog/2026/dapo/) — 신호 없는 프롬프트를 버린다
 
-**6부. Generative Reward Model**
+**6부. Process & Verifiable Reward**
 
-22. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
-23. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
-24. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
-25. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
-26. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
+25. [Let's Verify Step by Step (2023)](/blog/2026/lets-verify-step-by-step/) — 과정 감독이 결과 감독을 이긴다
+26. [Math-Shepherd (2023)](/blog/2026/math-shepherd/) — 사람 라벨 없는 PRM
+27. [DeepSeek-R1 (2025)](/blog/2026/deepseek-r1/) — RLVR, 규칙이 reward가 될 때
 
-**7부. 생각하는 Judge, 그리고 그 신뢰**
+**7부. Generative Reward Model**
 
-27. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
-28. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
-29. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
-30. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
-31. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
+28. [Prometheus 2 (2024)](/blog/2026/prometheus-2/) — 오픈 평가자 모델과 rubric 조건부 평가
+29. [Generative Verifiers (2024)](/blog/2026/generative-verifiers/) — reward를 next-token prediction으로
+30. [Generative Reward Models (2024)](/blog/2026/generative-reward-models/) — GenRM과 선호 학습의 결합
+31. [Self-Taught Evaluators (2024)](/blog/2026/self-taught-evaluators/) — 사람 라벨 없이 judge를 키우다
+32. [DeepSeek-GRM / SPCT (2025)](/blog/2026/deepseek-grm-spct/) — inference-time scaling
 
-**8부. 실전 종합**
+**8부. 생각하는 Judge, 그리고 그 신뢰**
 
-32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
-33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+33. [ReasonGRM (2025)](/blog/2026/reasongrm/) — reasoning 능력을 judge에 이식
+34. [J1 (2025)](/blog/2026/j1-thinking-judge/) — RL로 judge를 생각하게 만들기
+35. [Rubrics as Rewards (2025)](/blog/2026/rubrics-as-rewards/) — 비검증 도메인으로
+36. [CriticEval (2024)](/blog/2026/criticeval/) — judge 자체를 어떻게 평가하나
+37. [One Token to Fool LLM-as-a-Judge (2025)](/blog/2026/one-token-to-fool-judge/) — GenRM도 뚫린다
 
-본 시리즈는 33편으로 구성된다.
+**9부. 실전 종합**
+
+38. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — 열 개 모델이 실제로 택한 것
+39. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
+
+본 시리즈는 39편으로 구성된다.
 
 # 참고 문헌
 
