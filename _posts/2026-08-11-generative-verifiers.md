@@ -15,7 +15,7 @@ related_posts: true
 
 이 시리즈의 2부(4\~9편)는 스칼라 reward model(RM)을 해부하는 데 다섯 편을 썼다. [#4 Rethinking Bradley-Terry](/blog/2026/bradley-terry-rethinking/)는 "선호를 스칼라 점수로 접는 변환이 Bradley-Terry(BT)만 있는 게 아니다"라는 수학적 균열을 열었고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)는 "판별형(discriminative) RM과 생성형(generative) judge를 같은 벤치마크로 비교하는 것 자체가 문제"라는 평가 방법론의 틈을 짚었다. 3부(10\~13편)는 그 스칼라 점수가 얼마나 쉽게 hacking당하는지를 보였다. 이 모든 균열이 가리키는 방향은 하나였다. **reward를 스칼라 하나로 접어야 할 이유가 애초에 없다.**
 
-이번 글부터 시작하는 6부가 그 답이다. 판별 RM은 사전학습으로 얻은 LLM의 **텍스트 생성 능력을 전혀 쓰지 않는다.** 수십억 토큰으로 "그럴듯한 다음 토큰을 생성하는 법"을 배운 모델을 가져다가, 맨 끝에 classification head 하나만 새로 붙이고 그 능력을 통째로 버린다. Generative Verifiers(이하 GenRM)는 이 낭비를 정면으로 지적한다. 논문은 이렇게 말한다.
+이 글이 속한 6부가 그 답이다. 판별 RM은 사전학습으로 얻은 LLM의 **텍스트 생성 능력을 전혀 쓰지 않는다.** 수십억 토큰으로 "그럴듯한 다음 토큰을 생성하는 법"을 배운 모델을 가져다가, 맨 끝에 classification head 하나만 새로 붙이고 그 능력을 통째로 버린다. Generative Verifiers(이하 GenRM)는 이 낭비를 정면으로 지적한다. 논문은 이렇게 말한다.
 
 > "Discriminative LLM-based verifiers do not utilize the text generation capabilities of pretrained LLMs... As a result, discriminative RMs miss out on the inherent strengths of generative LLMs, such as unified instruction tuning, chain-of-thought reasoning, and utilizing additional inference-time computation."
 
@@ -171,7 +171,7 @@ GSM8K로만 학습한 verifier를 MMLU의 수학 하위 태스크에 그대로 �
 
 GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 아니라 next-token prediction으로도 충분히, 오히려 더 잘 만들 수 있다**는 것이다. 판별 RM이 버렸던 생성 능력을 되찾아오면 세 가지가 따라온다 — instruction tuning과의 매끄러운 통합, 판정 전에 근거를 쓰는 CoT 검증, 그리고 계산을 더 쓸수록 좋아지는 test-time compute 활용이다. Best-of-N에서 알고리즘 태스크 5% → 45.3%, GSM8K 73% → 93.4%, MMLU abstract algebra 37.9% → 53.5%라는 수치가 이를 뒷받침한다.
 
-다만 이 이득은 공짜가 아니다. 판정마다 텍스트를 생성해야 하므로 판별 RM보다 훨씬 느리다. [#21 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 규칙 기반 reward는 검증 가능한 도메인 안에서는 이 문제 자체가 없었지만, 검증이 어려운 일반 도메인으로 갈수록 "생성으로 검증한다"는 이 접근이 불가피해진다. 다음 글(#23)은 GenRM을 선호 학습(preference learning)과 결합하는 후속 연구를, 그다음(#24)은 이 추론 비용 문제를 inference-time scaling으로 다루는 DeepSeek-GRM/SPCT를 살펴본다.
+다만 이 이득은 공짜가 아니다. 판정마다 텍스트를 생성해야 하므로 판별 RM보다 훨씬 느리다. [#21 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 규칙 기반 reward는 검증 가능한 도메인 안에서는 이 문제 자체가 없었지만, 검증이 어려운 일반 도메인으로 갈수록 "생성으로 검증한다"는 이 접근이 불가피해진다. 다음 글([#24 Generative Reward Models](/blog/2026/generative-reward-models/))은 GenRM을 선호 학습(preference learning)과 결합하는 후속 연구를, [#26 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)는 이 추론 비용 문제를 inference-time scaling으로 다룬다.
 
 ---
 
