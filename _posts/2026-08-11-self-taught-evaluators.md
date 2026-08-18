@@ -15,7 +15,7 @@ related_posts: true
 
 이 시리즈는 지금까지 계속 같은 벽에 부딪혀 왔다. **사람 선호 라벨이라는 병목**이다. [#3 HH-RLHF](/blog/2026/anthropic-hh-rlhf/)는 라벨러 간 합의율이 63%밖에 안 된다고 보고했다. 사람 셋 중 한 명 이상은 "이게 더 낫다"는 판정에 동의하지 않는다는 뜻이다. [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)는 한발 더 나가서, 실제로 그 라벨의 25%가 뒤집혀 있다고 정량화했다. [#6 Skywork-Reward](/blog/2026/skywork-reward/)는 아예 "좋은 아키텍처보다 좋은 데이터가 이긴다"며 데이터 큐레이션에 모든 힘을 쏟았다. 세 편 모두 결국 같은 질문으로 수렴한다 — **사람이 매기는 선호 라벨을 어떻게 더 깨끗하게, 더 많이 모을 것인가.**
 
-이 논문은 그 질문 자체를 치운다. "라벨을 어떻게 더 잘 모을까"가 아니라 **"라벨을 아예 안 모으면 어떻게 되는가"**를 묻는다. 사람이 단 한 건도 "A가 B보다 낫다"고 표시하지 않은 상태에서 출발해, LLM judge를 반복적으로 자기 자신보다 나은 버전으로 개선시킨다. 그 결과 Llama3-70B-Instruct의 RewardBench 점수를 75.4에서 88.3으로, 다수결 투표를 쓰면 88.7까지 끌어올렸다. 사람 라벨로 학습한 동급 모델(85.6)과 GPT-4(84.3)를 모두 넘어선 숫자다.
+이 논문은 그 질문 자체를 치운다. "라벨을 어떻게 더 잘 모을까"가 아니라 **"라벨을 아예 안 모으면 어떻게 되는가"**를 묻는다. 사람이 단 한 건도 "A가 B보다 낫다"고 표시하지 않은 상태에서 출발해, LLM judge를 반복적으로 자기 자신보다 나은 버전으로 개선시킨다. 그 결과 Llama3-70B-Instruct의 [RewardBench](https://arxiv.org/abs/2403.13787) 점수를 75.4에서 88.3으로, 다수결 투표를 쓰면 88.7까지 끌어올렸다. 사람 라벨로 학습한 동급 모델(85.6)과 GPT-4(84.3)를 모두 넘어선 숫자다.
 
 비유하자면 이렇다. 지금까지의 RM 학습은 채점 기준을 배우기 위해 매번 선생님(사람 라벨러)을 불러야 하는 학원이었다. 이 논문은 그 학원을 없애고, **문제를 낼 때부터 정답을 이미 알고 있도록 시험지를 설계**한 뒤 학생(judge 모델) 스스로 자기 답안을 채점하며 실력을 키우게 한다. 정답을 아는 이유는 시험지를 그렇게 만들었기 때문이지, 채점자가 따로 있어서가 아니다.
 
@@ -31,11 +31,11 @@ related_posts: true
 
 [#22 Prometheus 2](/blog/2026/prometheus-2/)부터 [#24 Generative Reward Models](/blog/2026/generative-reward-models/)까지, 이 시리즈 6부는 "reward를 스칼라 하나가 아니라 텍스트 생성으로 뽑자"는 흐름을 다뤘다. judge 모델에게 두 응답 $$y_1, y_2$$를 보여주고, 어느 쪽이 지시문 $$x$$를 더 잘 만족하는지 자연어 추론(reasoning trace)을 거쳐 최종 판정(verdict)을 내리게 하는 방식이다. 이 판정 방식 자체는 [Zheng et al.(2023)의 LLM-as-a-Judge](https://arxiv.org/abs/2306.05685) 이후 표준으로 자리 잡았고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 다루는 평가 벤치마크도 이 판정 형식을 전제로 만들어졌다.
 
-문제는 이 judge를 **학습**시키려면 여전히 "어느 쪽이 나은지" 알려주는 선호 데이터가 필요하다는 점이었다. 6부의 앞선 글들도 이 지도 신호를 사람 선호 데이터(HelpSteer2 등)에서 가져왔다. 이 논문이 6부의 흐름에서 갖는 위치는 명확하다 — **판정 형식(reasoning trace + verdict)은 그대로 두고, 그 형식을 학습시키는 지도 신호만 사람에서 합성으로 바꾼다.**
+문제는 이 judge를 **학습**시키려면 여전히 "어느 쪽이 나은지" 알려주는 선호 데이터가 필요하다는 점이었다. 6부의 앞선 글들도 이 지도 신호를 사람 선호 데이터([HelpSteer2](https://arxiv.org/abs/2406.08673) 등)에서 가져왔다. 이 논문이 6부의 흐름에서 갖는 위치는 명확하다 — **판정 형식(reasoning trace + verdict)은 그대로 두고, 그 형식을 학습시키는 지도 신호만 사람에서 합성으로 바꾼다.**
 
 ## 자기 학습(self-training)의 오래된 위험
 
-모델이 자기 출력을 다시 자기 학습 데이터로 쓰는 아이디어 자체는 새롭지 않다. Zelikman et al.(2022)의 STaR은 모델이 생성한 추론 체인 중 정답을 맞힌 것만 걸러 다시 학습시키는 self-taught reasoner를 제안했다. 이 논문의 이름("Self-Taught Evaluators")도 그 계보를 잇는다.
+모델이 자기 출력을 다시 자기 학습 데이터로 쓰는 아이디어 자체는 새롭지 않다. [Zelikman et al.(2022)의 STaR](https://arxiv.org/abs/2203.14465)은 모델이 생성한 추론 체인 중 정답을 맞힌 것만 걸러 다시 학습시키는 self-taught reasoner를 제안했다. 이 논문의 이름("Self-Taught Evaluators")도 그 계보를 잇는다.
 
 self-training의 오래된 위험은 **순환 논리(circularity)**다. 모델이 스스로 옳다고 판단한 것만 걸러 다시 학습하면, 모델은 자기 편향을 검증하는 게 아니라 강화한다. 이 논문의 핵심 설계는 이 순환을 끊는 데 있다 — "모델이 스스로 옳다고 믿는 것"이 아니라 **"데이터를 만든 사람(연구자)이 구성 과정에서 이미 알고 있는 정답"**을 필터 기준으로 쓴다. 이 차이가 Method 섹션의 전부다.
 
@@ -60,7 +60,7 @@ self-training의 오래된 위험은 **순환 논리(circularity)**다. 모델�
 
 이 논문에서 가장 중요한 설계는 1단계, 특히 나쁜 응답 $$y^l$$을 만드는 방법이다. 순진한 접근은 judge에게 "일부러 나쁜 응답을 써봐"라고 시키는 것이다. 이 논문은 그렇게 하지 않는다. 대신,
 
-1. 원래 지시문 $$x$$에 대해 강한 모델(Mixtral 8x22B Instruct)로 정상적인 좋은 응답 $$y^w$$를 만든다.
+1. 원래 지시문 $$x$$에 대해 강한 모델([Mixtral 8x22B Instruct](https://arxiv.org/abs/2401.04088))로 정상적인 좋은 응답 $$y^w$$를 만든다.
 2. $$x$$와 "관련은 있지만 미묘하게 다른" 변형 지시문 $$x' = \phi(x)$$를 프롬프트로 생성한다.
 3. $$x'$$에 대해서도 정상적으로 좋은 응답 $$y^l$$을 만든다.
 4. $$y^l$$을 원래 지시문 $$x$$의 나쁜 응답으로 취급한다.
@@ -99,7 +99,7 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 
 ## 데이터 소스: WildChat에서 걸러낸 2만 건
 
-지시문 풀은 WildChat 대화 로그에서 가져왔다. Mixtral 8x22B Instruct로 지시문을 카테고리 분류한 뒤, "reasoning" 카테고리에서 **20,582개**를 학습용으로 선별했다. 카테고리별로 따로 학습시켜 비교한 결과, reasoning 카테고리가 RewardBench 83.5로 가장 높았고 safety(79.6), coding(79.4), math/GSM8K(79.3)가 뒤를 이었다 — 모두 학습 전 시드 점수(75.4)보다는 높지만, reasoning만큼은 아니었다. 논문은 이를 "복잡도가 도전적이면서도 분포가 고르게 퍼져 있기 때문"이라고 설명한다.
+지시문 풀은 [WildChat](https://arxiv.org/abs/2405.01470) 대화 로그에서 가져왔다. Mixtral 8x22B Instruct로 지시문을 카테고리 분류한 뒤, "reasoning" 카테고리에서 **20,582개**를 학습용으로 선별했다. 카테고리별로 따로 학습시켜 비교한 결과, reasoning 카테고리가 RewardBench 83.5로 가장 높았고 safety(79.6), coding(79.4), math/GSM8K(79.3)가 뒤를 이었다 — 모두 학습 전 시드 점수(75.4)보다는 높지만, reasoning만큼은 아니었다. 논문은 이를 "복잡도가 도전적이면서도 분포가 고르게 퍼져 있기 때문"이라고 설명한다.
 
 <p align="center"><img src="/assets/post/image/self-taught-evaluators/wildchat_category.png" width="70%"></p>
 
@@ -234,3 +234,7 @@ $$y^l$$은 그 자체로는 결코 조악한 텍스트가 아니다. 유창하�
 - [Self-Taught Evaluators — Hugging Face Papers](https://huggingface.co/papers/2408.02666).
 - Zheng et al., 2023. [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685).
 - Zelikman et al., 2022. [STaR: Bootstrapping Reasoning With Reasoning](https://arxiv.org/abs/2203.14465).
+- Lambert et al., 2024. [RewardBench: Evaluating Reward Models for Language Modeling](https://arxiv.org/abs/2403.13787).
+- Wang et al., 2024. [HelpSteer2: Open-source dataset for training top-performing reward models](https://arxiv.org/abs/2406.08673).
+- Jiang et al., 2024. [Mixtral of Experts](https://arxiv.org/abs/2401.04088).
+- Zhao et al., 2024. [WildChat: 1M ChatGPT Interaction Logs in the Wild](https://arxiv.org/abs/2405.01470).
