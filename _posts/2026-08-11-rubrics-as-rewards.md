@@ -279,9 +279,10 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 **8부. 실전 종합**
 
-32. [프론티어 모델의 reward 설계 (2024~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
+32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
+33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
 
-본 시리즈는 32편으로 구성된다.
+본 시리즈는 33편으로 구성된다.
 
 # 참고 문헌
 

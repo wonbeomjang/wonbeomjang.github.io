@@ -326,9 +326,10 @@ Skywork-Reward-V2는 이 26M 쌍으로 Qwen3(0.6B/1.7B/4B/8B)와 Llama-3.1/3.2(1
 
 **8부. 실전 종합**
 
-32. [프론티어 모델의 reward 설계 (2024~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
+32. [프론티어 모델의 reward 설계 (2025~2026)](/blog/2026/frontier-reward-design/) — DeepSeek·Qwen·Llama·Kimi·Solar가 실제로 택한 것
+33. [reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/) — 시리즈를 관통한 RM 설계 원칙 한 장
 
-본 시리즈는 32편으로 구성된다.
+본 시리즈는 33편으로 구성된다.
 
 # 참고 문헌
 
