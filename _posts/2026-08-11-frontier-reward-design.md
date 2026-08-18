@@ -311,7 +311,6 @@ reward 설계를 "어떤 함수로 점수를 매기나"로만 보면 절반만 �
 
 | 모델        | 프롬프트 선별·커리큘럼 전략                                                       | 무엇을 노리나                                                                 |
 | ----------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Qwen2.5     | 응답 점수 **분산이 큰** 쿼리 우선                                                 | 변별력 있는(정보량 큰) 신호만 학습                                            |
 | Qwen3       | reasoning RL에서 쿼리당 rollout 다수 + off-policy 재활용                          | 샘플 효율                                                                     |
 | Llama 4     | pass@k로 hard prompt 선별, advantage 0인 프롬프트 실시간 제거, medium-hard만 유지 | 신호 없는 프롬프트 낭비 제거, 탐색 여지 확보                                  |
 | DeepSeek-V4 | 도메인별 고품질 데이터로 전문가를 따로 육성                                       | 도메인 간 간섭 없이 각 reward에 집중                                          |
@@ -356,12 +355,10 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 
 지금까지는 "능력(정확성·추론·helpfulness)"을 어떻게 보상하나를 봤다. 그런데 여러 모델이 **안전성(safety) reward를 능력 reward와 명시적으로 분리해** 설계한다. 이 분리는 [#8 Llama 2](/blog/2026/llama2-rlhf/)가 helpfulness RM과 safety RM을 아예 두 개로 나눈 데서 시작됐고, 이번 세대에도 이어진다.
 
-| 모델                                         | 일반 능력 reward                         | 안전성 reward (별도 설계)                                       |
-| -------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
-| A.X K2                                       | 규칙 verifiable + reference rubric judge | **"안전한 완수"를 보상**(거절 자체가 아니라) + principle rubric |
-| K-EXAONE 2.0                                 | 도메인별 규칙·rubric·judge               | **별도 safety-aware preference 단계** + 296개 위험 영역 분류    |
-| DeepSeek-R1 ([#21](/blog/2026/deepseek-r1/)) | 규칙(RLVR)                               | all-scenario 단계의 helpfulness·harmlessness RM                 |
-| Llama 2 ([#8](/blog/2026/llama2-rlhf/))      | helpfulness RM                           | **별도 safety RM** (분리의 원형)                                |
+| 모델         | 일반 능력 reward                         | 안전성 reward (별도 설계)                                       |
+| ------------ | ---------------------------------------- | --------------------------------------------------------------- |
+| A.X K2       | 규칙 verifiable + reference rubric judge | **"안전한 완수"를 보상**(거절 자체가 아니라) + principle rubric |
+| K-EXAONE 2.0 | 도메인별 규칙·rubric·judge               | **별도 safety-aware preference 단계** + 296개 위험 영역 분류    |
 
 두 가지가 눈에 띈다.
 
