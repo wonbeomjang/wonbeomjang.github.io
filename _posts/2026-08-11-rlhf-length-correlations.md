@@ -140,7 +140,7 @@ $$R' = R + \left(1 - \frac{\text{len}(y)}{N}\right)\sigma$$
 $$R' = \frac{R - \mu}{\sigma}$$
 
 - $$\mu, \sigma$$: 최근 배치들에 대한 reward의 이동평균과 이동표준편차.
-- 배치 정규화와 같은 발상으로, 원래는 과최적화로 인한 학습 변동을 잡으려는 목적(Zheng et al., 2023)이지 길이를 직접 겨냥한 개입은 아니다.
+- 배치 정규화와 같은 발상으로, 원래는 과최적화로 인한 학습 변동을 잡으려는 목적([Zheng et al., 2023 — Secrets of RLHF I](/blog/2026/secrets-rlhf-ppo/))이지 길이를 직접 겨냥한 개입은 아니다.
 
 # Experiments
 

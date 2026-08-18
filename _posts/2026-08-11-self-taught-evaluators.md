@@ -29,7 +29,7 @@ related_posts: true
 
 ## LLM-as-a-Judge와 이 시리즈의 6부
 
-[#22 Prometheus 2](/blog/2026/prometheus-2/)부터 [#24 Generative Reward Models](/blog/2026/generative-reward-models/)까지, 이 시리즈 6부는 "reward를 스칼라 하나가 아니라 텍스트 생성으로 뽑자"는 흐름을 다뤘다. judge 모델에게 두 응답 $$y_1, y_2$$를 보여주고, 어느 쪽이 지시문 $$x$$를 더 잘 만족하는지 자연어 추론(reasoning trace)을 거쳐 최종 판정(verdict)을 내리게 하는 방식이다. 이 판정 방식 자체는 Zheng et al.(2023)의 LLM-as-a-Judge 이후 표준으로 자리 잡았고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 다루는 평가 벤치마크도 이 판정 형식을 전제로 만들어졌다.
+[#22 Prometheus 2](/blog/2026/prometheus-2/)부터 [#24 Generative Reward Models](/blog/2026/generative-reward-models/)까지, 이 시리즈 6부는 "reward를 스칼라 하나가 아니라 텍스트 생성으로 뽑자"는 흐름을 다뤘다. judge 모델에게 두 응답 $$y_1, y_2$$를 보여주고, 어느 쪽이 지시문 $$x$$를 더 잘 만족하는지 자연어 추론(reasoning trace)을 거쳐 최종 판정(verdict)을 내리게 하는 방식이다. 이 판정 방식 자체는 [Zheng et al.(2023)의 LLM-as-a-Judge](https://arxiv.org/abs/2306.05685) 이후 표준으로 자리 잡았고, [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 다루는 평가 벤치마크도 이 판정 형식을 전제로 만들어졌다.
 
 문제는 이 judge를 **학습**시키려면 여전히 "어느 쪽이 나은지" 알려주는 선호 데이터가 필요하다는 점이었다. 6부의 앞선 글들도 이 지도 신호를 사람 선호 데이터(HelpSteer2 등)에서 가져왔다. 이 논문이 6부의 흐름에서 갖는 위치는 명확하다 — **판정 형식(reasoning trace + verdict)은 그대로 두고, 그 형식을 학습시키는 지도 신호만 사람에서 합성으로 바꾼다.**
 
