@@ -31,6 +31,20 @@ related_posts: true
 4. 프롬프트 선별·커리큘럼이라는 "숨은 reward 설계", 그리고 hacking 방어 (Experiments)
 5. 지금 내가 reward를 설계해야 한다면 무엇을 골라야 하는가 (Conclusion)
 
+먼저 일곱 모델을 한 장으로 요약하면 이렇다. 각 칸의 근거는 이어지는 Method·Experiments에서 편별로 짚는다.
+
+| 모델         | 팀            | 핵심 reward 조달처                         | RL 알고리즘                 |
+| ------------ | ------------- | ------------------------------------------ | --------------------------- |
+| DeepSeek-V4  | DeepSeek (중) | 규칙 + GRM(비검증)                         | GRPO → on-policy 증류       |
+| Qwen3        | Alibaba (중)  | 규칙 / reference judge / 스칼라 RM 3분류   | GRPO + General RL           |
+| Llama 4      | Meta (미)     | 비공개(online RL) + 선호쌍                 | SFT → online RL → DPO       |
+| Kimi K3      | Moonshot (중) | 규칙(51.2M 샌드박스) + Agentic GRM         | 9전문가 RL → MOPD 증류      |
+| Solar Open 2 | Upstage (한)  | 규칙 + rubric judge                        | GRPO(token) → 12전문가 MOPD |
+| K-EXAONE 2.0 | LG (한)       | 도메인별 규칙·rubric·judge                 | GrouPER + AGAPO             |
+| A.X K2       | SKT (한)      | 규칙(+난이도필터) + reference rubric judge | CISPO + GDPO                |
+
+세 축이 한눈에 보인다 — **검증 가능 도메인은 모두 규칙**, **검증 불가능 도메인은 judge·GRM으로 갈리고**, **여럿이 "전문가→증류"로 통합**한다. 아래에서 하나씩 뜯는다.
+
 # Background
 
 ## 시리즈가 쌓은 재료: 세 가지 축
