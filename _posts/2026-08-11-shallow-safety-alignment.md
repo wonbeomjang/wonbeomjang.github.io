@@ -244,4 +244,9 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 # 참고 문헌
 
-- Qi et al., 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946).
+- Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) (ICLR 2025 Outstanding Paper).
+- Bai et al. (Anthropic), 2022. [Training a Helpful and Harmless Assistant with RLHF](https://arxiv.org/abs/2204.05862) — [#3](/blog/2026/anthropic-hh-rlhf/), 거절 위주 안전 학습의 원형.
+- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/).
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#15](/blog/2026/rule-based-rewards/).
+- Guan et al. (OpenAI), 2024. [Deliberative Alignment](https://arxiv.org/abs/2412.16339) — [#16](/blog/2026/deliberative-alignment/).
+- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#23](/blog/2026/dpo/), 제약 목적함수와 닮은 log-ratio·sigmoid 구조.

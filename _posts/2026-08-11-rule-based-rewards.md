@@ -17,7 +17,7 @@ related_posts: true
 
 문제는 여기서 끝나지 않는다. 사람이 매긴 선호 데이터로 reward model(RM)을 학습하는 과정 자체가 일종의 증류다. 원래 정책 작성자가 의도했던 세밀한 행동 명세(behavior specification) — 예를 들어 "이런 요청은 거절하되 훈계조로 말하지 말라" 같은 규정 — 는 사람이 두 응답 중 하나를 고르는 이진 비교 데이터로 뭉개지면서 상당 부분 소실된다. RM은 결과적으로 그 명세를 근사한 것일 뿐, 명세 그 자체가 아니다.
 
-Mu et al.(OpenAI, NeurIPS 2024)의 Rule Based Rewards(RBR)는 이 증류 단계를 건너뛴다. 아이디어는 단순하다. 안전 행동을 사람이 직접 규칙으로 적고, 그 규칙을 LLM grader가 응답에 대해 채점하게 한 다음, 채점 결과를 선형 결합해 곧바로 reward로 쓴다. 사람 데이터는 가중치를 학습하는 소량의 셋에만 쓰이고, 나머지는 AI 피드백으로 채운다. 그 결과 helpfulness를 유지하면서 안전 분류 성능이 F1 97.1까지 올라간다. 같은 조건의 사람 피드백 baseline은 91.7이다.
+Mu et al.(OpenAI, NeurIPS 2024)의 [Rule Based Rewards(RBR)](https://arxiv.org/abs/2411.01111)는 이 증류 단계를 건너뛴다. 아이디어는 단순하다. 안전 행동을 사람이 직접 규칙으로 적고, 그 규칙을 LLM grader가 응답에 대해 채점하게 한 다음, 채점 결과를 선형 결합해 곧바로 reward로 쓴다. 사람 데이터는 가중치를 학습하는 소량의 셋에만 쓰이고, 나머지는 AI 피드백으로 채운다. 그 결과 helpfulness를 유지하면서 안전 분류 성능이 F1 97.1까지 올라간다. 같은 조건의 사람 피드백 baseline은 91.7이다.
 
 이 포스트는 바로 전편인 [#14 Safe RLHF](/blog/2026/safe-rlhf/)와 짝을 이룬다. 둘 다 "단일 RM이 helpful과 harmless를 동시에 잘 못 다룬다"는 같은 문제에서 출발하지만 푸는 방식이 다르다. Safe RLHF는 **학습된 cost model + 제약 최적화**로 안전을 다뤘고, RBR은 **사람이 쓴 규칙 + LLM grader**로 안전을 다룬다. 이 대비를 축으로 RBR의 구조를 뜯어본다.
 
@@ -226,4 +226,10 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 # 참고 문헌
 
-- Mu et al., 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111).
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) (NeurIPS 2024).
+- Dai et al. (Peking University), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/)에서 다룬 cost model + 제약 최적화.
+- Touvron et al. (Meta), 2023. [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288) — [#8](/blog/2026/llama2-rlhf/)에서 다룬 helpfulness·safety RM 분리.
+- DeepSeek-AI, 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — [#30](/blog/2026/deepseek-r1/)에서 다룬 RLVR, 규칙 기반 판정의 다른 사례.
+- Gao et al. (OpenAI), 2022. [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760) — [#10](/blog/2026/reward-model-overoptimization/)에서 다룬 학습된 RM의 hacking 표면.
+- SKT AI, 2026. [A.X K2 Technical Report](https://github.com/SKT-AI/A.X-K2) — 거절이 아니라 안전한 완수를 보상하는 최신 사례([#41](/blog/2026/frontier-reward-design/)).
+- LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505) — 별도 safety-aware preference 단계([#41](/blog/2026/frontier-reward-design/)).

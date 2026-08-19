@@ -221,4 +221,9 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 # 참고 문헌
 
-- Guan et al., 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339).
+- Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339).
+- Bai et al. (Anthropic), 2022. [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) — 명세를 라벨 생성에만 쓴 선행 접근([별도 글](/blog/2026/constitutional-ai/)).
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#15](/blog/2026/rule-based-rewards/), 규칙을 reward 쪽에 두는 대비 사례.
+- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/), 안전을 제약으로 다루는 접근.
+- DeepSeek-AI, 2025. [DeepSeek-R1](https://arxiv.org/abs/2501.12948) — [#30](/blog/2026/deepseek-r1/), 추론을 RL로 길러낸 계보.
+- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#31](/blog/2026/prometheus-2/), 명세·rubric을 조건으로 받는 judge.
