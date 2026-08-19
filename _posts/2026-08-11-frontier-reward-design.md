@@ -412,6 +412,45 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 
 표현은 달라도 원리는 하나로 수렴한다 — **reward 신호와 "정책이 참조점에서 얼마나 벗어났는가"를 분리해서 다룬다.** DeepSeek·Solar는 KL을 손실 안에서 명시적으로 떼어놓고, Qwen·Llama는 애초에 노이즈가 크거나 신호가 없는 데이터를 걸러낸다. [#11 Length Correlations](/blog/2026/rlhf-length-correlations/)가 지적한 "성능 향상처럼 보이지만 실은 길이·문체 편향"이라는 함정을, 열한 모델 모두 나름의 방식으로 피해 가려 한 흔적이다.
 
+## 학습 안정성: 무엇을 클립하고, 무엇에 앵커를 걸 것인가
+
+reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한 모델은 **안정성 장치**에서도 뚜렷이 갈린다. 이 축은 크게 네 갈래다.
+
+**(1) importance ratio를 어느 단위로 다루나** — 같은 GRPO 계열인데 여기서 정반대 선택이 나온다.
+
+| 선택                     | 모델                          | 근거                                                                                                                                                            |
+| ------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| token 단위 유지          | Solar Open 2                  | 논문이 "GSPO의 sequence-level이 아니라 GRPO의 token-level 비율을 유지한다"고 명시. token 단위 trust-region masking을 씀                                         |
+| **sequence 단위로 올림** | GSPO([#26](/blog/2026/gspo/)) | token 비율은 고분산 노이즈를 누적시킨다. MoE에서 업데이트마다 활성 expert의 약 10%가 바뀌어 token 비율이 요동치는 문제를 해결                                   |
+| **IS 가중치를 클립**     | MiniMax-M1, A.X K2            | CISPO — token 업데이트가 아니라 importance-sampling 가중치를 클립해, 확률은 낮지만 행동에 결정적인 토큰("However", "Recheck")이 계속 그래디언트에 기여하게 한다 |
+
+**(2) KL 앵커를 어떻게 두나** — 고정할지, 움직일지, 아예 뺄지.
+
+| 선택               | 모델               | 방식                                                                                                                                       |
+| ------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **동적 EMA 앵커**  | Gemma 4(WARP·BOND) | 정책의 EMA를 KL 앵커로 삼아 제약이 학습 진행에 따라 자연히 완화된다(automatic annealing)                                                   |
+| 손실 안에서 분리   | DeepSeek 계열      | KL을 reward에 섞지 않고 손실에 직접 더한다                                                                                                 |
+| **KL을 아예 제거** | Magistral, A.X K2  | Magistral은 연산 절감을 위해 KL penalty를 완전히 제거하고 length penalty·zero-advantage 필터로 대신한다. A.X K2도 KL penalty를 쓰지 않는다 |
+
+**(3) 그래디언트가 죽거나 폭주하지 않게** — 배치와 클립 범위를 손본다.
+
+- **Clip-Higher**(DAPO [#27](/blog/2026/dapo/), Magistral): 상한 클립을 키워($$\epsilon_{high} \approx 0.28$$) 낮은 확률 토큰이 오를 여지를 준다. **entropy collapse** 방지.
+- **advantage 0 제거**(DAPO, Magistral, Llama 4): 그룹 reward가 전부 같으면 그래디언트가 0이라 배치만 낭비된다. 오버샘플링해 채운다.
+- **off-policy 내성**(Kimi K3): partial rollout으로 긴 궤적이 여러 iteration에 걸치면서 생기는 staleness를, **per-token regularization**으로 업데이트를 국소 이웃에 묶어 버틴다.
+- **truncated importance sampling**(K-EXAONE 2.0의 AGAPO), **off-policy rollout 재활용**(Qwen3의 reasoning RL): 샘플 효율과 안정성의 절충.
+
+**(4) reward 신호 자체를 안정화** — 이게 이 시리즈의 관심과 가장 가깝다.
+
+| 모델             | 장치                                                      | 무엇을 막나                                                                    |
+| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Gemma 4**      | **WARM** — 여러 RM을 weight averaging                     | RM 하나의 특이한 취약점·노이즈([#13](/blog/2026/warm-weight-averaged-reward/)) |
+| **MiniMax-M1**   | GenRM의 length bias를 학습 중 실시간 감시 → recalibration | judge가 "길수록 이긴다"로 새는 것                                              |
+| **A.X K2**       | GDPO — reward별로 따로 정규화한 뒤 결합                   | 여러 reward를 섞을 때 한 신호가 다른 신호를 잡아먹는 것                        |
+| **Kimi K3**      | budget 기반 verbosity 제어                                | Agentic GRM이 장황한 출력에 속는 것                                            |
+| **Solar Open 2** | MOPD를 KL-only로(outcome reward 없음)                     | 증류 단계에 reward를 안 얹어 hacking 표면 자체를 제거                          |
+
+정리하면 안정성 설계도 reward 설계와 같은 문법을 따른다 — **서로 다른 성질의 신호를 한 덩어리로 뭉치지 말고 분리해서 다룬다.** 클립의 단위를 reward의 단위에 맞추고(GSPO), 여러 reward를 따로 정규화하고(GDPO), RM을 평균해 개별 오차를 상쇄하고(WARM), 참조점 이탈은 KL이 아니라 길이·advantage 필터로 따로 관리한다(Magistral). [#12 ODIN](/blog/2026/odin-disentangled-reward/)이 길이를 reward에서 떼어낸 발상이, 최적화 쪽에서도 반복되고 있는 셈이다.
+
 ## 일반 능력 reward vs 안전성 reward: 프론티어는 둘을 나눈다
 
 지금까지는 "능력(정확성·추론·helpfulness)"을 어떻게 보상하나를 봤다. 그런데 여러 모델이 **안전성(safety) reward를 능력 reward와 명시적으로 분리해** 설계한다. 이 분리는 [#8 Llama 2](/blog/2026/llama2-rlhf/)가 helpfulness RM과 safety RM을 아예 두 개로 나눈 데서 시작됐고, 이번 세대에도 이어진다.
