@@ -342,7 +342,7 @@ reward 조달은 도메인별로 갈린다.
 | Gemma 4      | ① 규칙(코드실행·수학 정답) + ② WARM 평균 RM | BOND + WARM + WARP (+ IT teacher 증류)      | 코드 실행 피드백·수학 ground-truth | 도메인별 다양한 reward 함수        |
 | Magistral    | ① 규칙만(0.9정오+0.1format+lang)            | GRPO 변형(KL제거·Clip-Higher·zero-adv 필터) | SymPy·테스트 통과                  | (비검증 미대응)                    |
 
-이 표가 이 글의 결론을 압축한다. 왼쪽 도메인(검증 가능)에서는 열한 모델 모두 ①(규칙)을 포함한다. 오른쪽 도메인(검증 불가능)에서는 판정형 reward(③ reference judge·④ 생성형 GRM·rubric judge)가 **열하나 중 아홉**에서 쓰인다 — 스칼라 RM 하나만 두는 모델은 사실상 사라졌다(Llama 4만 DPO+RM 노선). 나아가 **"도메인 전문가를 따로 키워 증류로 합친다"는 구조가 DeepSeek-V4·Kimi K3·Solar Open 2·GLM-4.5 네 곳에서 겹치고(Solar 2·K3는 이름까지 MOPD).** 이 두 가지가 이전 세대와의 결정적 차이다.
+이 표가 이 글의 결론을 압축한다. 왼쪽 도메인(검증 가능)에서는 열한 모델 모두 ①(규칙)을 포함한다. 오른쪽 도메인(검증 불가능)에서는 판정형 reward(③ reference judge·④ 생성형 GRM·rubric judge)가 **열하나 중 여덟**에서 쓰인다 — 스칼라 RM 하나만 두는 모델은 사실상 사라졌다(Llama 4만 DPO+RM 노선). 나아가 **"도메인 전문가를 따로 키워 증류로 합친다"는 구조가 DeepSeek-V4·Kimi K3·Solar Open 2·GLM-4.5 네 곳에서 겹치고(Solar 2·K3는 이름까지 MOPD).** 이 두 가지가 이전 세대와의 결정적 차이다.
 
 ## 공통 수렴점: 검증 가능 도메인은 규칙이 표준이 됐다
 
@@ -354,14 +354,16 @@ DeepSeek-R1(2025-01)이 이 선택지를 대중화한 뒤, 이후 발표된 모�
 
 정답이 없는 도메인(글쓰기, 상담, 안전성 판단)으로 가면 열한 모델은 서로 다른 답을 낸다. 이전 세대(DeepSeek-R1, Qwen2.5, Llama 3)를 비교했을 때 이 칸의 결론은 "연구 논문은 생성형 judge를 말하지만, 프로덕션 report는 아직 스칼라 RM이나 self-critique에 머문다"였다. **이번 세대에서 그 결론이 바뀐다.**
 
-| 접근                       | 채택 모델                                                                         | 조달처 | 관련 편                                                                                                     |
-| -------------------------- | --------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
-| 사람 선호 쌍 + DPO         | Llama 4                                                                           | 선호   | [#23 DPO](/blog/2026/dpo/)                                                                                  |
-| 스칼라 RM                  | Qwen3                                                                             | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/))                            |
-| reference 기반 judge       | Qwen3, A.X K2                                                                     | ③      | [#33 Prometheus 2](/blog/2026/prometheus-2/)                                                                |
-| generative RM·rubric judge | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/) |
+| 접근                       | 채택 모델                                                                         | 조달처 | 관련 편                                                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 사람 선호 쌍 + DPO         | Llama 4                                                                           | 선호   | [#23 DPO](/blog/2026/dpo/)                                                                                                            |
+| 스칼라 RM                  | Qwen3, **Gemma 4**(weight averaged RM)                                            | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)), [#13 WARM](/blog/2026/warm-weight-averaged-reward/) |
+| reference 기반 judge       | Qwen3, A.X K2                                                                     | ③      | [#33 Prometheus 2](/blog/2026/prometheus-2/)                                                                                          |
+| generative RM·rubric judge | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)                           |
 
 마지막 행이 핵심이다. [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 프로덕션에 넣었고, Kimi K3·MiniMax-M1·Solar Open 2·K-EXAONE 2.0·GLM-4.5까지 여섯 모델이 생성형 rubric judge를 쓴다.** Qwen3·A.X K2의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. (그 씨앗은 전신 Kimi K2의 self-critique였다 — 위 Kimi K3 절 참고.) 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
+
+다만 **스칼라 RM이 사라진 것은 아니다.** Gemma 4는 judge나 GRM이 아니라 여전히 **학습된 RM(②)** 에 기댄다 — 대신 RM 하나를 믿는 대신 [#13 WARM](/blog/2026/warm-weight-averaged-reward/)처럼 **여러 RM을 weight averaging해서** 개별 RM의 특이한 취약점을 상쇄한다. 즉 이번 세대의 분기는 "스칼라 RM이냐 생성형 judge냐"의 이분법이 아니라, **스칼라 RM을 쓰더라도 그 RM을 어떻게 견고하게 만들 것인가**라는 축이 하나 더 있는 셈이다.
 
 ## 숨은 reward 설계: 프롬프트를 고르는 것도 reward다
 
