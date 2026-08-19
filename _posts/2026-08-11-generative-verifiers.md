@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Generative Verifiers: reward를 분류가 아니라 생성으로 풀다"
-date: 2026-08-11 09:32:00 +0900
-description: "RLHF Reward 설계 시리즈 #32 — next-token prediction으로 학습한 verifier가 CoT와 test-time compute를 얻는 법"
+date: 2026-08-11 09:34:00 +0900
+description: "RLHF Reward 설계 시리즈 #34 — next-token prediction으로 학습한 verifier가 CoT와 test-time compute를 얻는 법"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, verifier, llm-as-a-judge, paper]
 giscus_comments: true
@@ -23,7 +23,7 @@ GenRM의 핵심은 단순하다. "이 답이 맞습니까?"라는 질문에 **Ye
 
 이 전환이 중요한 이유는 세 가지다. (a) 판별 head 없이 instruction tuning 파이프라인에 그대로 올라탄다. (b) Yes/No를 뱉기 전에 **검증 근거(rationale)를 먼저 생성**할 수 있다 — chain-of-thought(CoT) 검증이다. (c) 이 rationale을 여러 번 샘플링해서 **test-time compute를 reward 품질에 직접 투입**할 수 있다. 이 시리즈에서 (c)는 처음 등장하는 축이다. 지금까지의 RM은 학습이 끝나면 추론 비용이 고정된 결정론적 함수였다. GenRM은 "얼마나 많이 계산할 것인가"를 reward 품질의 손잡이로 바꿔놓는다.
 
-결과는 명확하다. Best-of-N 선택에서 알고리즘 태스크는 5% → 45.3%, GSM8K는 73% → 93.4%, MATH로의 전이는 28% → 44.6%까지 오른다. 다만 이 모든 이득에는 값이 매겨져 있다. 검증마다 텍스트를 생성해야 하므로 스칼라 RM보다 훨씬 느리다. 이 비용 문제를 정면으로 다루는 것이 [#35 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)다.
+결과는 명확하다. Best-of-N 선택에서 알고리즘 태스크는 5% → 45.3%, GSM8K는 73% → 93.4%, MATH로의 전이는 28% → 44.6%까지 오른다. 다만 이 모든 이득에는 값이 매겨져 있다. 검증마다 텍스트를 생성해야 하므로 스칼라 RM보다 훨씬 느리다. 이 비용 문제를 정면으로 다루는 것이 [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)다.
 
 # Background
 
@@ -165,19 +165,19 @@ GSM8K로만 학습한 verifier를 MMLU의 수학 하위 태스크에 그대로 �
 
 판별 RM은 $$(x, y)$$ 한 쌍마다 forward pass 한 번이면 끝난다. GenRM-CoT는 $$N$$개의 후보 풀이 각각에 대해 $$K$$개의 검증 rationale을 **새로 생성**해야 한다. 즉 채점 비용이 $$O(N)$$에서 $$O(N \times K)$$로 늘어나고, 그마저도 각 rationale이 스칼라 하나가 아니라 수십~수백 토큰짜리 텍스트다. 논문 자체는 이 비용을 정량적으로 다루지 않지만, 구조적으로 명백하다 — 검증이 생성인 이상, 검증은 생성만큼 느리다.
 
-이 트레이드오프 — reward 품질은 좋아지는데 추론은 비싸진다 — 를 어떻게 다룰 것인가가 이후 GenRM 계열 연구의 핵심 과제로 넘어간다. [#35 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 바로 이 inference-time scaling 문제를 정면으로 다룬다.
+이 트레이드오프 — reward 품질은 좋아지는데 추론은 비싸진다 — 를 어떻게 다룰 것인가가 이후 GenRM 계열 연구의 핵심 과제로 넘어간다. [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 바로 이 inference-time scaling 문제를 정면으로 다룬다.
 
 # Conclusion
 
 GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 아니라 next-token prediction으로도 충분히, 오히려 더 잘 만들 수 있다**는 것이다. 판별 RM이 버렸던 생성 능력을 되찾아오면 세 가지가 따라온다 — instruction tuning과의 매끄러운 통합, 판정 전에 근거를 쓰는 CoT 검증, 그리고 계산을 더 쓸수록 좋아지는 test-time compute 활용이다. Best-of-N에서 알고리즘 태스크 5% → 45.3%, GSM8K 73% → 93.4%, MMLU abstract algebra 37.9% → 53.5%라는 수치가 이를 뒷받침한다.
 
-다만 이 이득은 공짜가 아니다. 판정마다 텍스트를 생성해야 하므로 판별 RM보다 훨씬 느리다. [#30 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 규칙 기반 reward는 검증 가능한 도메인 안에서는 이 문제 자체가 없었지만, 검증이 어려운 일반 도메인으로 갈수록 "생성으로 검증한다"는 이 접근이 불가피해진다. 다음 글([#33 Generative Reward Models](/blog/2026/generative-reward-models/))은 GenRM을 선호 학습(preference learning)과 결합하는 후속 연구를, [#35 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)는 이 추론 비용 문제를 inference-time scaling으로 다룬다.
+다만 이 이득은 공짜가 아니다. 판정마다 텍스트를 생성해야 하므로 판별 RM보다 훨씬 느리다. [#32 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 규칙 기반 reward는 검증 가능한 도메인 안에서는 이 문제 자체가 없었지만, 검증이 어려운 일반 도메인으로 갈수록 "생성으로 검증한다"는 이 접근이 불가피해진다. 다음 글([#35 Generative Reward Models](/blog/2026/generative-reward-models/))은 GenRM을 선호 학습(preference learning)과 결합하는 후속 연구를, [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)는 이 추론 비용 문제를 inference-time scaling으로 다룬다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른두 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른네 번째 글이다.
 
 **1부. 지형도**
 
@@ -229,11 +229,13 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
   <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
   <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
   <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
 </ol>
 
 **6부. Process & Verifiable Reward**
 
-<ol start="28">
+<ol start="30">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -241,7 +243,7 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
 
 **7부. Generative Reward Model**
 
-<ol start="31">
+<ol start="33">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><strong>(현재 글)</strong> Generative Verifiers (2024) — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -251,7 +253,7 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="36">
+<ol start="38">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -261,12 +263,12 @@ GenRM의 메시지를 한 줄로 요약하면, **reward는 스칼라 분류가 �
 
 **9부. 실전 종합**
 
-<ol start="41">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
+<ol start="43">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 42편으로 구성된다.
+본 시리즈는 44편으로 구성된다.
 
 # 참고 문헌
 

@@ -143,7 +143,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 # Conclusion
 
-안전 정렬은 기본적으로 얕다. 거절 예시로만 SFT를 걸면, 모델은 유해한 내용을 다루는 법이 아니라 응답을 거절 접두어로 시작하는 습관만 배운다. 이 하나의 사실이 adversarial suffix, prefilling, decoding parameter, fine-tuning 네 가지 공격을 전부 설명한다. 그리고 정렬을 깊게 만드는 처방도 이 진단에서 그대로 따라 나온다. (a) 유해한 응답으로 시작했다가 거절로 되돌아오는, 응답 뒷부분까지 안전 신호가 걸리는 데이터를 학습에 넣어야 하고, (b) 파인튜닝 API를 외부에 열어줄 경우에는 앞쪽 토큰을 특히 강하게 보호하는 위치별 제약을 파인튜닝 목적함수 자체에 걸어야 한다. [#41 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, 실제 서비스에서 파인튜닝 API를 제공하는 순간 이 문제는 이론이 아니라 운영 리스크가 된다.
+안전 정렬은 기본적으로 얕다. 거절 예시로만 SFT를 걸면, 모델은 유해한 내용을 다루는 법이 아니라 응답을 거절 접두어로 시작하는 습관만 배운다. 이 하나의 사실이 adversarial suffix, prefilling, decoding parameter, fine-tuning 네 가지 공격을 전부 설명한다. 그리고 정렬을 깊게 만드는 처방도 이 진단에서 그대로 따라 나온다. (a) 유해한 응답으로 시작했다가 거절로 되돌아오는, 응답 뒷부분까지 안전 신호가 걸리는 데이터를 학습에 넣어야 하고, (b) 파인튜닝 API를 외부에 열어줄 경우에는 앞쪽 토큰을 특히 강하게 보호하는 위치별 제약을 파인튜닝 목적함수 자체에 걸어야 한다. [#43 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, 실제 서비스에서 파인튜닝 API를 제공하는 순간 이 문제는 이론이 아니라 운영 리스크가 된다.
 
 다만 이 논문의 처방이 모든 공격을 원천 봉쇄하는 건 아니다. 데이터 증강과 제약 목적함수 모두 논문이 테스트한 공격 종류에 한정된 결과이고, 더 정교하게 설계된 새로운 공격이 같은 구멍을 다른 방식으로 다시 찌를 가능성은 남아 있다. shallow safety alignment는 진단이지 만병통치약이 아니다. "정렬이 얼마나 깊이 박혀 있는가"를 측정하고 개선하는 하나의 축일 뿐, 안전성 자체를 보장하는 개념은 아니다.
 
@@ -203,11 +203,13 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
   <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
   <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
   <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
 </ol>
 
 **6부. Process & Verifiable Reward**
 
-<ol start="28">
+<ol start="30">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -215,7 +217,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **7부. Generative Reward Model**
 
-<ol start="31">
+<ol start="33">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -225,7 +227,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="36">
+<ol start="38">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -235,12 +237,12 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **9부. 실전 종합**
 
-<ol start="41">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
+<ol start="43">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 42편으로 구성된다.
+본 시리즈는 44편으로 구성된다.
 
 # 참고 문헌
 

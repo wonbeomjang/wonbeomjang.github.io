@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Generative Reward Models: GenRM과 선호 학습을 잇다"
-date: 2026-08-11 09:33:00 +0900
-description: "RLHF Reward 설계 시리즈 #33 — 판별 RM과 생성 judge 사이, 그리고 CLoud 하이브리드"
+date: 2026-08-11 09:35:00 +0900
+description: "RLHF Reward 설계 시리즈 #35 — 판별 RM과 생성 judge 사이, 그리고 CLoud 하이브리드"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, dpo, llm-as-a-judge, paper]
 giscus_comments: true
@@ -13,16 +13,16 @@ related_posts: true
 
 # Introduction
 
-[32편](/blog/2026/generative-verifiers/)에서는 reward를 next-token prediction으로 다시 정의하는 **Generative Verifier**를 다뤘다. 모델이 "이 풀이가 맞는가"를 직접 next token으로 판정하게 만들면, 판별형 스칼라 RM보다 검증 성능이 좋아진다는 결과였다. 다만 그 글의 방법에는 조건이 하나 붙어 있었다. **정답이 있어야 한다**는 것이다. 수학 문제의 정답, 코드의 테스트케이스처럼 학습 시점에 참조할 수 있는 ground-truth solution이 있어야 "이 풀이가 정답과 일치하는가"를 판정할 수 있었다.
+[34편](/blog/2026/generative-verifiers/)에서는 reward를 next-token prediction으로 다시 정의하는 **Generative Verifier**를 다뤘다. 모델이 "이 풀이가 맞는가"를 직접 next token으로 판정하게 만들면, 판별형 스칼라 RM보다 검증 성능이 좋아진다는 결과였다. 다만 그 글의 방법에는 조건이 하나 붙어 있었다. **정답이 있어야 한다**는 것이다. 수학 문제의 정답, 코드의 테스트케이스처럼 학습 시점에 참조할 수 있는 ground-truth solution이 있어야 "이 풀이가 정답과 일치하는가"를 판정할 수 있었다.
 
-그런데 RLHF가 다루는 문제의 대부분은 정답이 없다. "이 이메일 요약이 저 이메일 요약보다 낫다"거나 "이 답변이 더 친절하다"는 판단에는 검증 가능한 정답이 없고, 오직 **사람의 선호(preference)**만 있다. 이 글에서 다루는 논문 [Generative Reward Models](https://arxiv.org/abs/2410.12832)(GenRM, Mahan et al., SynthLabs & Stanford, 2024)는 바로 이 지점에서 31편을 확장한다. 논문 자신도 관련 연구 절에서 이 차이를 명시한다 — 동시대 연구인 Generative Verifier는 "학습 시점에 전체 참조 풀이(reference solution)에 접근할 수 있어야 한다"는 조건이 있지만, GenRM은 그런 조건 없이 **쌍대 선호 데이터만으로** 생성형 judge를 학습시킨다.
+그런데 RLHF가 다루는 문제의 대부분은 정답이 없다. "이 이메일 요약이 저 이메일 요약보다 낫다"거나 "이 답변이 더 친절하다"는 판단에는 검증 가능한 정답이 없고, 오직 **사람의 선호(preference)**만 있다. 이 글에서 다루는 논문 [Generative Reward Models](https://arxiv.org/abs/2410.12832)(GenRM, Mahan et al., SynthLabs & Stanford, 2024)는 바로 이 지점에서 33편을 확장한다. 논문 자신도 관련 연구 절에서 이 차이를 명시한다 — 동시대 연구인 Generative Verifier는 "학습 시점에 전체 참조 풀이(reference solution)에 접근할 수 있어야 한다"는 조건이 있지만, GenRM은 그런 조건 없이 **쌍대 선호 데이터만으로** 생성형 judge를 학습시킨다.
 
 왜 이게 문제가 되는가? 지금까지 이 시리즈가 다뤄온 두 갈래 접근을 정리하면 이렇다.
 
 - **판별형 스칼라 RM** (2부, 4~9편): 사람이 매긴 선호 쌍으로 Bradley-Terry loss를 학습해 응답 하나에 실수 하나를 매긴다. In-distribution에서는 정확하지만, 분포가 바뀌면(OOD) 쉽게 무너진다.
 - **RLAIF / LLM-as-judge**: 강력한 LLM에게 "어느 쪽이 나은가"를 직접 물어본다. 별도 학습 없이 유연하지만, 논문의 표현을 빌리면 **zero-shot judge는 in-distribution 과제에서 Bradley-Terry RM보다 9~36% 낮은 정확도**를 보인다 — 즉 사람의 실제 선호와 정렬이 덜 되어 있다.
 
-GenRM의 제안은 단순하다. **이 둘을 섞는다.** 사람 선호 데이터(RLHF의 재료)로 생성형 judge(RLAIF의 형태)를 학습시키면, 판별형 RM의 정확도와 생성형 judge의 견고함을 동시에 가질 수 있다는 것이다. 실제로 논문은 GenRM이 in-distribution에서는 Bradley-Terry RM과 대등하면서 **out-of-distribution에서는 10~45% 더 높은 정확도**를 낸다고 보고한다. 이 글은 그 방법(GenRM, CoT-GenRM)과, 비슷한 시기에 나온 하이브리드 접근인 **CLoud**(Critique-out-Loud Reward Models, Ankner et al., Databricks, 2024)를 함께 들여다본다. 그리고 이 논문이 남긴 두 개의 빚 — 추론 시점 계산을 어떻게 더 적극적으로 쓸 것인가는 [35편](/blog/2026/deepseek-grm-spct/)으로, 생성형 judge가 여전히 속아 넘어가는 문제는 [40편](/blog/2026/one-token-to-fool-judge/)으로 넘어간다.
+GenRM의 제안은 단순하다. **이 둘을 섞는다.** 사람 선호 데이터(RLHF의 재료)로 생성형 judge(RLAIF의 형태)를 학습시키면, 판별형 RM의 정확도와 생성형 judge의 견고함을 동시에 가질 수 있다는 것이다. 실제로 논문은 GenRM이 in-distribution에서는 Bradley-Terry RM과 대등하면서 **out-of-distribution에서는 10~45% 더 높은 정확도**를 낸다고 보고한다. 이 글은 그 방법(GenRM, CoT-GenRM)과, 비슷한 시기에 나온 하이브리드 접근인 **CLoud**(Critique-out-Loud Reward Models, Ankner et al., Databricks, 2024)를 함께 들여다본다. 그리고 이 논문이 남긴 두 개의 빚 — 추론 시점 계산을 어떻게 더 적극적으로 쓸 것인가는 [37편](/blog/2026/deepseek-grm-spct/)으로, 생성형 judge가 여전히 속아 넘어가는 문제는 [42편](/blog/2026/one-token-to-fool-judge/)으로 넘어간다.
 
 # Background
 
@@ -217,7 +217,7 @@ UltraInteract(추론 위주)로 학습했을 때, in-distribution 정확도는 S
 
 ## 추론 시점 계산: 다수결의 효과
 
-CoT-GenRM은 여러 개의 추론을 샘플링해 다수결로 최종 판정을 낼 수 있다. 32개 샘플로 다수결을 하면 UltraFeedback에서 +1.6%p, RewardBench에서 +3.8%p, UltraInteract 학습 모델 기준으로는 UltraInteract에서 +4.6%p, RewardBench에서 +4.9%p 개선된다. CLoud도 비슷한 실험(self-consistency decoding, N개 critique를 샘플링해 보상을 평균)을 했는데, 결과가 흥미롭게 엇갈린다. CLoud는 **추론(Reasoning) 범주에서만** 이득을 봤고(8B +0.70%p, 70B +0.49%p), 그마저도 응답의 추론 단계가 1~2단계로 짧은 문제에서만 일관되게 좋아졌다. 두 논문 모두 "다수결이 추론 과제에서 특히 효과적"이라는 같은 신호를 보내지만, 이걸 어떻게 체계적으로 최대화할지는 아직 이 논문들의 범위 밖이다 — [35편](/blog/2026/deepseek-grm-spct/)이 이 지점을 정면으로 다룬다.
+CoT-GenRM은 여러 개의 추론을 샘플링해 다수결로 최종 판정을 낼 수 있다. 32개 샘플로 다수결을 하면 UltraFeedback에서 +1.6%p, RewardBench에서 +3.8%p, UltraInteract 학습 모델 기준으로는 UltraInteract에서 +4.6%p, RewardBench에서 +4.9%p 개선된다. CLoud도 비슷한 실험(self-consistency decoding, N개 critique를 샘플링해 보상을 평균)을 했는데, 결과가 흥미롭게 엇갈린다. CLoud는 **추론(Reasoning) 범주에서만** 이득을 봤고(8B +0.70%p, 70B +0.49%p), 그마저도 응답의 추론 단계가 1~2단계로 짧은 문제에서만 일관되게 좋아졌다. 두 논문 모두 "다수결이 추론 과제에서 특히 효과적"이라는 같은 신호를 보내지만, 이걸 어떻게 체계적으로 최대화할지는 아직 이 논문들의 범위 밖이다 — [37편](/blog/2026/deepseek-grm-spct/)이 이 지점을 정면으로 다룬다.
 
 # Conclusion
 
@@ -226,7 +226,7 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 한계도 분명하다.
 
 - **추론 비용.** CoT-GenRM은 판정마다 수백 토큰의 추론을 생성해야 하고, 다수결까지 쓰면 N배로 늘어난다. 스칼라 RM의 순전파 1회와는 비교가 안 된다. CLoud도 critique 생성만큼의 추가 지연이 붙는다.
-- **생성형 judge 특유의 편향.** 토이 예제에서 본 verbosity bias(장황한 응답을 무조건 선호) 외에도, 논문은 프롬프트 설계 단계에서부터 position bias(응답 순서가 판정에 영향을 주는 것)를 피하려 명시적으로 지시문을 넣는다. self-enhancement bias(judge가 자기 자신과 비슷한 스타일의 응답을 선호하는 것) 같은 문제는 이 논문에서 직접 다루지 않는다. 이런 편향들이 실제로 얼마나 쉽게 판정을 뒤집을 수 있는지는 [40편](/blog/2026/one-token-to-fool-judge/)에서 훨씬 극단적인 형태로 확인하게 된다.
+- **생성형 judge 특유의 편향.** 토이 예제에서 본 verbosity bias(장황한 응답을 무조건 선호) 외에도, 논문은 프롬프트 설계 단계에서부터 position bias(응답 순서가 판정에 영향을 주는 것)를 피하려 명시적으로 지시문을 넣는다. self-enhancement bias(judge가 자기 자신과 비슷한 스타일의 응답을 선호하는 것) 같은 문제는 이 논문에서 직접 다루지 않는다. 이런 편향들이 실제로 얼마나 쉽게 판정을 뒤집을 수 있는지는 [42편](/blog/2026/one-token-to-fool-judge/)에서 훨씬 극단적인 형태로 확인하게 된다.
 
 정확한 판정 근거를 보여주는 judge라 해도, 그 근거가 사람을 설득하기 위한 그럴듯한 텍스트일 뿐일 위험은 여전히 남는다.
 
@@ -234,7 +234,7 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른세 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -286,11 +286,13 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
   <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
   <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
   <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
 </ol>
 
 **6부. Process & Verifiable Reward**
 
-<ol start="28">
+<ol start="30">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -298,7 +300,7 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 
 **7부. Generative Reward Model**
 
-<ol start="31">
+<ol start="33">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><strong>(현재 글)</strong> Generative Reward Models (2024) — GenRM과 선호 학습의 결합</li>
@@ -308,7 +310,7 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="36">
+<ol start="38">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -318,12 +320,12 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 
 **9부. 실전 종합**
 
-<ol start="41">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
+<ol start="43">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 42편으로 구성된다.
+본 시리즈는 44편으로 구성된다.
 
 # 참고 문헌
 

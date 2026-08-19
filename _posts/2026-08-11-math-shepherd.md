@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Math-Shepherd: 사람 라벨 없이 PRM을 만들다"
-date: 2026-08-11 09:29:00 +0900
-description: "RLHF Reward 설계 시리즈 #29 — rollout으로 단계별 라벨을 자동 생성하는 법, 그리고 PRM 평가의 함정"
+date: 2026-08-11 09:31:00 +0900
+description: "RLHF Reward 설계 시리즈 #31 — rollout으로 단계별 라벨을 자동 생성하는 법, 그리고 PRM 평가의 함정"
 categories: [paper]
 tags: [rlhf, reward-model, prm, process-supervision, reasoning, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[28편](/blog/2026/lets-verify-step-by-step/)에서 확인한 결론은 명확했다. 최종 답만 채점하는 outcome reward model(ORM)보다, 풀이의 각 단계를 하나씩 채점하는 process reward model(PRM)이 수학 추론에서 훨씬 신뢰할 수 있는 reward 신호를 준다. 문제는 그 PRM을 어떻게 만드느냐였다. OpenAI의 PRM800K는 사람 라벨러가 MATH 문제 풀이의 단계 하나하나에 "옳다/틀리다"를 매겨 80만 건의 step-level 라벨을 만들었다. 정확하긴 하지만, 이 방식은 문제 하나가 늘어날 때마다 사람의 시간이 그만큼 늘어난다는 근본적인 한계를 갖는다. 28편이 이 시리즈에 남긴 부채는 정확히 이것이었다 — **"단계별 사람 라벨은 너무 비싸다. 그러면 자동으로 만들 수는 없는가?"**
+[30편](/blog/2026/lets-verify-step-by-step/)에서 확인한 결론은 명확했다. 최종 답만 채점하는 outcome reward model(ORM)보다, 풀이의 각 단계를 하나씩 채점하는 process reward model(PRM)이 수학 추론에서 훨씬 신뢰할 수 있는 reward 신호를 준다. 문제는 그 PRM을 어떻게 만드느냐였다. OpenAI의 PRM800K는 사람 라벨러가 MATH 문제 풀이의 단계 하나하나에 "옳다/틀리다"를 매겨 80만 건의 step-level 라벨을 만들었다. 정확하긴 하지만, 이 방식은 문제 하나가 늘어날 때마다 사람의 시간이 그만큼 늘어난다는 근본적인 한계를 갖는다. 30편이 이 시리즈에 남긴 부채는 정확히 이것이었다 — **"단계별 사람 라벨은 너무 비싸다. 그러면 자동으로 만들 수는 없는가?"**
 
 이번 글에서 다루는 Math-Shepherd는 이 질문에 대한 정면 답변이다. 핵심 아이디어는 단순하다. 어떤 단계가 "좋은 단계"인지 사람에게 묻는 대신, **그 단계에서 이어서 여러 번 풀어보게 하고 정답에 도달하는 비율을 세면 된다**는 것이다. 사람이 한 줄씩 채점하는 대신, 모델 스스로 자기 풀이의 각 갈림길에서 "여기서 계속 가면 얼마나 자주 정상에 도착하는가"를 rollout으로 재본다. 그리고 이렇게 얻은 라벨로 학습한 PRM을, [21편 GRPO](/blog/2026/grpo-deepseekmath/)와 같은 DeepSeek 계열의 관심사인 **RL의 reward 신호**로 직접 사용한다.
 
@@ -23,13 +23,13 @@ related_posts: true
 2. **그 라벨로 만든 PRM을 어디에 쓰는가**: best-of-N 재랭킹(verifier)과 PPO reward(policy 학습), 두 가지 용도.
 3. **이 PRM을 믿어도 되는가**: ProcessBench와 PRMBench가 드러낸, "best-of-N 성능이 좋다"와 "PRM이 단계를 제대로 판별한다"의 간극.
 
-미리 예고하자면, 세 번째 질문의 답은 그리 밝지 않다. 그리고 이 어두운 답이 [30편 DeepSeek-R1](/blog/2026/deepseek-r1/)이 결국 PRM 자체를 포기하는 이유로 이어진다.
+미리 예고하자면, 세 번째 질문의 답은 그리 밝지 않다. 그리고 이 어두운 답이 [32편 DeepSeek-R1](/blog/2026/deepseek-r1/)이 결국 PRM 자체를 포기하는 이유로 이어진다.
 
 # Background
 
 ## PRM vs ORM, 짧은 복습
 
-28편에서 다룬 구도를 한 문장으로: ORM은 풀이 전체 $$S$$에 스칼라 보상 하나를 매기고, PRM은 각 단계 $$s_i$$에 개별 보상 $$r_{s_i}$$를 매긴다. PRM이 이기는 이유는 "어디서 틀렸는지"를 짚어주기 때문이다 — 5단계 풀이 중 3단계에서 부호를 잘못 옮겼다면, ORM은 "이 풀이는 틀렸다"고만 말하지만 PRM은 "3단계가 문제"라고 말한다. 문제는 이 $$r_{s_i}$$를 어디서 얻느냐였고, PRM800K는 그 답을 사람 손에 맡겼다.
+30편에서 다룬 구도를 한 문장으로: ORM은 풀이 전체 $$S$$에 스칼라 보상 하나를 매기고, PRM은 각 단계 $$s_i$$에 개별 보상 $$r_{s_i}$$를 매긴다. PRM이 이기는 이유는 "어디서 틀렸는지"를 짚어주기 때문이다 — 5단계 풀이 중 3단계에서 부호를 잘못 옮겼다면, ORM은 "이 풀이는 틀렸다"고만 말하지만 PRM은 "3단계가 문제"라고 말한다. 문제는 이 $$r_{s_i}$$를 어디서 얻느냐였고, PRM800K는 그 답을 사람 손에 맡겼다.
 
 | 항목        | ORM                      | PRM([PRM800K, 19편](/blog/2026/lets-verify-step-by-step/)) | PRM(Math-Shepherd, 이 글)      |
 | ----------- | ------------------------ | ---------------------------------------------------------- | ------------------------------ |
@@ -195,13 +195,13 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
 2. **결과**: DeepSeek-67B 검증에서 GSM8K 88.2% → 93.3%, Mistral-7B RL+검증에서 MATH 28.6% → 43.5%까지 끌어올렸다.
 3. **한계**: 논문 스스로도 인정하듯 "완성 과정이 많은 컴퓨팅 자원을 요구한다"는 rollout 비용 문제가 있고, 더 근본적으로는 **"정답으로 이어졌다"와 "그 단계가 논리적으로 옳다"가 같지 않다**는 간극이 있다. ProcessBench와 PRMBench는 이 간극이 추상적인 우려가 아니라 실제로 측정 가능한 성능 격차(F1 31.5, PRMScore 47.0)임을 보여줬다.
 
-이 한계는 그냥 넘어갈 문제가 아니다. rollout 기반이든 사람 라벨 기반이든, 신경망 PRM은 결국 근사치이고 hacking될 여지를 남긴다. [30편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이 문제를 아예 정면으로 받아들여 — 일반적인 추론 과제에서 단계를 세밀하게 정의하기 어렵다는 점, 중간 단계의 정오 판단 자체가 어렵다는 점, 그리고 신경망 reward model은 대규모 RL에서 결국 reward hacking에 취약하다는 점을 이유로 — **PRM을 포함한 신경망 reward model 전체를 버리고 규칙 기반 reward로 돌아서는** 선택을 한다. Math-Shepherd가 "사람 라벨을 없앴다"면, DeepSeek-R1은 한 발 더 나아가 "PRM 자체를 없앤다." 그 이야기는 다음 글에서 이어간다.
+이 한계는 그냥 넘어갈 문제가 아니다. rollout 기반이든 사람 라벨 기반이든, 신경망 PRM은 결국 근사치이고 hacking될 여지를 남긴다. [32편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이 문제를 아예 정면으로 받아들여 — 일반적인 추론 과제에서 단계를 세밀하게 정의하기 어렵다는 점, 중간 단계의 정오 판단 자체가 어렵다는 점, 그리고 신경망 reward model은 대규모 RL에서 결국 reward hacking에 취약하다는 점을 이유로 — **PRM을 포함한 신경망 reward model 전체를 버리고 규칙 기반 reward로 돌아서는** 선택을 한다. Math-Shepherd가 "사람 라벨을 없앴다"면, DeepSeek-R1은 한 발 더 나아가 "PRM 자체를 없앤다." 그 이야기는 다음 글에서 이어간다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물아홉 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 서른한 번째 글이다.
 
 **1부. 지형도**
 
@@ -253,11 +253,13 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
   <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
   <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
   <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
 </ol>
 
 **6부. Process & Verifiable Reward**
 
-<ol start="28">
+<ol start="30">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><strong>(현재 글)</strong> Math-Shepherd (2023) — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -265,7 +267,7 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
 
 **7부. Generative Reward Model**
 
-<ol start="31">
+<ol start="33">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -275,7 +277,7 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="36">
+<ol start="38">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -285,12 +287,12 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
 
 **9부. 실전 종합**
 
-<ol start="41">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
+<ol start="43">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 42편으로 구성된다.
+본 시리즈는 44편으로 구성된다.
 
 # 참고 문헌
 
@@ -298,6 +300,6 @@ Math-Shepherd의 핵심은 한 줄로 요약된다. **"좋은 단계 = 정답으
 - Wang et al., 2024. [Math-Shepherd (ACL Anthology)](https://aclanthology.org/2024.acl-long.510/).
 - Zheng et al., 2024. [ProcessBench: Identifying Process Errors in Mathematical Reasoning](https://arxiv.org/abs/2412.06559).
 - Song et al., 2025. [PRMBench: A Fine-grained and Challenging Benchmark for Process-Level Reward Models](https://arxiv.org/abs/2501.03124). ACL 2025.
-- Lightman et al., 2023. [Let's Verify Step by Step](https://arxiv.org/abs/2305.20050) — PRM800K, 이 시리즈 28편에서 다룬 논문.
+- Lightman et al., 2023. [Let's Verify Step by Step](https://arxiv.org/abs/2305.20050) — PRM800K, 이 시리즈 30편에서 다룬 논문.
 - [OpenAI PRM800K GitHub](https://github.com/openai/prm800k) — 80만 건 step-level 라벨 데이터셋.
-- Guo et al., 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — 30편에서 다룰 PRM 포기 논거의 출처.
+- Guo et al., 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — 32편에서 다룰 PRM 포기 논거의 출처.

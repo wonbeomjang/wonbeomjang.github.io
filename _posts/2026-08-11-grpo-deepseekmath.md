@@ -97,7 +97,7 @@ $$
 \hat{A}_{i,t} = \sum_{\mathrm{index}(j) \ge t} \widetilde{r}_i^{\,\mathrm{index}(j)}
 $$
 
-이건 "지금 이 토큰 이후에 잘한 단계들만 이 토큰의 공로로 친다"는 뜻이다. process reward는 이후 [#28](/blog/2026/lets-verify-step-by-step/), [#29](/blog/2026/math-shepherd/) 글에서 본격적으로 다룬다. DeepSeekMath 실험 자체는 outcome supervision 버전을 주로 쓴다.
+이건 "지금 이 토큰 이후에 잘한 단계들만 이 토큰의 공로로 친다"는 뜻이다. process reward는 이후 [#30](/blog/2026/lets-verify-step-by-step/), [#31](/blog/2026/math-shepherd/) 글에서 본격적으로 다룬다. DeepSeekMath 실험 자체는 outcome supervision 버전을 주로 쓴다.
 
 ## 토이 예제: 응답 4개, 보상 (0.8, 0.2, 0.5, 0.9)
 
@@ -212,7 +212,7 @@ $$G = 64$$라는 숫자가 중요하다. PPO였다면 critic 하나로 응답 �
 
 GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는 방법**을 바꾼 논문이다. critic이 학습으로 추정하던 baseline을, 같은 프롬프트에서 뽑은 $$G$$개 응답의 평균·표준편차로 대체했다. 그 결과 PPO가 짊어졌던 policy 크기만 한 critic의 메모리·연산 부담이 사라졌고, KL penalty를 reward에서 손실로 옮겨 그룹 비교 신호를 순수하게 유지했다. GSM8K +5.3%p, MATH +4.9%p라는 개선폭보다, Pass@K는 그대로인데 Maj@K만 오른다는 관찰이 더 중요한 메시지다. GRPO는 새 능력을 만드는 게 아니라 이미 있는 능력의 출력 분포를 정답 쪽으로 재정렬한다.
 
-다만 이 방식에는 뚜렷한 한계가 있다. 그룹 내 $$G$$개 응답이 **모두 정답이거나 모두 오답**이면, $$r_i - \mathrm{mean}(r)$$이 모든 $$i$$에 대해 0이 되어 advantage 자체가 사라진다. 표준편차로 나누기 이전에 이미 학습 신호가 0인 것이다. 너무 쉬운 문제(항상 맞음)나 너무 어려운 문제(항상 틀림)에 대해서는 $$G$$개를 샘플링하고 채점하는 연산을 쓰고도 gradient가 전혀 나오지 않는다는 뜻이다. 또한 표준편차로 나누는 정규화가 정말 필요한지, 오히려 편향을 만드는 건 아닌지도 뒤따르는 논쟁의 대상이 된다 — [#22 RLOO 글](/blog/2026/rloo-back-to-basics/)이 이 지점을 정면으로 파고든다. 그리고 reward를 학습된 모델이 아니라 정답 여부를 판정하는 규칙(rule-based reward)으로 완전히 대체하면 어떻게 되는지는 [#30 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다룬다.
+다만 이 방식에는 뚜렷한 한계가 있다. 그룹 내 $$G$$개 응답이 **모두 정답이거나 모두 오답**이면, $$r_i - \mathrm{mean}(r)$$이 모든 $$i$$에 대해 0이 되어 advantage 자체가 사라진다. 표준편차로 나누기 이전에 이미 학습 신호가 0인 것이다. 너무 쉬운 문제(항상 맞음)나 너무 어려운 문제(항상 틀림)에 대해서는 $$G$$개를 샘플링하고 채점하는 연산을 쓰고도 gradient가 전혀 나오지 않는다는 뜻이다. 또한 표준편차로 나누는 정규화가 정말 필요한지, 오히려 편향을 만드는 건 아닌지도 뒤따르는 논쟁의 대상이 된다 — [#22 RLOO 글](/blog/2026/rloo-back-to-basics/)이 이 지점을 정면으로 파고든다. 그리고 reward를 학습된 모델이 아니라 정답 여부를 판정하는 규칙(rule-based reward)으로 완전히 대체하면 어떻게 되는지는 [#32 DeepSeek-R1 글](/blog/2026/deepseek-r1/)에서 다룬다.
 
 ---
 
@@ -270,11 +270,13 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
   <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
   <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
   <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
 </ol>
 
 **6부. Process & Verifiable Reward**
 
-<ol start="28">
+<ol start="30">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -282,7 +284,7 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **7부. Generative Reward Model**
 
-<ol start="31">
+<ol start="33">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -292,7 +294,7 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="36">
+<ol start="38">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -302,12 +304,12 @@ GRPO는 reward 자체를 바꾸는 논문이 아니다. **advantage를 만드는
 
 **9부. 실전 종합**
 
-<ol start="41">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열 개 모델이 실제로 택한 것</li>
+<ol start="43">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 42편으로 구성된다.
+본 시리즈는 44편으로 구성된다.
 
 # 참고 문헌
 
