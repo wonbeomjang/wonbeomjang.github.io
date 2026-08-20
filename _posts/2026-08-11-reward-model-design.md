@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "reward를 어떻게 설계할 것인가 — RM 설계 실무"
-date: 2026-08-11 09:44:00 +0900
-description: "RLHF Reward 설계 시리즈 #44 — 시리즈 43편을 관통한 reward 시스템 설계 절차를 한 장의 실무 가이드로"
+date: 2026-08-11 09:45:00 +0900
+description: "RLHF Reward 설계 시리즈 #45 — 시리즈 43편을 관통한 reward 시스템 설계 절차를 한 장의 실무 가이드로"
 categories: [paper]
 tags: [rlhf, reward-model, rlvr, genrm, dpo, reward-hacking, paper]
 giscus_comments: true
@@ -197,13 +197,13 @@ reward를 설계할 때, 이 순서대로 자문한다.
 
 이 모든 절차를 거쳐도 남는 사실이 하나 있다 — **어떤 reward도 결국 "품질"이라는 것의 프록시일 뿐이다.** 규칙은 검증 가능한 것만 보고, RM은 근사하며, judge도 뚫린다([#42](/blog/2026/one-token-to-fool-judge/)). 그래서 잘 설계된 reward 시스템일수록 역설적으로 **"reward를 언제 믿지 말아야 하는가"를 함께 설계한다** — 홀드아웃 사람 평가, overoptimization 조기 경보, 여러 신호의 교차검증이 그 안전장치다.
 
-[#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)에서 시작해 [#43](/blog/2026/frontier-reward-design/)의 프론티어 사례까지, 이 시리즈가 44편에 걸쳐 도달한 결론은 한 문장이다. **reward 설계란 완벽한 보상 함수를 찾는 일이 아니라, 내 도메인을 정확히 진단하고 그 진단에 맞는 조달처를 고른 뒤, 그 선택이 틀렸을 때를 대비하는 일이다.**
+[#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)에서 시작해 [#43](/blog/2026/frontier-reward-design/)의 프론티어 사례까지, 이 시리즈가 45편에 걸쳐 도달한 결론은 한 문장이다. **reward 설계란 완벽한 보상 함수를 찾는 일이 아니라, 내 도메인을 정확히 진단하고 그 진단에 맞는 조달처를 고른 뒤, 그 선택이 틀렸을 때를 대비하는 일이다.**
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 마흔네 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -290,11 +290,12 @@ reward를 설계할 때, 이 순서대로 자문한다.
 **9부. 실전 종합**
 
 <ol start="43">
-  <li><a href="/blog/2026/frontier-reward-design/">프론티어 모델의 reward 설계 (2025~2026)</a> — 열한 개 모델이 실제로 택한 것</li>
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><strong>(현재 글)</strong> reward를 어떻게 설계할 것인가 — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 44편으로 구성된다.
+본 시리즈는 45편으로 구성된다.
 
 # 참고 문헌
 
