@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "J1: RL로 judge를 생각하게 만들다"
-date: 2026-08-11 09:39:00 +0900
-description: "RLHF Reward 설계 시리즈 #39 — 비검증 프롬프트를 검증 가능한 판정 태스크로 바꿔 judge를 RL로 학습시키는 법"
+date: 2026-08-11 09:40:00 +0900
+description: "RLHF Reward 설계 시리즈 #40 — 비검증 프롬프트를 검증 가능한 판정 태스크로 바꿔 judge를 RL로 학습시키는 법"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, llm-as-a-judge, rlvr, reasoning, paper]
 giscus_comments: true
@@ -15,11 +15,11 @@ related_posts: true
 
 이 시리즈는 이번 글에서 크게 세 갈래가 한 지점에 모인다.
 
-- [#32 DeepSeek-R1](/blog/2026/deepseek-r1/)은 정답이 있는 문제(수학, 코드)에서 규칙 기반 verifiable reward로 모델을 RL로 학습시켜 **생각하게** 만들었다. J1은 같은 RLVR 레시피를 **judge 자신**에게 적용한다 — 판정을 내리는 모델도 생각을 하면 더 정확해진다는 가설이다.
-- [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)는 애초에 정답이 없는 도메인(의료 상담, 개방형 질의)을 **사람이 쓴 채점 기준표**로 검증 가능하게 바꾼다. J1은 같은 문제 — "비검증 프롬프트를 어떻게 RL로 학습할 것인가" — 를 전혀 다른 방식으로 푼다. 기준표를 쓰는 대신 **판정 태스크의 구조 자체**를 조작해 정답을 자동으로 만들어낸다.
-- [#42 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)는 GenRM judge가 얼마나 쉽게 흔들리는지, 특히 **어느 응답이 먼저 제시되느냐(position)**에 얼마나 취약한지를 보여준다. J1은 이 취약성 중 하나인 position bias 완화를 설계 단계에서부터 명시적 목표로 못박는다.
+- [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)은 정답이 있는 문제(수학, 코드)에서 규칙 기반 verifiable reward로 모델을 RL로 학습시켜 **생각하게** 만들었다. J1은 같은 RLVR 레시피를 **judge 자신**에게 적용한다 — 판정을 내리는 모델도 생각을 하면 더 정확해진다는 가설이다.
+- [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)는 애초에 정답이 없는 도메인(의료 상담, 개방형 질의)을 **사람이 쓴 채점 기준표**로 검증 가능하게 바꾼다. J1은 같은 문제 — "비검증 프롬프트를 어떻게 RL로 학습할 것인가" — 를 전혀 다른 방식으로 푼다. 기준표를 쓰는 대신 **판정 태스크의 구조 자체**를 조작해 정답을 자동으로 만들어낸다.
+- [#43 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)는 GenRM judge가 얼마나 쉽게 흔들리는지, 특히 **어느 응답이 먼저 제시되느냐(position)**에 얼마나 취약한지를 보여준다. J1은 이 취약성 중 하나인 position bias 완화를 설계 단계에서부터 명시적 목표로 못박는다.
 
-지금까지 이 시리즈 7부([#33](/blog/2026/prometheus-2/)~[#37](/blog/2026/deepseek-grm-spct/))는 judge를 **생성 모델(GenRM)**로 바꾸면 스칼라 reward model보다 유연해진다는 것을 보였다. [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)은 judge가 스스로 평가 원칙(principle)을 만들고 그에 따라 비평(critique)을 쓰도록 학습시켰고, [#38 ReasonGRM](/blog/2026/reasongrm/)은 reasoning 능력이 뛰어난 모델의 풀이 흔적을 골라내 judge에 주입했다. 두 글 모두 "judge가 더 잘 판정하려면 더 잘 생각해야 한다"는 전제는 같지만, **그 생각하는 능력을 어떻게 얻게 할 것인가**에서 갈렸다 — 원칙 생성이라는 행동을 SFT로 심거나(GRM), 좋은 추론 경로를 골라내거나(ReasonGRM).
+지금까지 이 시리즈 7부([#34](/blog/2026/prometheus-2/)~[#38](/blog/2026/deepseek-grm-spct/))는 judge를 **생성 모델(GenRM)**로 바꾸면 스칼라 reward model보다 유연해진다는 것을 보였다. [#38 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)은 judge가 스스로 평가 원칙(principle)을 만들고 그에 따라 비평(critique)을 쓰도록 학습시켰고, [#39 ReasonGRM](/blog/2026/reasongrm/)은 reasoning 능력이 뛰어난 모델의 풀이 흔적을 골라내 judge에 주입했다. 두 글 모두 "judge가 더 잘 판정하려면 더 잘 생각해야 한다"는 전제는 같지만, **그 생각하는 능력을 어떻게 얻게 할 것인가**에서 갈렸다 — 원칙 생성이라는 행동을 SFT로 심거나(GRM), 좋은 추론 경로를 골라내거나(ReasonGRM).
 
 J1은 세 번째 길을 연다. **judge의 CoT 자체를 RL로 직접 최적화**하는 것이다. 그런데 RL은 reward가 있어야 돌아가고, "이 판정이 맞았는가"는 애초에 정답이 없는 프롬프트(에세이 첨삭, 여행 코스 추천 같은)에서는 정의하기 어렵다. J1의 전부는 이 문장 하나로 요약된다 — **검증 가능한 프롬프트와 검증 불가능한 프롬프트를 모두 하나의 형식으로 바꿔, 판정 자체에 verifiable reward를 붙인다.** 그 결과 8B·32B·70B 세 규모의 judge가 만들어졌고, 그중 J1-Qwen-32B는 RewardBench에서 93.6점을 받아 o1-mini(87.1), o3(86.4), 그리고 20배 넘게 큰 DeepSeek-R1-671B(90.6)를 모두 앞질렀다 — 그것도 **합성 데이터 22K건만으로** 학습해서다.
 
@@ -27,13 +27,13 @@ J1은 세 번째 길을 연다. **judge의 CoT 자체를 RL로 직접 최적화*
 
 ## RLVR 레시피를 다시 꺼내며
 
-[#32 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 정리했듯 RLVR(Reinforcement Learning from Verifiable Rewards)의 골자는 간단하다. 정답을 채점 함수로 확인할 수 있는 문제(수학 답, 코드 테스트 통과 여부)라면, 사람이 개입하지 않아도 규칙만으로 reward를 줄 수 있다. 모델은 이 reward를 높이려고 스스로 생각의 길이를 늘리고, 중간에 스스로를 되짚는 행동(self-verification)을 학습한다.
+[#33 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 정리했듯 RLVR(Reinforcement Learning from Verifiable Rewards)의 골자는 간단하다. 정답을 채점 함수로 확인할 수 있는 문제(수학 답, 코드 테스트 통과 여부)라면, 사람이 개입하지 않아도 규칙만으로 reward를 줄 수 있다. 모델은 이 reward를 높이려고 스스로 생각의 길이를 늘리고, 중간에 스스로를 되짚는 행동(self-verification)을 학습한다.
 
 문제는 judge를 학습시키려는 순간 발생한다. judge가 맞혀야 할 "정답"은 "어느 응답이 더 나은가"인데, 이건 수학 답과 달리 채점 함수가 없다. 특히 WildChat류의 일반 대화 프롬프트("이직 이력서 어떻게 써?", "제주도 여행 코스 짜줘")에는 애초에 절대적으로 옳은 응답이 없다.
 
 ## pairwise와 pointwise, 그리고 judge 포맷
 
-judge를 만드는 방식은 크게 두 갈래다. **pairwise**는 두 응답을 동시에 보여주고 우열을 가리게 하고([#34 Generative Verifiers](/blog/2026/generative-verifiers/)), **pointwise**는 응답 하나에 절대 점수를 매기게 한다([#35 Generative Reward Models](/blog/2026/generative-reward-models/)). pairwise는 상대 비교라 정확하지만 두 응답의 **제시 순서**에 따라 판정이 흔들리는 position bias에 취약하다 — 같은 두 응답을 순서만 바꿔 다시 보여주면 judge가 다른 결론을 낸다. pointwise는 순서 문제는 없지만 절대 점수의 캘리브레이션이 어렵다.
+judge를 만드는 방식은 크게 두 갈래다. **pairwise**는 두 응답을 동시에 보여주고 우열을 가리게 하고([#35 Generative Verifiers](/blog/2026/generative-verifiers/)), **pointwise**는 응답 하나에 절대 점수를 매기게 한다([#36 Generative Reward Models](/blog/2026/generative-reward-models/)). pairwise는 상대 비교라 정확하지만 두 응답의 **제시 순서**에 따라 판정이 흔들리는 position bias에 취약하다 — 같은 두 응답을 순서만 바꿔 다시 보여주면 judge가 다른 결론을 낸다. pointwise는 순서 문제는 없지만 절대 점수의 캘리브레이션이 어렵다.
 
 J1은 이 둘을 모두 학습하고 결국 하나의 모델로 합친다(MultiTask-J1). 그 전에 먼저, 이 두 포맷 모두가 요구하는 재료 — "정답이 알려진 (프롬프트, 우수 응답, 열등 응답)" 삼중항 — 을 어떻게 조달하는지가 이 논문의 핵심이다.
 
@@ -51,7 +51,7 @@ J1은 이 둘을 모두 학습하고 결국 하나의 모델로 합친다(MultiT
 2. 각 응답을 정답과 대조해 채점한다(Verification) — 맞으면 통과, 틀리면 탈락.
 3. 맞은 응답 중 하나를 $$a$$(chosen), 틀린 응답 중 하나를 $$b$$(rejected)로 뽑는다(Pair Selection).
 
-이 경로는 새로울 게 없다 — [#30 Let's Verify Step by Step](/blog/2026/lets-verify-step-by-step/), [#31 Math-Shepherd](/blog/2026/math-shepherd/)에서부터 봐온 "정답과 대조" 방식 그대로다.
+이 경로는 새로울 게 없다 — [#31 Let's Verify Step by Step](/blog/2026/lets-verify-step-by-step/), [#32 Math-Shepherd](/blog/2026/math-shepherd/)에서부터 봐온 "정답과 대조" 방식 그대로다.
 
 ### 검증 불가능한 프롬프트(WildChat): 질문을 일부러 흐려서 정답을 만든다
 
@@ -79,7 +79,7 @@ judge가 이 삼중항을 pairwise로 받으면 $$a$$와 $$b$$ 둘 다 표면적
 
 ## reward 설계: 정답을 맞히는 것과 흔들리지 않는 것
 
-이제 이 삼중항으로 GRPO를 돌린다(GRPO 자체는 [#21 GRPO/DeepSeekMath](/blog/2026/grpo-deepseekmath/) 참고). judge 모델 $$\pi_\theta$$는 $$(x, a, b)$$를 받아 사고 과정 $$t$$와 판정 $$y$$를 함께 생성한다.
+이제 이 삼중항으로 GRPO를 돌린다(GRPO 자체는 [#22 GRPO/DeepSeekMath](/blog/2026/grpo-deepseekmath/) 참고). judge 모델 $$\pi_\theta$$는 $$(x, a, b)$$를 받아 사고 과정 $$t$$와 판정 $$y$$를 함께 생성한다.
 
 $$J_{(a,b)} = \pi_\theta(t, y \mid x, a, b), \quad J_{(b,a)} = \pi_\theta(t, y \mid x, b, a)$$
 
@@ -119,7 +119,7 @@ Pointwise(PoS)는 별도의 pointwise 라벨이 없다. 같은 $$(x,a,b,\text{wi
 
 ## RaR과 무엇이 다른가
 
-| 항목                          | Rubrics as Rewards(#40, Gunjal et al. 2025)        | J1                                                |
+| 항목                          | Rubrics as Rewards(#41, Gunjal et al. 2025)        | J1                                                |
 | ----------------------------- | -------------------------------------------------- | ------------------------------------------------- |
 | 무엇을 검증 가능하게 만드는가 | 채점 기준(rubric) 자체                             | 판정 태스크(어느 응답이 나은가) 자체              |
 | 정답의 출처                   | 사람(도메인 전문가)이 작성한 rubric 항목           | LLM이 스스로 만든 노이즈 프롬프트로부터 자동 생성 |
@@ -127,7 +127,7 @@ Pointwise(PoS)는 별도의 pointwise 라벨이 없다. 같은 $$(x,a,b,\text{wi
 | 사람 개입                     | rubric 설계 단계에 필요                            | 없음 — 파이프라인 전체가 LLM 생성                 |
 | 검증 대상 도메인              | HealthBench(의료), GPQA-Diamond(과학) 등 특정 분야 | WildChat(범용 대화) + MATH                        |
 
-두 논문 모두 "비검증 도메인을 어떻게 RLVR화할 것인가"라는 같은 문제에서 출발하지만, RaR은 사람이 여전히 정답의 기준을 정의하고 J1은 정답의 존재 자체를 자동으로 조작해낸다. 그만큼 J1은 사람 개입이 없어 확장성이 좋지만, "노이즈 프롬프트가 실제로 더 나쁜 질문인가"를 보장하는 별도 장치가 없다는 약점도 함께 짊어진다 — 이 지점은 [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)에서 다시 다뤄질 부채다.
+두 논문 모두 "비검증 도메인을 어떻게 RLVR화할 것인가"라는 같은 문제에서 출발하지만, RaR은 사람이 여전히 정답의 기준을 정의하고 J1은 정답의 존재 자체를 자동으로 조작해낸다. 그만큼 J1은 사람 개입이 없어 확장성이 좋지만, "노이즈 프롬프트가 실제로 더 나쁜 질문인가"를 보장하는 별도 장치가 없다는 약점도 함께 짊어진다 — 이 지점은 [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)에서 다시 다뤄질 부채다.
 
 ## judge의 자기 성찰 행동들
 
@@ -140,9 +140,9 @@ RL로 학습된 judge의 사고 과정을 들여다보면 반복적으로 등장
 3. **자기 판단의 반복적 교정(Re-evaluation)**: 한 번 세운 결론을 다시 검산한다. "이 단계를 다시 확인해보면..." 같은 문장이 등장하며 스스로 되짚는다.
 4. **저품질 응답에 대한 피드백 생성(Feedback)**: pointwise 판정에서 특히 두드러지는데, 낮은 점수를 준 응답에 "정확한 계산법은 사실 이렇다"처럼 구체적으로 무엇이 틀렸는지를 짚는다.
 
-이 네 행동은 [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)의 자기 원칙 생성(self-principled critique)과 닮은 점이 많다 — 둘 다 "판정 기준을 모델이 스스로 만든다"는 발상을 공유한다. 다른 점은 그 행동이 어디서 나왔는가다.
+이 네 행동은 [#38 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)의 자기 원칙 생성(self-principled critique)과 닮은 점이 많다 — 둘 다 "판정 기준을 모델이 스스로 만든다"는 발상을 공유한다. 다른 점은 그 행동이 어디서 나왔는가다.
 
-| 항목                | DeepSeek-GRM / SPCT(#37)                                                             | J1                                                                      |
+| 항목                | DeepSeek-GRM / SPCT(#38)                                                             | J1                                                                      |
 | ------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
 | 기준 생성 방식      | rejection sampling으로 원칙 생성 능력을 SFT로 심고 RL(GRPO)로 다듬음                 | verdict correctness/consistency reward만으로 RL 도중 자연 발생          |
 | 명시적 목표 함수    | 원칙(principle) 품질에 대한 별도 보상 없이 principle+critique를 함께 생성하도록 학습 | reference answer·재평가는 reward에 명시된 목표가 아니라 부산물로 관찰됨 |
@@ -187,7 +187,7 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 ## ReasonGRM과 어떻게 다른 길을 갔나
 
-| 항목      | ReasonGRM(#38, Chen et al. 2025)                                       | J1                                                                 |
+| 항목      | ReasonGRM(#39, Chen et al. 2025)                                       | J1                                                                 |
 | --------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | 문제의식  | judge의 reasoning 흔적 품질이 들쭉날쭉함                               | 비검증 프롬프트엔 reward를 줄 수 없음                              |
 | 핵심 장치 | $$R^*$$ 지표로 좋은 추론 경로를 사후에 골라냄(데이터 선별)             | 노이즈 프롬프트로 정답이 있는 학습 데이터 자체를 생성(데이터 생성) |
@@ -202,15 +202,15 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 한계도 분명하다.
 
-1. **노이즈 프롬프트의 품질이 보장되지 않는다.** $$x'$$가 정말로 $$x$$보다 나쁜 질문인지 검증하는 장치가 없다 — 이 약점은 사람이 직접 기준을 쓰는 [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)와 대비되는 지점이자, 뒤 글에서 다시 짚을 부채다.
-2. **position bias가 완전히 없어지지 않았다.** consistent accuracy(67.0~70.6%)는 여전히 단일 순서 정확도(76%대)보다 한참 낮다. [#42 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)가 다루는 judge의 구조적 취약성은 J1 같은 RL 학습으로도 완전히 닫히지 않는 문제라는 뜻이다.
+1. **노이즈 프롬프트의 품질이 보장되지 않는다.** $$x'$$가 정말로 $$x$$보다 나쁜 질문인지 검증하는 장치가 없다 — 이 약점은 사람이 직접 기준을 쓰는 [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)와 대비되는 지점이자, 뒤 글에서 다시 짚을 부채다.
+2. **position bias가 완전히 없어지지 않았다.** consistent accuracy(67.0~70.6%)는 여전히 단일 순서 정확도(76%대)보다 한참 낮다. [#43 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)가 다루는 judge의 구조적 취약성은 J1 같은 RL 학습으로도 완전히 닫히지 않는 문제라는 뜻이다.
 3. **format reward는 도움이 안 됐다.** `<think>` 태그를 강제하는 reward를 추가로 줘봐도 유의미한 성능 차이가 없었다 — 사고의 "형식"이 아니라 reward 구조 자체가 사고의 질을 만든다는 시사점이다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른아홉 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔 번째 글이다.
 
 **1부. 지형도**
 
@@ -237,12 +237,13 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -252,7 +253,7 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -268,7 +269,7 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -276,7 +277,7 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -286,7 +287,7 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><strong>(현재 글)</strong> J1 (2025) — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -296,13 +297,13 @@ training data는 22K개(WildChat 17K + MATH 5K) 합성 선호 쌍이 전부다 �
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 

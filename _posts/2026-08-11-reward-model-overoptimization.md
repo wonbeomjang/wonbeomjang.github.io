@@ -25,7 +25,7 @@ related_posts: true
 2. proxy reward가 커질수록 gold reward가 **어떤 함수 모양으로** 꺾이는가 — BoN과 RL이 왜 다른 모양을 그리는가.
 3. 그 함수의 계수는 **무엇에 의존**하는가 — RM을 키우면, 데이터를 늘리면, 정책을 키우면 각각 무슨 일이 벌어지는가.
 
-이 글은 3부 "Reward Hacking"의 첫 글이다. 앞의 2부가 "RM을 잘 만드는 법"이었다면, 이 글은 **아무리 잘 만들어도 최적화하면 무너진다**는 근본 한계를 정량화한다. 11~13편은 이 한계에 대한 세 가지 다른 대응이다 — Conclusion에서 그 연결을 짚는다.
+이 글은 3부 "Reward Hacking"의 첫 글이다. 앞의 2부가 "RM을 잘 만드는 법"이었다면, 이 글은 **아무리 잘 만들어도 최적화하면 무너진다**는 근본 한계를 정량화한다. 11~14편은 이 한계에 대한 세 가지 다른 대응이다 — Conclusion에서 그 연결을 짚는다.
 
 # Background
 
@@ -213,7 +213,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 3. **계수의 의존성**: RM을 키우면 $$\beta$$(붕괴 계수)가 매끄럽게 줄어 정점이 늦춰지지만 $$\alpha$$(초기 이득)는 거의 그대로다. 데이터는 약 2,000건 문턱을 넘어야 의미가 생긴다. 정책 크기는 overoptimization 정도에 거의 영향을 주지 않는다.
 4. **KL penalty의 정체**: gold-KL frontier 자체를 바꾸지 못하고, early stopping과 동등한 효과만 낸다 — 2편의 그 항이 왜 거기 있었는지에 대한 사후적 답이다.
 
-남는 문제는 명확하다. $$\alpha$$ 항(regressional Goodharting)은 RM을 키워도 데이터를 늘려도 거의 줄지 않는다. $$\beta$$ 항(extremal Goodharting)은 줄일 수는 있지만 없앨 수는 없다. 그리고 이 논문이 다루지 못한 adversarial Goodharting은 모델이 더 강력해지면 이 스케일링 법칙 자체를 깨뜨릴 수 있다고 저자들 스스로 경고한다. [11편](/blog/2026/rlhf-length-correlations/)은 이 논문이 extremal Goodhart의 예시로 든 "길이 편향"을 정면으로 파고들어 성능 향상 중 얼마가 진짜고 얼마가 길이인지 정량화하고, [12편 ODIN](/blog/2026/odin-disentangled-reward/)은 그 길이 성분을 reward에서 아예 분리해내며, [13편 WARM](/blog/2026/warm-weight-averaged-reward/)은 여러 RM을 가중 평균해 $$\beta$$ 항 자체를 줄이는 또 다른 접근을 시도한다. [1편](/blog/2026/deep-rl-human-preferences/)의 Pong 무한 랠리는 결국 이 논문에서 하나의 곡선이 되었고, 그 곡선이 남긴 두 개의 미해결 항이 3부의 나머지 세 편을 채운다.
+남는 문제는 명확하다. $$\alpha$$ 항(regressional Goodharting)은 RM을 키워도 데이터를 늘려도 거의 줄지 않는다. $$\beta$$ 항(extremal Goodharting)은 줄일 수는 있지만 없앨 수는 없다. 그리고 이 논문이 다루지 못한 adversarial Goodharting은 모델이 더 강력해지면 이 스케일링 법칙 자체를 깨뜨릴 수 있다고 저자들 스스로 경고한다. [11편](/blog/2026/rlhf-length-correlations/)은 이 논문이 extremal Goodhart의 예시로 든 "길이 편향"을 정면으로 파고들어 성능 향상 중 얼마가 진짜고 얼마가 길이인지 정량화하고, [12편 ODIN](/blog/2026/odin-disentangled-reward/)은 그 길이 성분을 reward에서 아예 분리해내며, [14편 WARM](/blog/2026/warm-weight-averaged-reward/)은 여러 RM을 가중 평균해 $$\beta$$ 항 자체를 줄이는 또 다른 접근을 시도한다. [1편](/blog/2026/deep-rl-human-preferences/)의 Pong 무한 랠리는 결국 이 논문에서 하나의 곡선이 되었고, 그 곡선이 남긴 두 개의 미해결 항이 3부의 나머지 세 편을 채운다.
 
 ---
 
@@ -246,12 +246,13 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
   <li><strong>(현재 글)</strong> Overoptimization Scaling Laws (2022) — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -261,7 +262,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -277,7 +278,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -285,7 +286,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -295,7 +296,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -305,13 +306,13 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 

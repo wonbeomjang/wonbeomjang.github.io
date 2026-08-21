@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "WARM: reward model을 weight 공간에서 평균내다"
-date: 2026-08-11 09:13:00 +0900
-description: "RLHF Reward 설계 시리즈 #13 — 앙상블의 강건성을 단일 모델 비용으로 얻어 reward hacking을 막는 법"
+date: 2026-08-11 09:14:00 +0900
+description: "RLHF Reward 설계 시리즈 #14 — 앙상블의 강건성을 단일 모델 비용으로 얻어 reward hacking을 막는 법"
 categories: [paper]
 tags: [rlhf, reward-model, reward-hacking, model-merging, robustness, paper]
 giscus_comments: true
@@ -229,7 +229,7 @@ RM_A만 보면 $$y_{\text{bad}}$$(5.0)가 $$y_{\text{good}}$$(2.8)보다 높다 
 | RM 아키텍처                        | PaLM-XXS + 선형 프로빙 분류기                                                  |
 | 통제(control) RM                   | PaLM-XS, $$\mathcal{D}_{ood}$$ 정확도 80.1%                                    |
 | RL 정책·가치 모델                  | PaLM-XS                                                                        |
-| RL 알고리즘                        | 베이스라인을 포함한 REINFORCE (PPO는 [#19](/blog/2026/ppo/)에서 별도로 다룬다) |
+| RL 알고리즘                        | 베이스라인을 포함한 REINFORCE (PPO는 [#20](/blog/2026/ppo/)에서 별도로 다룬다) |
 | 선호 라벨                          | Stiennon et al. 데이터 + PaLM-L CoT 라벨링(RLAIF, 오라클로도 사용)             |
 | RM 학습 스텝                       | 10k step                                                                       |
 | OOD 테스트셋 $$\mathcal{D}_{ood}$$ | 92k pairwise 비교, 여러 PaLM-XS 정책이 생성                                    |
@@ -264,7 +264,7 @@ BoN에서 WARM은 point-wise control reward와 오라클 선호 두 지표 모�
 | 6     | 절대 성능 최고, 이 논문의 기본값. 79.4%/99.8%가 여기서 나온 숫자                                                                                 |
 | 10    | hacking을 더 늦게까지 지연시키지만 peak 성능은 $$M=6$$과 같다 — 저자들은 뒤늦게 추가된 $$\phi_7 \sim \phi_{10}$$의 개별 정확도가 낮아서라고 추정 |
 
-KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적인 $$\alpha$$가 단일 RM에 최적인 $$\alpha$$보다 작다**는 것이다. $$\alpha$$가 작을수록 정책이 SFT에서 더 멀리(더 큰 KL로) 벗어날 수 있는데, 단일 RM은 그렇게 멀리 보내면 바로 hacking이 시작되니 큰 $$\alpha$$로 묶어둬야 한다. WARM은 hacking 자체를 지연시키므로, 같은 만큼 멀리 보내도 안전하다 — 즉 **KL 페널티가 덜 필요해진다.** 이 관찰이 이 시리즈 5부, 특히 KL 페널티를 정면으로 다루는 [#19 PPO](/blog/2026/ppo/) 글에서 다시 등장할 개념이다.
+KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적인 $$\alpha$$가 단일 RM에 최적인 $$\alpha$$보다 작다**는 것이다. $$\alpha$$가 작을수록 정책이 SFT에서 더 멀리(더 큰 KL로) 벗어날 수 있는데, 단일 RM은 그렇게 멀리 보내면 바로 hacking이 시작되니 큰 $$\alpha$$로 묶어둬야 한다. WARM은 hacking 자체를 지연시키므로, 같은 만큼 멀리 보내도 안전하다 — 즉 **KL 페널티가 덜 필요해진다.** 이 관찰이 이 시리즈 5부, 특히 KL 페널티를 정면으로 다루는 [#20 PPO](/blog/2026/ppo/) 글에서 다시 등장할 개념이다.
 
 # Conclusion
 
@@ -274,13 +274,13 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 3부를 전체로 묶으면 이런 그림이 된다. [#10](/blog/2026/reward-model-overoptimization/)이 hacking이 얼마나 심각한지 자로 쟀고, [#11](/blog/2026/rlhf-length-correlations/)이 그 상당 부분의 정체를 밝혔고, [#12 ODIN](/blog/2026/odin-disentangled-reward/)이 그 정체를 알고 있을 때 수술하는 법을, 이 글이 정체를 몰라도 버티는 법을 보여줬다. 두 방어선은 서로 대체재가 아니라 상호보완적이다 — 이미 알려진 축(길이)은 ODIN처럼 직접 잘라내고, 아직 모르는 축은 WARM처럼 평균으로 흐리는 식으로 같이 쓸 수 있다.
 
-그런데 이 글에서 반복해서 등장한 장치가 하나 있다 — KL 페널티다. WARM의 $$\alpha$$ ablation도, 배경으로 다룬 앙상블 논문의 20배 페널티 비교도, 결국 "정책이 SFT에서 얼마나 멀리 벗어나도록 허용할 것인가"라는 같은 질문을 다르게 던진 것이었다. [#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)의 결론에서 이미 예고했듯, distribution shift 문제에 대한 원조 해법은 RM을 온라인으로 계속 갱신하는 것이었지만, LLM 시대의 RLHF는 그 대신 KL 페널티로 정책의 이동 범위 자체를 억제한다. 3부가 "reward를 어떻게 더 안전하게 설계할까"를 다뤘다면, 5부는 그렇게 설계된 reward를 "정책이 어떻게 안전하게 쫓아갈까"로 넘어간다. [#19 PPO](/blog/2026/ppo/)에서 이 KL 페널티가 정확히 어떤 수식으로 구현되는지부터 다시 시작한다.
+그런데 이 글에서 반복해서 등장한 장치가 하나 있다 — KL 페널티다. WARM의 $$\alpha$$ ablation도, 배경으로 다룬 앙상블 논문의 20배 페널티 비교도, 결국 "정책이 SFT에서 얼마나 멀리 벗어나도록 허용할 것인가"라는 같은 질문을 다르게 던진 것이었다. [#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)의 결론에서 이미 예고했듯, distribution shift 문제에 대한 원조 해법은 RM을 온라인으로 계속 갱신하는 것이었지만, LLM 시대의 RLHF는 그 대신 KL 페널티로 정책의 이동 범위 자체를 억제한다. 3부가 "reward를 어떻게 더 안전하게 설계할까"를 다뤘다면, 5부는 그렇게 설계된 reward를 "정책이 어떻게 안전하게 쫓아갈까"로 넘어간다. [#20 PPO](/blog/2026/ppo/)에서 이 KL 페널티가 정확히 어떤 수식으로 구현되는지부터 다시 시작한다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열세 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 열네 번째 글이다.
 
 **1부. 지형도**
 
@@ -307,12 +307,13 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><strong>(현재 글)</strong> WARM (2024) — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -322,7 +323,7 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -338,7 +339,7 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -346,7 +347,7 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -356,7 +357,7 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -366,13 +367,13 @@ KL 계수 $$\alpha$$ ablation에서 흥미로운 점 하나는, **WARM에 최적
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 

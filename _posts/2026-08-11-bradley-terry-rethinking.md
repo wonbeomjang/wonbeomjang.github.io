@@ -447,12 +447,13 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -462,7 +463,7 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -478,7 +479,7 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -486,7 +487,7 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -496,7 +497,7 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -506,13 +507,13 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 

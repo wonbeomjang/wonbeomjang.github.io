@@ -1,19 +1,19 @@
 ---
 layout: post
 title: "프론티어 모델은 harmlessness reward를 어떻게 설계했나"
-date: 2026-08-11 09:44:00 +0900
-description: "RLHF Reward 설계 시리즈 #44 — 안전성 reward의 실전 설계와 over-refusal 트레이드오프"
+date: 2026-08-11 09:45:00 +0900
+description: "RLHF Reward 설계 시리즈 #45 — 안전성 reward의 실전 설계와 over-refusal 트레이드오프"
 categories: [paper]
 tags: [rlhf, safety, harmlessness, over-refusal, reward-model, paper]
 giscus_comments: true
 related_posts: true
 ---
 
-> 이 글은 프론티어 모델들의 공개 자료에서 **안전성 reward 설계**만 따로 떼어 비교한다. 능력(helpfulness) 축은 [#43](/blog/2026/frontier-reward-design/)에서 다뤘다.
+> 이 글은 프론티어 모델들의 공개 자료에서 **안전성 reward 설계**만 따로 떼어 비교한다. 능력(helpfulness) 축은 [#44](/blog/2026/frontier-reward-design/)에서 다뤘다.
 
 # Introduction
 
-[#43](/blog/2026/frontier-reward-design/)은 열한 개 프론티어 모델이 helpfulness reward를 어떻게 설계했는지 훑었다. 결론은 비교적 깔끔했다 — 검증 가능한 도메인(수학, 코드)에서는 규칙 기반 reward로 수렴하고, 검증 불가능한 도메인(대화, 글쓰기)에서는 GRM과 rubric judge로 갈렸다. 이 글은 같은 자료를 다시 펼치되, 이번엔 harmlessness(안전성) reward만 따로 뜯는다.
+[#44](/blog/2026/frontier-reward-design/)은 열한 개 프론티어 모델이 helpfulness reward를 어떻게 설계했는지 훑었다. 결론은 비교적 깔끔했다 — 검증 가능한 도메인(수학, 코드)에서는 규칙 기반 reward로 수렴하고, 검증 불가능한 도메인(대화, 글쓰기)에서는 GRM과 rubric judge로 갈렸다. 이 글은 같은 자료를 다시 펼치되, 이번엔 harmlessness(안전성) reward만 따로 뜯는다.
 
 두 축을 한 글에 묶지 않은 데는 두 가지 이유가 있다.
 
@@ -25,7 +25,7 @@ related_posts: true
 
 1. 오픈 report를 냈다고 안전 설계를 공개하는 건 아니다. 능력·효율은 상세히 쓰면서 안전은 통째로 비우는 경우가 흔하다.
 2. 공개된 설계들은 표현은 제각각이어도 공통된 방향을 향한다 — "거절 자체가 아니라 안전한 완수(safe completion)에 보상"한다.
-3. 외부 벤치마크로 실측하면([#18 OR-Bench](/blog/2026/or-bench/)) 안전과 과잉거절을 실제로 동시에 개선한 사례는 드물다. 대부분의 모델이 하나의 트레이드오프 곡선 위에서 미끄러질 뿐이다.
+3. 외부 벤치마크로 실측하면([#19 OR-Bench](/blog/2026/or-bench/)) 안전과 과잉거절을 실제로 동시에 개선한 사례는 드물다. 대부분의 모델이 하나의 트레이드오프 곡선 위에서 미끄러질 뿐이다.
 
 먼저 이번에 다루는 자료들이 안전 설계를 얼마나, 어떻게 공개했는지부터 층위를 나눠보면 이렇다.
 
@@ -49,7 +49,7 @@ related_posts: true
 
 > "다른 연구들도 helpfulness와 safety가 종종 서로 트레이드오프 관계에 있다는 것을 발견했고, 이는 하나의 reward model이 둘 다에서 잘 작동하기 어렵게 만든다. 이를 해결하기 위해 우리는 두 개의 별도 reward model을 학습시킨다 — 하나는 helpfulness에, 다른 하나는 safety에 최적화된 모델이다."
 
-Llama 2는 신호를 분리하는 데서 멈췄지만, [#14 Safe RLHF](/blog/2026/safe-rlhf/)는 한 걸음 더 나아가 이 분리를 최적화 목적식 자체에 박아 넣는다. helpfulness는 reward $$R$$로, harmlessness는 cost $$C$$로 완전히 분리하고, "cost가 threshold를 넘지 않는다"는 제약을 라그랑주 승수 $$\lambda$$로 건다.
+Llama 2는 신호를 분리하는 데서 멈췄지만, [#15 Safe RLHF](/blog/2026/safe-rlhf/)는 한 걸음 더 나아가 이 분리를 최적화 목적식 자체에 박아 넣는다. helpfulness는 reward $$R$$로, harmlessness는 cost $$C$$로 완전히 분리하고, "cost가 threshold를 넘지 않는다"는 제약을 라그랑주 승수 $$\lambda$$로 건다.
 
 - $$R$$: 응답이 얼마나 도움이 되는지 채점하는 helpfulness reward model의 출력
 - $$C$$: 응답이 얼마나 유해한지 채점하는 cost model의 출력 (클수록 위험)
@@ -57,7 +57,7 @@ Llama 2는 신호를 분리하는 데서 멈췄지만, [#14 Safe RLHF](/blog/202
 
 핵심은 $$\lambda$$가 고정 가중치가 아니라 **학습 중 데이터를 보고 스스로 조절되는 값**이라는 점이다. 정책이 아직 위험하면 $$\lambda$$가 커져 안전 쪽으로 강하게 밀고, 안전 기준을 넘어서면 $$\lambda$$가 줄어들어 helpfulness에 다시 여유를 준다. 안전을 reward에 섞을 또 하나의 항이 아니라 넘지 말아야 할 제약으로 두는 설계다. 이 결과는 Experiments에서 수치로 확인한다.
 
-[#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/)는 다른 방식으로 같은 원칙을 지킨다. helpfulness reward에 안전 규칙을 만족했는지 채점하는 $$r_{RBR}$$을 더하는 형태다.
+[#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/)는 다른 방식으로 같은 원칙을 지킨다. helpfulness reward에 안전 규칙을 만족했는지 채점하는 $$r_{RBR}$$을 더하는 형태다.
 
 $$r_{total} = r_{helpful} + r_{RBR}$$
 
@@ -67,7 +67,7 @@ $$r_{total} = r_{helpful} + r_{RBR}$$
 
 ## over-refusal은 reward 설계 문제다
 
-harmlessness reward에만 있는 고유한 실패 모드가 over-refusal이다. 왜 안전 reward를 걸면 무해한 요청까지 거절하게 되는가. [#17 Shallow Safety Alignment](/blog/2026/shallow-safety-alignment/)는 이 현상과 jailbreak 취약성이 **같은 뿌리에서 나온다**고 진단한다.
+harmlessness reward에만 있는 고유한 실패 모드가 over-refusal이다. 왜 안전 reward를 걸면 무해한 요청까지 거절하게 되는가. [#18 Shallow Safety Alignment](/blog/2026/shallow-safety-alignment/)는 이 현상과 jailbreak 취약성이 **같은 뿌리에서 나온다**고 진단한다.
 
 안전 정렬이 응답의 첫 몇 토큰에만 얹히면(shallow), 모델이 실제로 배우는 건 "위험해 보이는 표면 단어가 나오면 거절 접두어를 붙여라"는 얕은 패턴이다. 이 패턴은 두 방향으로 문제를 일으킨다.
 
@@ -116,9 +116,9 @@ safety-preference 데이터는 principle 기반 rubric으로 채점하되 데이
 
 ## OpenAI: RBR와 Deliberative Alignment
 
-제품 report 대신 방법론 논문으로 안전 reward 설계를 공개했다. [#15 RBR](/blog/2026/rule-based-rewards/)은 안전 분류 F1을 97.1까지 끌어올렸다(사람 피드백만 쓴 baseline은 91.7). F1은 precision과 recall을 함께 보는 지표이므로, 이 상승은 유해 응답을 더 잘 잡으면서 동시에 무해 응답을 덜 거절했다는 뜻이다.
+제품 report 대신 방법론 논문으로 안전 reward 설계를 공개했다. [#16 RBR](/blog/2026/rule-based-rewards/)은 안전 분류 F1을 97.1까지 끌어올렸다(사람 피드백만 쓴 baseline은 91.7). F1은 precision과 recall을 함께 보는 지표이므로, 이 상승은 유해 응답을 더 잘 잡으면서 동시에 무해 응답을 덜 거절했다는 뜻이다.
 
-[#16 Deliberative Alignment](/blog/2026/deliberative-alignment/)는 안전 스펙 자체를 모델이 CoT로 추론하게 만드는 안전 전용 SFT + RL 단계를 별도로 둔다. 설계상 중요한 디테일 하나는, RL 중 이 CoT를 reward model에게 숨긴다는 점이다. reward model이 CoT 내용을 보고 채점하면 모델이 "그럴듯해 보이는 CoT"를 최적화할 유인이 생기는데, 최종 출력만 채점 대상으로 남겨 기만적(deceptive) CoT를 최적화하지 않도록 막는다.
+[#17 Deliberative Alignment](/blog/2026/deliberative-alignment/)는 안전 스펙 자체를 모델이 CoT로 추론하게 만드는 안전 전용 SFT + RL 단계를 별도로 둔다. 설계상 중요한 디테일 하나는, RL 중 이 CoT를 reward model에게 숨긴다는 점이다. reward model이 CoT 내용을 보고 채점하면 모델이 "그럴듯해 보이는 CoT"를 최적화할 유인이 생기는데, 최종 출력만 채점 대상으로 남겨 기만적(deceptive) CoT를 최적화하지 않도록 막는다.
 
 ## Anthropic: Constitutional Classifiers
 
@@ -130,7 +130,7 @@ safety-preference 데이터는 principle 기반 rubric으로 채점하되 데이
 
 ## 외부 벤치마크가 본 실제 트레이드오프
 
-지금까지는 각 모델이 자체 보고한 수치였다. [#18 OR-Bench](/blog/2026/or-bench/)는 25개 모델, 8개 모델 패밀리를 안전 프롬프트 거절률과 유해 프롬프트 거절률 두 축으로 함께 재서 외부에서 검증한다. 결과는 자체 보고와 결이 다르다. 안전 프롬프트 거절률과 유해 프롬프트 거절률 사이 Spearman 순위상관이 0.878로, 매우 강한 양의 상관을 보인다. 대부분의 모델이 이 두 축을 독립적으로 개선하지 못하고 하나의 트레이드오프 곡선 위에서 움직인다는 뜻이다. Claude는 가장 안전한 동시에 과잉거절도 가장 심하고, Mistral은 가장 많은 프롬프트를 수용한다. GPT-3.5-turbo는 버전이 올라가며 over-refusal은 개선됐지만 safety는 오히려 하락했다. 즉 자사 발표에서 "과잉거절을 줄였다"고 말하는 것과 별개로, 실제로 트레이드오프 곡선 자체를 옮긴 사례는 드물다.
+지금까지는 각 모델이 자체 보고한 수치였다. [#19 OR-Bench](/blog/2026/or-bench/)는 25개 모델, 8개 모델 패밀리를 안전 프롬프트 거절률과 유해 프롬프트 거절률 두 축으로 함께 재서 외부에서 검증한다. 결과는 자체 보고와 결이 다르다. 안전 프롬프트 거절률과 유해 프롬프트 거절률 사이 Spearman 순위상관이 0.878로, 매우 강한 양의 상관을 보인다. 대부분의 모델이 이 두 축을 독립적으로 개선하지 못하고 하나의 트레이드오프 곡선 위에서 움직인다는 뜻이다. Claude는 가장 안전한 동시에 과잉거절도 가장 심하고, Mistral은 가장 많은 프롬프트를 수용한다. GPT-3.5-turbo는 버전이 올라가며 over-refusal은 개선됐지만 safety는 오히려 하락했다. 즉 자사 발표에서 "과잉거절을 줄였다"고 말하는 것과 별개로, 실제로 트레이드오프 곡선 자체를 옮긴 사례는 드물다.
 
 이 현상은 [#10 Reward Model Overoptimization](/blog/2026/reward-model-overoptimization/)이 지적한 Goodhart 문제와 같은 구조다. 안전 프롬프트 거절률 하나만 밀어붙이면, 측정되지 않던 다른 축(유해 프롬프트 통과)이 조용히 무너진다. 안전 지표 단독 보고가 위험한 이유가 여기 있다 — 그 지표를 최적화한 대가를 다른 지표가 대신 치르고 있을 수 있는데, 그 다른 지표를 재지 않으면 대가 자체가 보이지 않는다.
 
@@ -155,19 +155,19 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 첫째, **문서화 격차 자체가 신호다.** Kimi K3는 47페이지에서 "safety"를 한 번도 쓰지 않았고, Magistral은 비검증 도메인을 통째로 범위 밖에 뒀다. A.X K2, Deliberative Alignment, Constitutional Classifiers처럼 안전 reward를 상세히 공개한 쪽은 예외에 가깝다. 오픈 report를 냈다는 사실만으로 안전 설계까지 공개했다고 가정하면 안 된다.
 
-둘째, **거절이 아니라 안전한 완수를 보상해야 한다.** A.X K2가 명시적으로 쓴 원칙이지만 RBR, Deliberative Alignment도 결과적으로 같은 방향이다. 거절 자체에 보상을 주는 순간 [#17 Shallow Safety](/blog/2026/shallow-safety-alignment/)가 지적한 얕은 패턴 학습이 시작되고, 그 패턴은 취약성과 과잉거절을 동시에 만든다.
+둘째, **거절이 아니라 안전한 완수를 보상해야 한다.** A.X K2가 명시적으로 쓴 원칙이지만 RBR, Deliberative Alignment도 결과적으로 같은 방향이다. 거절 자체에 보상을 주는 순간 [#18 Shallow Safety](/blog/2026/shallow-safety-alignment/)가 지적한 얕은 패턴 학습이 시작되고, 그 패턴은 취약성과 과잉거절을 동시에 만든다.
 
 셋째, **신호는 분리하되 최적화는 함께 돌려야 한다.** Llama 2의 두 RM, Safe RLHF의 $$R$$·$$C$$ 분리, RBR의 $$r_{helpful} + r_{RBR}$$, A.X K2의 4그룹 mixture — 표현은 다르지만 전부 helpful과 harmless를 별개의 채점 축으로 유지한다. 진짜 갈림길은 학습을 단계로 나누느냐가 아니라, 두 신호를 하나의 스칼라로 미리 뭉쳐버리느냐다. 뭉치는 순간 사후에 조절할 손잡이가 사라진다.
 
 넷째, **측정에는 반드시 대조군이 있어야 한다.** OR-Bench의 Spearman 0.878은 안전 프롬프트 거절률만 보고하는 지표가 왜 위험한지를 보여준다. Deliberative Alignment와 Safe RLHF가 신뢰할 만한 이유는 안전 지표와 함께 helpfulness·과잉거절 지표를 나란히 실었기 때문이다. 안전 수치 하나만 내놓는 report는, 그게 진짜 파레토 개선인지 단순히 거절을 늘려 얻은 착시인지 구분할 수 없다.
 
-이 넷을 관통하는 결론은 하나다. harmlessness reward 설계는 helpfulness reward 설계보다 어렵다 — 실패 모드가 하나 더 있고(과잉거절), 그 실패 모드는 안전 지표 하나만 봐서는 보이지 않기 때문이다. 다음 글 [#45](/blog/2026/reward-model-design/)에서는 이 시리즈 전체가 쌓은 결론 — helpfulness와 harmlessness를 아우르는 reward 설계 원칙 — 을 한 장으로 정리한다.
+이 넷을 관통하는 결론은 하나다. harmlessness reward 설계는 helpfulness reward 설계보다 어렵다 — 실패 모드가 하나 더 있고(과잉거절), 그 실패 모드는 안전 지표 하나만 봐서는 보이지 않기 때문이다. 다음 글 [#46](/blog/2026/reward-model-design/)에서는 이 시리즈 전체가 쌓은 결론 — helpfulness와 harmlessness를 아우르는 reward 설계 원칙 — 을 한 장으로 정리한다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 마흔네 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -194,12 +194,13 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -209,7 +210,7 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -225,7 +226,7 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -233,7 +234,7 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -243,7 +244,7 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -253,21 +254,21 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><strong>(현재 글)</strong> 프론티어의 harmlessness reward 설계 — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 
-- Dai et al. (PKU Alignment), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/)에서 다룬 제약 기반 안전 최적화.
-- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#15](/blog/2026/rule-based-rewards/).
-- Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339) — [#16](/blog/2026/deliberative-alignment/).
-- Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) — [#17](/blog/2026/shallow-safety-alignment/).
-- Cui et al., 2024. [OR-Bench: An Over-Refusal Benchmark for Large Language Models](https://arxiv.org/abs/2405.20947) — [#18](/blog/2026/or-bench/).
+- Dai et al. (PKU Alignment), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/)에서 다룬 제약 기반 안전 최적화.
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#16](/blog/2026/rule-based-rewards/).
+- Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339) — [#17](/blog/2026/deliberative-alignment/).
+- Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) — [#18](/blog/2026/shallow-safety-alignment/).
+- Cui et al., 2024. [OR-Bench: An Over-Refusal Benchmark for Large Language Models](https://arxiv.org/abs/2405.20947) — [#19](/blog/2026/or-bench/).
 - Touvron et al. (Meta AI), 2023. [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288) — [#8](/blog/2026/llama2-rlhf/).
 - Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
 - LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505).

@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Deliberative Alignment: 안전 명세를 모델의 추론 안으로"
-date: 2026-08-11 09:16:00 +0900
-description: "RLHF Reward 설계 시리즈 #16 — 안전 규칙을 라벨 생성용이 아니라 모델이 직접 읽고 추론하게 만들다"
+date: 2026-08-11 09:17:00 +0900
+description: "RLHF Reward 설계 시리즈 #17 — 안전 규칙을 라벨 생성용이 아니라 모델이 직접 읽고 추론하게 만들다"
 categories: [paper]
 tags: [rlhf, safety, reasoning, over-refusal, deliberative-alignment, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#14 Safe RLHF](/blog/2026/safe-rlhf/)는 안전을 별도의 cost model과 Lagrangian 제약으로 다뤘다. [#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/)는 사람이 쓴 규칙과 LLM grader로 reward를 합성했다. 두 방법은 접근 방식이 다르지만 구조는 똑같다. 안전 명세(사람이 정의한 규칙이든, cost model이 학습한 선호든)는 **학습 신호를 계산하는 도구**로만 쓰인다.
+[#15 Safe RLHF](/blog/2026/safe-rlhf/)는 안전을 별도의 cost model과 Lagrangian 제약으로 다뤘다. [#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/)는 사람이 쓴 규칙과 LLM grader로 reward를 합성했다. 두 방법은 접근 방식이 다르지만 구조는 똑같다. 안전 명세(사람이 정의한 규칙이든, cost model이 학습한 선호든)는 **학습 신호를 계산하는 도구**로만 쓰인다.
 
 정책 모델 자신은 그 명세를 한 번도 읽지 않는다. 모델이 배우는 것은 "이 출력이 명세를 얼마나 만족했는가"라는 스칼라 값뿐이고, 왜 그 출력이 안전한지 혹은 위험한지에 대한 추론 과정은 어디에도 남지 않는다.
 
@@ -29,7 +29,7 @@ Deliberative Alignment(Guan et al., OpenAI 2024)는 이 구조를 뒤집는다. 
 
 지금까지 이 시리즈에서 본 안전 정렬 방법들의 공통 파이프라인을 정리하면 다음과 같다. 명세(사람이 쓴 규칙, 헌법 원칙, 혹은 학습된 cost function) → 그 명세를 참조하는 판단자(사람 라벨러, cost model, 혹은 LLM grader) → 스칼라 학습 신호 → 정책 업데이트. [Constitutional AI 글](/blog/2026/constitutional-ai/)도 마찬가지다. 헌법 원칙은 self-critique와 revision을 생성하는 데 쓰이고, 그렇게 만들어진 (critique 반영 후) 응답으로 학습이 끝나면 원칙 텍스트 자체는 최종 정책의 입력에서 사라진다. 정책은 원칙이 만들어낸 결과물만 흡수할 뿐, 원칙을 스스로 인용하며 추론하는 법은 배우지 않는다.
 
-Deliberative Alignment는 여기서 한 가지 전제를 이용한다. o1류 reasoning model은 답을 내기 전에 explicit CoT를 생성할 수 있다는 전제다. [#32 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 것처럼 이런 CoT는 RL로 스스로 길어지고 정교해질 수 있다. Deliberative Alignment는 이 능력을 안전 판단에도 적용한다. 안전 여부를 "패턴 매칭 후 즉답"이 아니라 "관련 정책을 recall → 현재 상황에 적용 → 결론"이라는 명시적 추론 체인으로 만들면, 모델은 명세의 표면 패턴이 아니라 명세가 담고 있는 **판단 기준**을 배우게 된다는 것이 핵심 가설이다.
+Deliberative Alignment는 여기서 한 가지 전제를 이용한다. o1류 reasoning model은 답을 내기 전에 explicit CoT를 생성할 수 있다는 전제다. [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)에서 본 것처럼 이런 CoT는 RL로 스스로 길어지고 정교해질 수 있다. Deliberative Alignment는 이 능력을 안전 판단에도 적용한다. 안전 여부를 "패턴 매칭 후 즉답"이 아니라 "관련 정책을 recall → 현재 상황에 적용 → 결론"이라는 명시적 추론 체인으로 만들면, 모델은 명세의 표면 패턴이 아니라 명세가 담고 있는 **판단 기준**을 배우게 된다는 것이 핵심 가설이다.
 
 이 논문에는 표기가 세 개 나온다. 하나씩 짚어보면 다음과 같다.
 
@@ -61,7 +61,7 @@ Deliberative Alignment는 이 구조를 바꾼다. 학생에게도 채점 기준
 
 ## Stage 2: RL
 
-두 번째 단계는 안전 관련 프롬프트에 대한 RL이다. 명세에 접근 가능한 $$\mathcal{G}_{RM}$$이 정책 준수 여부를 기준으로 reward를 준다. 구조만 보면 [#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/)의 LLM grader와 비슷하다. 규칙(명세)에 접근한 judge가 채점한다는 점은 같다.
+두 번째 단계는 안전 관련 프롬프트에 대한 RL이다. 명세에 접근 가능한 $$\mathcal{G}_{RM}$$이 정책 준수 여부를 기준으로 reward를 준다. 구조만 보면 [#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/)의 LLM grader와 비슷하다. 규칙(명세)에 접근한 judge가 채점한다는 점은 같다.
 
 결정적인 차이는 CoT를 다루는 방식에 있다. RL 도중 $$\mathcal{G}_{RM}$$은 모델의 CoT를 보지 못한다. output만 보고 채점한다. 이렇게 하는 이유는 명확하다. CoT까지 reward의 대상이 되면, 모델은 "그럴듯해 보이는 CoT를 써서 grader를 통과시키는" 방향으로 최적화될 위험이 있다. 즉 진짜 추론이 아니라 겉보기만 정책을 인용하는 기만적(deceptive) CoT를 학습할 수 있다. CoT를 reward 계산에서 제외함으로써, CoT는 오직 output의 품질을 통해서만 간접적으로 강화된다. 모델이 정책을 실제로 따르는 output을 내야 보상을 받고, 그 output을 내는 데 도움이 된 추론 과정만 살아남는다.
 
@@ -71,9 +71,9 @@ Deliberative Alignment는 이 구조를 바꾼다. 학생에게도 채점 기준
 
 ## RBR과의 대비
 
-[#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/)와의 관계를 정리하면 이 논문의 위치가 분명해진다. 둘 다 "규칙 있는 judge가 reward를 계산한다"는 구조는 공유한다. 차이는 그 규칙이 정책 모델의 어디에 닿는가에 있다.
+[#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/)와의 관계를 정리하면 이 논문의 위치가 분명해진다. 둘 다 "규칙 있는 judge가 reward를 계산한다"는 구조는 공유한다. 차이는 그 규칙이 정책 모델의 어디에 닿는가에 있다.
 
-| 측면                          | Rule-Based Rewards (#15)                               | Deliberative Alignment (#16)                                                                         |
+| 측면                          | Rule-Based Rewards (#16)                               | Deliberative Alignment (#17)                                                                         |
 | ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | 명세가 실제로 쓰이는 곳       | reward 계산 단계의 LLM grader 안(rubric)               | 정책의 CoT 생성 과정 자체(context distillation)                                                      |
 | 정책이 명세를 추론하는가      | 아니오 — 정책은 명세를 본 적 없이 결과 reward만 받는다 | 예 — SFT 데이터 생성 시 명세를 읽고 추론한 CoT를 학습해, 이후 스스로 관련 정책을 recall하며 추론한다 |
@@ -116,19 +116,19 @@ GPT-4o(안전 학습 이전 helpful-only 베이스에 가까운 비교군)와 De
 | 인코딩 기반 jailbreak | 0.95                       | 0.95                | 0.65                    |
 | 다국어 jailbreak      | 0.69                       | 0.68                | 0.44                    |
 
-인코딩 기반 jailbreak(예: base64, 문자 치환 등으로 위장한 요청) 안전 데이터를 한 번도 보지 않은 o1이 0.95로, 그 데이터를 포함해 학습한 o1(0.95)과 사실상 같은 성능을 냈다. 다국어 jailbreak도 마찬가지로 0.69 대 0.68이다. 두 경우 모두 baseline(0.65, 0.44)과는 뚜렷한 격차를 유지했다. 이는 모델이 "인코딩된 요청을 거절하라"거나 "이 언어의 요청을 거절하라" 같은 표면 규칙을 암기한 게 아니라, 디코딩하거나 번역한 뒤 원래 요청의 의미에 명세를 적용하는 추론 능력 자체를 일반화했다는 뜻으로 읽힌다. [#33 Prometheus 2](/blog/2026/prometheus-2/)에서 본 rubric 조건부 judge와 마찬가지로, 여기서도 $$\mathcal{G}_{RM}$$은 고정된 스코어러가 아니라 spec이라는 조건을 받아 판단을 바꾸는 채점자다. 다만 이 논문은 그 spec-조건부 판단 능력을 judge뿐 아니라 정책 자신에게도 심어 넣었다는 점이 다르다.
+인코딩 기반 jailbreak(예: base64, 문자 치환 등으로 위장한 요청) 안전 데이터를 한 번도 보지 않은 o1이 0.95로, 그 데이터를 포함해 학습한 o1(0.95)과 사실상 같은 성능을 냈다. 다국어 jailbreak도 마찬가지로 0.69 대 0.68이다. 두 경우 모두 baseline(0.65, 0.44)과는 뚜렷한 격차를 유지했다. 이는 모델이 "인코딩된 요청을 거절하라"거나 "이 언어의 요청을 거절하라" 같은 표면 규칙을 암기한 게 아니라, 디코딩하거나 번역한 뒤 원래 요청의 의미에 명세를 적용하는 추론 능력 자체를 일반화했다는 뜻으로 읽힌다. [#34 Prometheus 2](/blog/2026/prometheus-2/)에서 본 rubric 조건부 judge와 마찬가지로, 여기서도 $$\mathcal{G}_{RM}$$은 고정된 스코어러가 아니라 spec이라는 조건을 받아 판단을 바꾸는 채점자다. 다만 이 논문은 그 spec-조건부 판단 능력을 judge뿐 아니라 정책 자신에게도 심어 넣었다는 점이 다르다.
 
 # Conclusion
 
-Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward 계산에만 쓰지 말고, 모델이 답하기 전에 직접 recall하고 추론하는 대상으로 만들면 jailbreak 저항과 over-refusal 감소를 동시에 얻을 수 있다는 것이다. [#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/)가 규칙을 정교한 채점 도구로 다듬는 방향이었다면, 이 논문은 같은 채점 구조를 유지하면서 규칙의 목적지를 판단자에서 정책 자신으로 옮겼다. 그리고 이 전환에 사람이 쓴 CoT나 정답 완성이 필요 없었다는 점은, [#32 DeepSeek-R1](/blog/2026/deepseek-r1/) 계보에서 본 "추론은 스스로 길러진다"는 관찰이 안전 영역에도 적용됨을 보여준다.
+Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward 계산에만 쓰지 말고, 모델이 답하기 전에 직접 recall하고 추론하는 대상으로 만들면 jailbreak 저항과 over-refusal 감소를 동시에 얻을 수 있다는 것이다. [#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/)가 규칙을 정교한 채점 도구로 다듬는 방향이었다면, 이 논문은 같은 채점 구조를 유지하면서 규칙의 목적지를 판단자에서 정책 자신으로 옮겼다. 그리고 이 전환에 사람이 쓴 CoT나 정답 완성이 필요 없었다는 점은, [#33 DeepSeek-R1](/blog/2026/deepseek-r1/) 계보에서 본 "추론은 스스로 길러진다"는 관찰이 안전 영역에도 적용됨을 보여준다.
 
-한계도 분명하다. 이 방법은 $$\mathcal{G}_{RM}$$이 명세를 정확히 반영해 채점할 수 있다는 전제, 그리고 $$\mathcal{G}_{base}$$가 애초에 명세를 읽고 그럴듯한 추론을 생성할 수 있을 만큼 충분히 능력 있는 모델이라는 전제 위에 서 있다. reasoning 능력이 약한 모델에는 이 파이프라인 자체가 잘 작동하지 않을 가능성이 크다. 또한 RL 중 CoT를 grader에게 숨기는 장치는 명시적 기만은 막지만, output만으로는 드러나지 않는 형태의 추론 편향까지 막아준다는 보장은 없다. 안전 판단을 "명세를 읽고 추론하는 능력"에 의존하게 만든 만큼, 그 추론 능력 자체의 신뢰성이 이후 시리즈([#43 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/))에서 다시 다뤄질 문제로 남는다.
+한계도 분명하다. 이 방법은 $$\mathcal{G}_{RM}$$이 명세를 정확히 반영해 채점할 수 있다는 전제, 그리고 $$\mathcal{G}_{base}$$가 애초에 명세를 읽고 그럴듯한 추론을 생성할 수 있을 만큼 충분히 능력 있는 모델이라는 전제 위에 서 있다. reasoning 능력이 약한 모델에는 이 파이프라인 자체가 잘 작동하지 않을 가능성이 크다. 또한 RL 중 CoT를 grader에게 숨기는 장치는 명시적 기만은 막지만, output만으로는 드러나지 않는 형태의 추론 편향까지 막아준다는 보장은 없다. 안전 판단을 "명세를 읽고 추론하는 능력"에 의존하게 만든 만큼, 그 추론 능력 자체의 신뢰성이 이후 시리즈([#44 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/))에서 다시 다뤄질 문제로 남는다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열여섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 열일곱 번째 글이다.
 
 **1부. 지형도**
 
@@ -155,12 +155,13 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><strong>(현재 글)</strong> Deliberative Alignment (2024) — 안전 명세를 모델의 추론 안으로</li>
@@ -170,7 +171,7 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -186,7 +187,7 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -194,7 +195,7 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -204,7 +205,7 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -214,19 +215,19 @@ Deliberative Alignment의 핵심 메시지는 하나다. 안전 명세를 reward
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 
 - Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339).
 - Bai et al. (Anthropic), 2022. [Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) — 명세를 라벨 생성에만 쓴 선행 접근([별도 글](/blog/2026/constitutional-ai/)).
-- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#15](/blog/2026/rule-based-rewards/), 규칙을 reward 쪽에 두는 대비 사례.
-- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/), 안전을 제약으로 다루는 접근.
-- DeepSeek-AI, 2025. [DeepSeek-R1](https://arxiv.org/abs/2501.12948) — [#32](/blog/2026/deepseek-r1/), 추론을 RL로 길러낸 계보.
-- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#33](/blog/2026/prometheus-2/), 명세·rubric을 조건으로 받는 judge.
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#16](/blog/2026/rule-based-rewards/), 규칙을 reward 쪽에 두는 대비 사례.
+- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/), 안전을 제약으로 다루는 접근.
+- DeepSeek-AI, 2025. [DeepSeek-R1](https://arxiv.org/abs/2501.12948) — [#33](/blog/2026/deepseek-r1/), 추론을 RL로 길러낸 계보.
+- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#34](/blog/2026/prometheus-2/), 명세·rubric을 조건으로 받는 judge.

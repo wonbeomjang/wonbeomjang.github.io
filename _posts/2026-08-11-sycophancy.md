@@ -1,0 +1,244 @@
+---
+layout: post
+title: "아첨(sycophancy): RM은 사실보다 동의를 좋아한다"
+date: 2026-08-11 09:13:00 +0900
+description: "RLHF Reward 설계 시리즈 #13 — 선호 데이터가 진실보다 동조를 보상하는 구조적 문제"
+categories: [paper]
+tags: [rlhf, reward-model, reward-hacking, sycophancy, truthfulness, paper]
+giscus_comments: true
+related_posts: true
+---
+
+> [Towards Understanding Sycophancy in Language Models](https://arxiv.org/abs/2310.13548) (Sharma et al., Anthropic, ICLR 2024)
+
+# Introduction
+
+3부 "Reward Hacking"에서 지금까지 두 편을 봤다. [#11](/blog/2026/rlhf-length-correlations/)은 RM이 답변 길이에 체계적으로 편향된다는 것을 보였고, [#12 ODIN](/blog/2026/odin-disentangled-reward/)은 길이 신호를 quality 신호와 분리해 학습하는 처방을 제시했다. 이번 편은 세 번째 축을 다룬다. **아첨(sycophancy)** — 모델이 사실보다 사용자의 믿음에 맞춰 답을 바꾸는 현상이다.
+
+구조는 길이 편향과 정확히 같다. RM은 "품질"을 학습하도록 설계됐지만, 실제로는 사람이 응답을 볼 때 반응하는 표면적 신호를 학습한다. 길이 편향이 "길면 좋아 보인다"였다면, 아첨은 **"동의해주면 좋아 보인다"**다.
+
+다만 결정적 차이가 하나 있다. 길이는 reward에서 분리해낼 수 있는 축이다 — [#12 ODIN](/blog/2026/odin-disentangled-reward/)처럼 길이를 별도 head로 떼어내면 quality reward만 남길 수 있다. 하지만 **아첨은 "사람의 선호" 그 자체에 박혀 있다.** 선호 데이터를 더 깨끗하게 모아도 사라지지 않는다 — 사람이 실제로, 진심으로 동조하는 답을 더 좋아하기 때문이다. Sharma et al. (2024)이 보여주는 것이 바로 이 지점이다: [#10 Overoptimization](/blog/2026/reward-model-overoptimization/)에서 다룬 Goodhart 구조가, 데이터 수집 단계에서부터 이미 인간의 선호 그 자체에 새겨져 있다는 사실이다.
+
+이 논문은 두 층위에서 아첨을 측정한다. 첫째, **SycophancyEval**이라는 벤치마크로 5개 상용 RLHF 어시스턴트(Claude 1.3, Claude 2.0, GPT-3.5-Turbo, GPT-4, LLaMA 2 70B Chat)의 아첨 행동을 정량화한다. 둘째, [#3 HH-RLHF](/blog/2026/anthropic-hh-rlhf/)의 선호쌍 15K건을 직접 분석해서, **사람과 preference model(PM) 모두가 아첨하는 응답을 진실한 응답보다 무시할 수 없는 비율로 선호한다**는 것을 보인다. 결론을 미리 말하면: "사용자의 믿음과 일치하는가"가 사람 선호를 예측하는 가장 강력한 특징 중 하나로 나오고, RLHF 최적화를 더 세게 돌릴수록 이 경향은 오히려 강해진다.
+
+# Background
+
+[#4 Bradley-Terry](/blog/2026/bradley-terry-rethinking/)에서 정리했듯, RM은 사람이 두 응답 중 하나를 고른 선호쌍으로부터 다음을 학습한다.
+
+$$P(y_w \succ y_l \mid x) = \sigma(r_\phi(x, y_w) - r_\phi(x, y_l))$$
+
+- $$x$$: 프롬프트
+- $$y_w, y_l$$: 사람이 선택한 응답(chosen)과 거부한 응답(rejected)
+- $$r_\phi$$: 학습되는 reward model
+
+이 목적함수는 $$y_w$$가 $$y_l$$보다 "왜" 선택됐는지는 묻지 않는다. 라벨러가 정확성 때문에 골랐는지, 문체가 매끄러워서 골랐는지, 아니면 자기 생각과 같은 말을 해서 골랐는지 RM 입장에서는 구분이 안 된다. [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 라벨 노이즈 문제를 다뤘다면, 이 논문은 노이즈가 아니라 **체계적 편향**을 다룬다 — 사람이 일관되게, 재현 가능하게 동조하는 응답을 선호한다면, 그건 노이즈가 아니라 RM이 정확히 학습해야 할(그러나 원치 않는) 신호다.
+
+아첨을 정의하면: 모델이 응답의 정확성이나 논리적 일관성보다 사용자가 이미 가진 믿음, 표현한 선호, 제시한 주장에 맞추는 방향으로 출력을 조정하는 경향이다. RLHF 파이프라인에서 이게 왜 생기는지 확인하려면 두 층위를 봐야 한다 — 모델의 최종 행동(SycophancyEval)과, 그 행동을 만드는 학습 신호(선호 데이터 자체).
+
+여기서 짚어야 할 건 이 편향이 어디서 유입되는지다. RM 학습 알고리즘 자체(Bradley-Terry 손실)에는 잘못이 없다. 손실함수는 주어진 라벨을 충실히 재현하도록 설계됐을 뿐이다. 문제는 라벨을 만드는 입력, 즉 사람의 선택이 이미 아첨 쪽으로 기울어 있다는 것이다. 그래서 RM 아키텍처를 바꾸거나 하이퍼파라미터를 튜닝하는 방식으로는 근본적으로 해결이 안 된다 — 데이터가 가리키는 방향 자체를 봐야 한다.
+
+# Method
+
+## SycophancyEval: 네 가지 자유형 태스크
+
+Sharma et al.은 아첨을 자유형 생성(free-form generation) 상황에서 측정하는 벤치마크를 만들었다. 객관식으로는 아첨이 잘 드러나지 않기 때문에, 실제 대화처럼 사용자가 의견·선호·반박을 자연어로 던지는 세팅을 쓴다.
+
+| 태스크                                           | 무엇을 측정하는가                                                    | 트리거 예시                                         |
+| ------------------------------------------------ | -------------------------------------------------------------------- | --------------------------------------------------- |
+| 편향된 피드백 (biased feedback)                  | 논증·시·수학 풀이에 대한 코멘트가 사용자가 밝힌 선호 쪽으로 기우는가 | "저는 이 논증이 마음에 드는데, 어떻게 생각해?"      |
+| 답변 동조 (answer conformity)                    | 사용자가 믿는 답에 모델이 맞추는가                                   | "저는 정답이 A라고 생각해요"                        |
+| 반박에 대한 취약성 (susceptibility to challenge) | 맞은 답을 사용자가 의심하면 바꾸는가                                 | "정말요? 틀린 것 같은데요"                          |
+| 오류 모방 (mimicry of errors)                    | 사용자의 실수를 그대로 따라 하는가                                   | 시의 저자를 잘못 말한 사용자의 진술을 그대로 받아씀 |
+
+네 태스크 모두 같은 것을 서로 다른 각도에서 잰다 — 모델의 출력이 **사용자가 방금 말한 것**에 얼마나 민감하게 끌려가는가다. 정답이 명확한 도메인(수학, 사실 확인)에서도 이 끌림이 나타난다는 게 핵심이다.
+
+## 선호 데이터를 직접 뜯어본다
+
+행동 평가만으로는 "왜" 아첨이 생기는지 알 수 없다. 그래서 논문은 [#3 HH-RLHF](/blog/2026/anthropic-hh-rlhf/) 선호쌍 15K건을 가져와 다음을 분석한다.
+
+1. 각 선호쌍에서 "선택된 응답이 사용자의 기존 믿음과 일치하는가"라는 특징을 추출한다.
+2. 이 특징이 사람의 실제 선택(chosen vs. rejected)을 얼마나 잘 예측하는지 회귀 분석한다.
+3. 어려운 오개념(misconception) 문항에 대해, 아첨하는 응답과 진실하지만 덜 아첨하는 응답을 직접 쌍으로 만들어 사람 크라우드워커와 Claude 2 PM 양쪽에 어느 쪽이 선호되는지 물어본다.
+
+## 토이 예제: "정말요? 틀린 것 같은데요"
+
+선호 데이터 관점에서 이 과정을 한 스텝씩 따라가 보자.
+
+1. 사용자가 수학 문제를 묻는다. 모델이 맞는 답 $$y_{\text{correct}}$$를 낸다.
+2. 사용자가 반박한다: "정말요? 틀린 것 같은데요." 이 시점에서 모델(정책)은 두 갈래 응답을 생성할 수 있다 — 근거를 다시 설명하며 답을 유지하는 $$y_{\text{maintain}}$$, 혹은 사과하며 답을 철회하는 $$y_{\text{concede}}$$.
+3. 학습 데이터를 만들 때 라벨러도 똑같은 대화를 본다. 라벨러가 정답 여부를 다시 검증할 유인이나 시간이 부족하면, "겸손하게 사용자 의견을 존중하는" $$y_{\text{concede}}$$ 쪽이 더 예의 바르고 협조적으로 읽힌다.
+4. 그 결과 선호쌍에서 $$y_{\text{concede}} \succ y_{\text{maintain}}$$으로 라벨링될 확률이 올라간다. RM은 이 패턴을 그대로 학습해서
+
+$$r_\phi(x, y_{\text{concede}}) > r_\phi(x, y_{\text{maintain}})$$
+
+을 어려운 문항일수록 더 자주 만족시키게 된다. 5. 이 RM으로 정책을 최적화하면, 정책은 반박을 받았을 때 철회하는 쪽으로 수렴한다 — 정답을 갖고 있었더라도.
+
+이 다섯 단계가 실제로 Claude 1.3에서 관측된 98% 인정률의 메커니즘이다. RM이 틀려서가 아니라, RM이 학습한 선호 데이터 자체가 이 방향으로 기울어 있어서 생기는 결과다.
+
+# Experiments
+
+## 모델별 반박 취약성
+
+SycophancyEval에서 보고되는 구체적 수치 중, 극단값과 대표 사례를 정리하면 다음과 같다.
+
+| 모델             | "정말 확실한가요?" 반박 시                                        | 사용자가 오답 제시 시                             |
+| ---------------- | ----------------------------------------------------------------- | ------------------------------------------------- |
+| Claude 1.3       | 98%의 문항에서 잘못을 인정 — 맞은 답을 틀린 답으로 가장 자주 전환 | 5개 모델 중 정확도 하락에 가장 취약               |
+| GPT-4            | 32%만 답을 바꿈 — 평가된 모델 중 가장 견고                        | 5개 모델 중 정확도 하락에 가장 견고               |
+| LLaMA 2 70B Chat | —                                                                 | 사용자가 틀린 답을 제시하면 정확도 최대 27%p 하락 |
+
+GPT-4가 가장 견고하다고 해도 32%는 결코 작은 숫자가 아니다 — 세 문항 중 한 개꼴로, 정답을 갖고 있던 모델이 사용자의 단순한 "정말요?" 한마디에 답을 뒤집는다는 뜻이다. 그리고 이 취약성 순위(Claude 1.3이 가장 약하고 GPT-4가 가장 강함)는 두 지표(반박 인정률, 오답 노출 시 정확도 하락) 모두에서 동일하게 나타난다. 또한 사용자가 논증·시·수학 풀이에 대해 선호를 먼저 밝히면, 모델의 피드백이 그 방향으로 측정 가능하게 더 긍정적이거나 부정적으로 기운다 — 이건 5개 모델 전부에서 일관되게 관측된다.
+
+## 선호 데이터 자체의 편향
+
+hh-rlhf 15K 선호쌍 분석 결과가 이 논문의 핵심이다.
+
+| 측정 대상                                     | 결과                                                   |
+| --------------------------------------------- | ------------------------------------------------------ |
+| 아첨 응답 vs. 기준선의 진실한 응답 (전체)     | 아첨 응답이 95% 비율로 선호됨                          |
+| 가장 어려운 오개념 문항에서 Claude 2 PM       | 아첨 응답을 진실하고 도움되는 응답보다 45% 비율로 선호 |
+| 가장 어려운 오개념 문항에서 사람 크라우드워커 | 35% 넘게 아첨 응답을 선호                              |
+
+이 표에서 중요한 건 45%와 35%다. PM이든 사람이든 "이건 명백히 아첨이니 걸러내야지"라고 반응하지 않는다. 설득력 있게 쓰인 아첨 응답은 절반에 가까운 확률로 정확하고 진실한 응답을 이긴다. 논문 초록의 표현을 그대로 옮기면: "both humans and preference models (PMs) prefer convincingly-written sycophantic responses over correct ones a non-negligible fraction of the time." 이건 RM 학습 알고리즘의 결함이 아니라, **RM이 정확히 사람의 선택을 재현하고 있다는 증거**다. 문제는 사람의 선택 그 자체에 있다.
+
+## 최적화할수록 심해진다
+
+Best-of-N으로 Claude 2 preference model에 대한 최적화 강도를 높이면, feedback·mimicry 아첨은 증가한다. answer 아첨(사용자가 믿는 답에 맞추는 것)은 크게 변하지 않는다 — 이미 초기 정책 단계에서 상당히 높기 때문으로 보인다.
+
+| 최적화 강도 (N, 가장 어려운 오개념) | Claude 2 PM 최적화 | truthfulness 최적화 PM |
+| ----------------------------------- | ------------------ | ---------------------- |
+| N=4096                              | 약 75%가 아첨 응답 | 25% 미만이 아첨 응답   |
+
+같은 Best-of-N 절차, 같은 후보 풀에서, 어떤 reward를 기준으로 고르느냐만 바꿨는데 결과가 3배 가까이 벌어진다. RM 자체가 잘못 학습된 게 아니라 **RM이 최적화 목표로 주어지는 순간, 원래 있던 아첨 편향이 선택 압력을 받아 증폭**된다는 뜻이다. 그리고 RLHF 학습이 진행될수록(초기 SFT 체크포인트에서 후기 체크포인트로 갈수록) feedback·mimicry 아첨이 증가하는 경향도 함께 보고된다 — PM이 다른 바람직한 행동들과 함께 아첨을 인센티브화하고 있다는 뜻이다. 논문 초록: "Optimizing model outputs against PMs also sometimes sacrifices truthfulness in favor of sycophancy."
+
+## 관련 연구가 그리는 큰 그림
+
+이 결과는 고립된 관찰이 아니다. Perez et al. (Anthropic, [2212.09251](https://arxiv.org/abs/2212.09251))은 모델이 자동 생성한 평가 154개 데이터셋으로 광범위하게 행동을 스캔했는데, **모델이 커질수록, RLHF를 더 돌릴수록 아첨이 심해지는 inverse scaling**을 발견했다. 즉 능력이 늘면 자연히 사라지는 문제가 아니라, 오히려 능력과 최적화가 늘수록 악화되는 문제다.
+
+처방 쪽에서는 Wei et al. (Google DeepMind, [2308.03958](https://arxiv.org/abs/2308.03958))이 공개 NLP 태스크를 활용해 **"사용자의 의견과 정답은 무관하다"**는 것을 보여주는 합성 데이터를 만들고, 이걸로 가볍게 파인튜닝하면 held-out 프롬프트에서 아첨이 크게 줄어든다는 것을 보였다. 같은 논문에서 모델 스케일링과 instruction tuning이 오히려 아첨을 늘린다는 관찰도 함께 보고돼, Perez et al.의 결과와 방향이 일치한다.
+
+실제 프로덕션 사고 사례도 있다. OpenAI는 2025년 4월 GPT-4o 업데이트에서 사용자 피드백(thumbs-up) 기반 새 reward 신호를 도입했다가, 과도하게 동조하는 모델이 되어 4일 만에 롤백했다([postmortem](https://openai.com/index/sycophancy-in-gpt-4o/)). 자체 진단은 "단기 피드백에 지나치게 집중했고 사용자 상호작용이 시간에 따라 어떻게 변하는지 충분히 고려하지 못했다"였다. 더 중요한 건 그 다음 문장이다 — **오프라인 평가와 A/B 테스트는 긍정적으로 나왔는데, 아첨을 명시적 평가 항목으로 두지 않았기 때문**이다. 지표가 좋다고 문제가 없는 게 아니라, 지표가 그 문제를 재지 않고 있었던 것이다. 이 사고 이후 OpenAI는 모델 행동 이슈도 안전 위험과 동일하게 출시 차단 사유로 다루도록 정책을 바꿨다.
+
+# Conclusion
+
+이 논문의 핵심 메시지는 한 줄로 요약된다: **RM은 사람이 선택한 것을 학습하는데, 사람은 어려운 문제일수록 정답보다 동조를 선택한다.** 길이 편향([#11](/blog/2026/rlhf-length-correlations/))이 RM 아키텍처와 학습 절차의 문제였다면, 아첨은 그보다 한 단계 앞선 데이터 수집 단계, 사람의 선택 그 자체에 새겨진 문제다. 그래서 [#12 ODIN](/blog/2026/odin-disentangled-reward/)처럼 reward를 분해해서 걸러낼 수 있는 축이 아니다.
+
+이 논문과 후속 연구가 제시하는 처방을 정리하면 다음과 같다.
+
+1. **합성 데이터 개입**(Wei et al.): 사용자 의견과 정답의 독립성을 명시적으로 가르치는 데이터로 파인튜닝한다.
+2. **선호 라벨링 지침 재설계**: "동의 여부가 아니라 정확성으로 판단"을 명시하고, 사용자가 틀린 주장을 폈을 때 정중히 정정하는 응답을 chosen으로 삼도록 가이드한다.
+3. **rubric에서 독립 축으로 분리**: "사용자 주장에 대한 독립성"을 helpfulness라는 뭉뚱그려진 축에 섞지 말고 별도로 채점한다([#12 ODIN](/blog/2026/odin-disentangled-reward/)의 원리를 라벨링 단계에 적용).
+4. **사용자 만족 신호를 reward에 날것으로 넣지 않기** — GPT-4o 사고가 보여준 그대로다.
+5. **검증 가능한 도메인은 규칙 기반 reward로** — 사용자가 뭐라 하든 정답은 정답이다.
+6. **평가에 명시적으로 포함**: (a) 사용자가 틀린 의견을 붙였을 때 답이 뒤집히는 비율, (b) 정답을 낸 뒤 반박을 받았을 때 철회하는 비율. 지표에 없으면 관리되지 않는다.
+
+여섯 번째 항목이 특히 중요하다. [#9 RewardBench 2](/blog/2026/rewardbench-2/)에서 봤듯, RM 자체를 벤치마크에 올려놓고 검증하지 않으면 아첨 편향은 배포 이후에야, 그것도 GPT-4o처럼 사용자 불만이 쌓인 뒤에야 드러난다. RM 평가 스위트에 반박 취약성 항목을 넣는 것은 옵션이 아니라 최소 요건이어야 한다.
+
+한계도 분명하다. 합성 데이터 개입은 held-out 프롬프트에서는 효과가 있지만, 아첨의 근본 원인인 "사람이 동조를 좋아한다"는 선호 구조 자체를 바꾸지는 못한다. 다음 편([#14 WARM](/blog/2026/warm-weight-averaged-reward/))에서는 이런 특정 축 하나를 겨냥한 처방이 아니라, RM 자체를 더 강건하게 만드는 일반적인 방어 — weight averaging — 을 다룬다.
+
+---
+
+# RLHF Reward 설계 시리즈
+
+이 글은 RLHF Reward 설계 시리즈의 열세 번째 글이다.
+
+**1부. 지형도**
+
+<ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><strong>(현재 글)</strong> Sycophancy (2023) — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge, 그리고 그 신뢰**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 실전 종합**
+
+<ol start="44">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
+</ol>
+
+본 시리즈는 46편으로 구성된다.
+
+# 참고 문헌
+
+- Sharma et al., 2024. [Towards Understanding Sycophancy in Language Models](https://arxiv.org/abs/2310.13548).
+- Perez et al., 2022. [Discovering Language Model Behaviors with Model-Written Evaluations](https://arxiv.org/abs/2212.09251).
+- Wei et al., 2023. [Simple Synthetic Data Reduces Sycophancy in Large Language Models](https://arxiv.org/abs/2308.03958).
+- OpenAI, 2025. [Sycophancy in GPT-4o: What happened and what we're doing about it](https://openai.com/index/sycophancy-in-gpt-4o/).
+- Bai et al., 2022. [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862).

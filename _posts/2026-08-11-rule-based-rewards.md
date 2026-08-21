@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "Rule-Based Rewards: 안전 규칙을 reward로 직접 번역한다"
-date: 2026-08-11 09:15:00 +0900
-description: "RLHF Reward 설계 시리즈 #15 — 명제와 LLM grader로 over-refusal을 줄이는 OpenAI의 안전 reward"
+date: 2026-08-11 09:16:00 +0900
+description: "RLHF Reward 설계 시리즈 #16 — 명제와 LLM grader로 over-refusal을 줄이는 OpenAI의 안전 reward"
 categories: [paper]
 tags: [rlhf, safety, reward-model, over-refusal, rule-based-reward, paper]
 giscus_comments: true
@@ -19,19 +19,19 @@ related_posts: true
 
 Mu et al.(OpenAI, NeurIPS 2024)의 [Rule Based Rewards(RBR)](https://arxiv.org/abs/2411.01111)는 이 증류 단계를 건너뛴다. 아이디어는 단순하다. 안전 행동을 사람이 직접 규칙으로 적고, 그 규칙을 LLM grader가 응답에 대해 채점하게 한 다음, 채점 결과를 선형 결합해 곧바로 reward로 쓴다. 사람 데이터는 가중치를 학습하는 소량의 셋에만 쓰이고, 나머지는 AI 피드백으로 채운다. 그 결과 helpfulness를 유지하면서 안전 분류 성능이 F1 97.1까지 올라간다. 같은 조건의 사람 피드백 baseline은 91.7이다.
 
-이 포스트는 바로 전편인 [#14 Safe RLHF](/blog/2026/safe-rlhf/)와 짝을 이룬다. 둘 다 "단일 RM이 helpful과 harmless를 동시에 잘 못 다룬다"는 같은 문제에서 출발하지만 푸는 방식이 다르다. Safe RLHF는 **학습된 cost model + 제약 최적화**로 안전을 다뤘고, RBR은 **사람이 쓴 규칙 + LLM grader**로 안전을 다룬다. 이 대비를 축으로 RBR의 구조를 뜯어본다.
+이 포스트는 바로 전편인 [#15 Safe RLHF](/blog/2026/safe-rlhf/)와 짝을 이룬다. 둘 다 "단일 RM이 helpful과 harmless를 동시에 잘 못 다룬다"는 같은 문제에서 출발하지만 푸는 방식이 다르다. Safe RLHF는 **학습된 cost model + 제약 최적화**로 안전을 다뤘고, RBR은 **사람이 쓴 규칙 + LLM grader**로 안전을 다룬다. 이 대비를 축으로 RBR의 구조를 뜯어본다.
 
 # Background
 
 안전 정렬이 어려운 근본 이유는 helpfulness와 harmlessness가 같은 축 위에 있지 않다는 데 있다. "얼마나 도움이 되는가"를 최적화하는 압력과 "얼마나 위험을 회피하는가"를 최적화하는 압력을 하나의 RM에 억지로 우겨 넣으면, 데이터 분포가 조금만 한쪽으로 기울어도 모델은 극단으로 쏠린다. [#8 Llama 2](/blog/2026/llama2-rlhf/)가 helpfulness RM과 safety RM을 아예 분리한 것도 이 문제 때문이다.
 
-[#14 Safe RLHF](/blog/2026/safe-rlhf/)는 이 문제를 제약 최적화로 풀었다. 사람이 매긴 해로움 선호 데이터로 cost model을 학습하고, PPO 단계에서 cost의 기댓값이 임계값 아래로 유지되도록 Lagrangian 승수로 helpful reward 최적화에 제약을 건다. 이 방식은 여전히 사람이 만든 비교 데이터로 cost model을 학습하는 단계를 거친다. 즉 앞서 말한 증류 문제 — 세밀한 행동 명세가 이진 비교 데이터로 뭉개지는 문제 — 가 완전히 사라지지는 않는다.
+[#15 Safe RLHF](/blog/2026/safe-rlhf/)는 이 문제를 제약 최적화로 풀었다. 사람이 매긴 해로움 선호 데이터로 cost model을 학습하고, PPO 단계에서 cost의 기댓값이 임계값 아래로 유지되도록 Lagrangian 승수로 helpful reward 최적화에 제약을 건다. 이 방식은 여전히 사람이 만든 비교 데이터로 cost model을 학습하는 단계를 거친다. 즉 앞서 말한 증류 문제 — 세밀한 행동 명세가 이진 비교 데이터로 뭉개지는 문제 — 가 완전히 사라지지는 않는다.
 
 RBR은 다른 길을 택한다. cost model을 학습하는 대신, "이 응답이 훈계조인가", "이 응답이 거절을 포함하는가" 같은 개별 판단을 사람이 규칙으로 직접 적고, 그 규칙의 판정을 고정된 LLM grader에게 맡긴다. 규칙 자체에는 학습 가능한 파라미터가 없다. 학습되는 것은 오직 "이 규칙들을 얼마나 중요하게 반영할지"를 정하는 가중치뿐이다. 그래서 사람이 쓴 행동 명세가 RM 학습 과정에서 흐려지지 않고 reward 계산에 거의 그대로 들어간다.
 
 두 접근을 나란히 놓고 보면 어디서 다른 선택을 했는지 분명해진다.
 
-| 항목                 | Safe RLHF (#14)                   | RBR                                 |
+| 항목                 | Safe RLHF (#15)                   | RBR                                 |
 | -------------------- | --------------------------------- | ----------------------------------- |
 | 안전 신호의 근원     | 학습된 cost model                 | 사람이 쓴 규칙 + LLM grader         |
 | 최적화 방식          | Lagrangian 제약 최적화            | helpful reward에 가산하는 선형 결합 |
@@ -121,19 +121,19 @@ RBR의 핵심 성능 지표는 안전 분류 F1이다. 사람 피드백만으로
 
 RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 쓴 명제와 규칙으로 형식화하고 LLM grader로 채점해 reward에 곧바로 반영하면, RM 증류 과정에서 흐려지던 행동 명세를 보존하면서 helpfulness를 유지한 채 over-refusal을 줄일 수 있다.
 
-물론 한계도 있다. 규칙과 명제를 사람이 직접 설계해야 하므로, 설계자가 미처 예상하지 못한 유해 카테고리에는 규칙 자체가 존재하지 않을 수 있다. 또 판정을 맡은 LLM grader의 신뢰도에 최종 reward 품질이 그대로 좌우된다. [#14 Safe RLHF](/blog/2026/safe-rlhf/)의 cost model은 넓은 선호 데이터로부터 일반화할 여지가 있는 반면, RBR의 규칙은 명시적으로 적어둔 범위 밖으로는 잘 확장되지 않는다. RBR은 유연성을 일부 내주는 대신 해석 가능성과 통제력을 얻는 설계다.
+물론 한계도 있다. 규칙과 명제를 사람이 직접 설계해야 하므로, 설계자가 미처 예상하지 못한 유해 카테고리에는 규칙 자체가 존재하지 않을 수 있다. 또 판정을 맡은 LLM grader의 신뢰도에 최종 reward 품질이 그대로 좌우된다. [#15 Safe RLHF](/blog/2026/safe-rlhf/)의 cost model은 넓은 선호 데이터로부터 일반화할 여지가 있는 반면, RBR의 규칙은 명시적으로 적어둔 범위 밖으로는 잘 확장되지 않는다. RBR은 유연성을 일부 내주는 대신 해석 가능성과 통제력을 얻는 설계다.
 
-이 시리즈에서 안전 정렬 문제를 다룬 세 편을 나란히 놓으면 답이 점점 더 명시적인 규칙 쪽으로 옮겨가는 흐름이 보인다. [#8 Llama 2](/blog/2026/llama2-rlhf/)는 helpfulness RM과 safety RM을 분리하는 것으로 시작했고, [#14 Safe RLHF](/blog/2026/safe-rlhf/)는 안전을 학습된 cost model과 제약 최적화로 다시 정식화했다. RBR은 그 cost model마저 사람이 쓴 규칙과 LLM grader로 대체했다. 매번 사람의 판단이 사라진 것이 아니라, 사람의 판단이 놓이는 위치가 데이터 라벨링에서 규칙 작성으로 옮겨간 것이다.
+이 시리즈에서 안전 정렬 문제를 다룬 세 편을 나란히 놓으면 답이 점점 더 명시적인 규칙 쪽으로 옮겨가는 흐름이 보인다. [#8 Llama 2](/blog/2026/llama2-rlhf/)는 helpfulness RM과 safety RM을 분리하는 것으로 시작했고, [#15 Safe RLHF](/blog/2026/safe-rlhf/)는 안전을 학습된 cost model과 제약 최적화로 다시 정식화했다. RBR은 그 cost model마저 사람이 쓴 규칙과 LLM grader로 대체했다. 매번 사람의 판단이 사라진 것이 아니라, 사람의 판단이 놓이는 위치가 데이터 라벨링에서 규칙 작성으로 옮겨간 것이다.
 
-이 규칙 기반 판정 방식은 [#32 DeepSeek-R1](/blog/2026/deepseek-r1/)의 RLVR과 닮았다. RLVR이 "정답인가"라는 명확한 기준을 규칙으로 판정한다면, RBR은 "안전한가"라는 기준을 규칙으로 판정한다. 두 경우 모두 판정 규칙 자체에는 학습 가능한 파라미터가 없다. 그래서 [#10 Overoptimization](/blog/2026/reward-model-overoptimization/)에서 다룬, 학습된 RM이 근사이기 때문에 생기는 reward hacking 표면이 훨씬 작다.
+이 규칙 기반 판정 방식은 [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)의 RLVR과 닮았다. RLVR이 "정답인가"라는 명확한 기준을 규칙으로 판정한다면, RBR은 "안전한가"라는 기준을 규칙으로 판정한다. 두 경우 모두 판정 규칙 자체에는 학습 가능한 파라미터가 없다. 그래서 [#10 Overoptimization](/blog/2026/reward-model-overoptimization/)에서 다룬, 학습된 RM이 근사이기 때문에 생기는 reward hacking 표면이 훨씬 작다.
 
-이런 흐름은 최근 프론티어 모델의 reward 설계로 이어진다. [#43 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, A.X K2는 거절 자체가 아니라 안전한 완수를 보상하는 방향을 취하고, K-EXAONE 2.0은 별도의 safety-aware 단계를 둔다. 안전성을 사람의 이진 선호가 아니라 rubric과 judge로 명시적으로 판정하는 설계가 점점 표준이 되어가는 중이다.
+이런 흐름은 최근 프론티어 모델의 reward 설계로 이어진다. [#44 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, A.X K2는 거절 자체가 아니라 안전한 완수를 보상하는 방향을 취하고, K-EXAONE 2.0은 별도의 safety-aware 단계를 둔다. 안전성을 사람의 이진 선호가 아니라 rubric과 judge로 명시적으로 판정하는 설계가 점점 표준이 되어가는 중이다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열다섯 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 열여섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -160,12 +160,13 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><strong>(현재 글)</strong> Rule-Based Rewards (2024) — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -175,7 +176,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -191,7 +192,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -199,7 +200,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -209,7 +210,7 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -219,20 +220,20 @@ RBR의 메시지는 한 줄로 요약된다. 안전 행동을 사람이 직접 �
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 
 - Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) (NeurIPS 2024).
-- Dai et al. (Peking University), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/)에서 다룬 cost model + 제약 최적화.
+- Dai et al. (Peking University), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/)에서 다룬 cost model + 제약 최적화.
 - Touvron et al. (Meta), 2023. [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288) — [#8](/blog/2026/llama2-rlhf/)에서 다룬 helpfulness·safety RM 분리.
-- DeepSeek-AI, 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — [#32](/blog/2026/deepseek-r1/)에서 다룬 RLVR, 규칙 기반 판정의 다른 사례.
+- DeepSeek-AI, 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — [#33](/blog/2026/deepseek-r1/)에서 다룬 RLVR, 규칙 기반 판정의 다른 사례.
 - Gao et al. (OpenAI), 2022. [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760) — [#10](/blog/2026/reward-model-overoptimization/)에서 다룬 학습된 RM의 hacking 표면.
-- SKT AI, 2026. [A.X K2 Technical Report](https://github.com/SKT-AI/A.X-K2) — 거절이 아니라 안전한 완수를 보상하는 최신 사례([#43](/blog/2026/frontier-reward-design/)).
-- LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505) — 별도 safety-aware preference 단계([#43](/blog/2026/frontier-reward-design/)).
+- SKT AI, 2026. [A.X K2 Technical Report](https://github.com/SKT-AI/A.X-K2) — 거절이 아니라 안전한 완수를 보상하는 최신 사례([#44](/blog/2026/frontier-reward-design/)).
+- LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505) — 별도 safety-aware preference 단계([#44](/blog/2026/frontier-reward-design/)).

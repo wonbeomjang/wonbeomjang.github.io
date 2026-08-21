@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "안전 정렬은 첫 몇 토큰에만 얹혀 있다"
-date: 2026-08-11 09:17:00 +0900
-description: "RLHF Reward 설계 시리즈 #17 — shallow safety alignment가 prefilling·fine-tuning 공격을 한 번에 설명한다"
+date: 2026-08-11 09:18:00 +0900
+description: "RLHF Reward 설계 시리즈 #18 — shallow safety alignment가 prefilling·fine-tuning 공격을 한 번에 설명한다"
 categories: [paper]
 tags: [rlhf, safety, alignment, fine-tuning-attack, robustness, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#14 Safe RLHF](/blog/2026/safe-rlhf/), [#15 Rule-Based Rewards](/blog/2026/rule-based-rewards/), [#16 Deliberative Alignment](/blog/2026/deliberative-alignment/)까지 세 편은 전부 같은 질문을 다뤘다. 안전 reward를 **어떻게 설계할까**. Cost model을 따로 두거나(Safe RLHF), rubric 기반 reward를 쓰거나(RBR), 정책 자체가 안전 스펙을 추론하게 만들거나(deliberative alignment) — 방식은 다르지만 전부 "무엇을 거절하게 만들 것인가"에 집중했다.
+[#15 Safe RLHF](/blog/2026/safe-rlhf/), [#16 Rule-Based Rewards](/blog/2026/rule-based-rewards/), [#17 Deliberative Alignment](/blog/2026/deliberative-alignment/)까지 세 편은 전부 같은 질문을 다뤘다. 안전 reward를 **어떻게 설계할까**. Cost model을 따로 두거나(Safe RLHF), rubric 기반 reward를 쓰거나(RBR), 정책 자체가 안전 스펙을 추론하게 만들거나(deliberative alignment) — 방식은 다르지만 전부 "무엇을 거절하게 만들 것인가"에 집중했다.
 
 이번 글이 묻는 건 다른 질문이다. 그렇게 설계한 정렬이 모델 안에 **얼마나 깊이** 박히는가. ICLR 2025 Outstanding Paper Award를 받은 이 논문은, 지금 쓰이는 safety alignment 방법들(RLHF든 SFT든) 대부분이 지름길을 탄다고 주장한다. 모델은 유해한 질문에 어떻게 답해야 하는지를 배우는 게 아니라, 응답을 **"I cannot"**처럼 시작하는 법만 배운다는 것이다. 논문은 이 현상을 **shallow safety alignment**라고 부른다.
 
@@ -103,7 +103,7 @@ $$
 - $$\beta_t$$: 토큰 위치 $$t$$마다 다르게 주는 제약 강도 파라미터
 - $$\sigma$$: sigmoid 함수
 
-이 형태는 낯설지 않다. log-ratio를 sigmoid에 넣고 음의 로그를 취하는 구조는 [#23 DPO](/blog/2026/dpo/)의 목적함수와 뼈대가 같다. 다른 점은 DPO가 응답 쌍 전체에 하나의 $$\beta$$를 쓰는 반면, 여기서는 **같은 응답 안에서도 토큰 위치마다 $$\beta_t$$를 다르게** 준다는 것이다.
+이 형태는 낯설지 않다. log-ratio를 sigmoid에 넣고 음의 로그를 취하는 구조는 [#24 DPO](/blog/2026/dpo/)의 목적함수와 뼈대가 같다. 다른 점은 DPO가 응답 쌍 전체에 하나의 $$\beta$$를 쓰는 반면, 여기서는 **같은 응답 안에서도 토큰 위치마다 $$\beta_t$$를 다르게** 준다는 것이다.
 
 ### $$\beta_t$$가 큰 쪽이 강한 제약이다
 
@@ -177,7 +177,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 # Conclusion
 
-안전 정렬은 기본적으로 얕다. 거절 예시로만 SFT를 걸면, 모델은 유해한 내용을 다루는 법이 아니라 응답을 거절 접두어로 시작하는 습관만 배운다. 이 하나의 사실이 adversarial suffix, prefilling, decoding parameter, fine-tuning 네 가지 공격을 전부 설명한다. 그리고 정렬을 깊게 만드는 처방도 이 진단에서 그대로 따라 나온다. (a) 유해한 응답으로 시작했다가 거절로 되돌아오는, 응답 뒷부분까지 안전 신호가 걸리는 데이터를 학습에 넣어야 하고, (b) 파인튜닝 API를 외부에 열어줄 경우에는 앞쪽 토큰을 특히 강하게 보호하는 위치별 제약을 파인튜닝 목적함수 자체에 걸어야 한다. [#43 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, 실제 서비스에서 파인튜닝 API를 제공하는 순간 이 문제는 이론이 아니라 운영 리스크가 된다.
+안전 정렬은 기본적으로 얕다. 거절 예시로만 SFT를 걸면, 모델은 유해한 내용을 다루는 법이 아니라 응답을 거절 접두어로 시작하는 습관만 배운다. 이 하나의 사실이 adversarial suffix, prefilling, decoding parameter, fine-tuning 네 가지 공격을 전부 설명한다. 그리고 정렬을 깊게 만드는 처방도 이 진단에서 그대로 따라 나온다. (a) 유해한 응답으로 시작했다가 거절로 되돌아오는, 응답 뒷부분까지 안전 신호가 걸리는 데이터를 학습에 넣어야 하고, (b) 파인튜닝 API를 외부에 열어줄 경우에는 앞쪽 토큰을 특히 강하게 보호하는 위치별 제약을 파인튜닝 목적함수 자체에 걸어야 한다. [#44 프론티어 모델의 reward 설계](/blog/2026/frontier-reward-design/)에서 다루듯, 실제 서비스에서 파인튜닝 API를 제공하는 순간 이 문제는 이론이 아니라 운영 리스크가 된다.
 
 다만 이 논문의 처방이 모든 공격을 원천 봉쇄하는 건 아니다. 데이터 증강과 제약 목적함수 모두 논문이 테스트한 공격 종류에 한정된 결과이고, 더 정교하게 설계된 새로운 공격이 같은 구멍을 다른 방식으로 다시 찌를 가능성은 남아 있다. shallow safety alignment는 진단이지 만병통치약이 아니다. "정렬이 얼마나 깊이 박혀 있는가"를 측정하고 개선하는 하나의 축일 뿐, 안전성 자체를 보장하는 개념은 아니다.
 
@@ -185,7 +185,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열일곱 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 열여덟 번째 글이다.
 
 **1부. 지형도**
 
@@ -212,12 +212,13 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -227,7 +228,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -243,7 +244,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -251,7 +252,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -261,7 +262,7 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -271,19 +272,19 @@ Llama-2-7B-Chat에 safety recovery examples를 섞어 재정렬한 뒤, 세 가�
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 
 - Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) (ICLR 2025 Outstanding Paper).
 - Bai et al. (Anthropic), 2022. [Training a Helpful and Harmless Assistant with RLHF](https://arxiv.org/abs/2204.05862) — [#3](/blog/2026/anthropic-hh-rlhf/), 거절 위주 안전 학습의 원형.
-- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#14](/blog/2026/safe-rlhf/).
-- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#15](/blog/2026/rule-based-rewards/).
-- Guan et al. (OpenAI), 2024. [Deliberative Alignment](https://arxiv.org/abs/2412.16339) — [#16](/blog/2026/deliberative-alignment/).
-- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#23](/blog/2026/dpo/), 제약 목적함수와 닮은 log-ratio·sigmoid 구조.
+- Dai et al. (Peking University), 2023. [Safe RLHF](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/).
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#16](/blog/2026/rule-based-rewards/).
+- Guan et al. (OpenAI), 2024. [Deliberative Alignment](https://arxiv.org/abs/2412.16339) — [#17](/blog/2026/deliberative-alignment/).
+- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#24](/blog/2026/dpo/), 제약 목적함수와 닮은 log-ratio·sigmoid 구조.

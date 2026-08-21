@@ -1,21 +1,21 @@
 ---
 layout: post
 title: "프론티어 모델은 helpfulness reward를 어떻게 설계했나"
-date: 2026-08-11 09:43:00 +0900
-description: "RLHF Reward 설계 시리즈 #43 — 열한 개 프론티어 모델이 능력(helpfulness) reward를 설계한 방식 비교"
+date: 2026-08-11 09:44:00 +0900
+description: "RLHF Reward 설계 시리즈 #44 — 열한 개 프론티어 모델이 능력(helpfulness) reward를 설계한 방식 비교"
 categories: [paper]
 tags: [rlhf, reward-model, rlvr, dpo, grpo, genrm, deepseek, qwen, llama, paper]
 giscus_comments: true
 related_posts: true
 ---
 
-> 이 글은 열한 개 프론티어 모델의 공개 자료를 가로지른다 — [DeepSeek-V4](https://arxiv.org/abs/2606.19348), [Qwen3](https://arxiv.org/abs/2505.09388), [Llama 4](https://ai.meta.com/blog/llama-4-multimodal-intelligence/), [Kimi K3](https://github.com/MoonshotAI/Kimi-K3), [Solar Open 2](https://arxiv.org/abs/2607.20062), [K-EXAONE 2.0](https://arxiv.org/abs/2608.04505), [A.X K2](https://github.com/SKT-AI/A.X-K2), [MiniMax-M1](https://arxiv.org/abs/2506.13585), [GLM-4.5](https://arxiv.org/abs/2508.06471), [Magistral](https://arxiv.org/abs/2506.10910), [Gemma 4](https://arxiv.org/abs/2607.02770). 한국 팀 셋(Solar·K-EXAONE·A.X)과 유럽 팀 하나(Magistral)가 함께 오른다. 이 중 Llama 4만 정식 technical report 없이 공식 블로그로 공개됐다. 이 글은 **능력(helpfulness) 축**을 다루고, **안전성(harmlessness) 축은 [#44](/blog/2026/frontier-safety-design/)** 에서 따로 뜯는다.
+> 이 글은 열한 개 프론티어 모델의 공개 자료를 가로지른다 — [DeepSeek-V4](https://arxiv.org/abs/2606.19348), [Qwen3](https://arxiv.org/abs/2505.09388), [Llama 4](https://ai.meta.com/blog/llama-4-multimodal-intelligence/), [Kimi K3](https://github.com/MoonshotAI/Kimi-K3), [Solar Open 2](https://arxiv.org/abs/2607.20062), [K-EXAONE 2.0](https://arxiv.org/abs/2608.04505), [A.X K2](https://github.com/SKT-AI/A.X-K2), [MiniMax-M1](https://arxiv.org/abs/2506.13585), [GLM-4.5](https://arxiv.org/abs/2508.06471), [Magistral](https://arxiv.org/abs/2506.10910), [Gemma 4](https://arxiv.org/abs/2607.02770). 한국 팀 셋(Solar·K-EXAONE·A.X)과 유럽 팀 하나(Magistral)가 함께 오른다. 이 중 Llama 4만 정식 technical report 없이 공식 블로그로 공개됐다. 이 글은 **능력(helpfulness) 축**을 다루고, **안전성(harmlessness) 축은 [#45](/blog/2026/frontier-safety-design/)** 에서 따로 뜯는다.
 
 # Introduction
 
-42편 동안 이 시리즈는 reward를 부품 단위로 뜯어봤다. 사람 선호를 스칼라로 압축하는 Bradley-Terry([#4](/blog/2026/bradley-terry-rethinking/)), 그 스칼라가 hacking당하는 방식과 방어법([#10](/blog/2026/reward-model-overoptimization/)\~[#13](/blog/2026/warm-weight-averaged-reward/)), reward를 정책 업데이트로 바꾸는 PPO·GRPO·DPO([#19](/blog/2026/ppo/)\~[#23](/blog/2026/dpo/)), 검증 가능한 도메인에서 학습된 reward model 자체를 규칙으로 대체하는 RLVR([#30](/blog/2026/lets-verify-step-by-step/)\~[#32](/blog/2026/deepseek-r1/)), 학습된 RM을 생성형 judge로 재구성하는 흐름([#33](/blog/2026/prometheus-2/)\~[#37](/blog/2026/deepseek-grm-spct/)), 그리고 그 judge가 스스로 생각하고 그 신뢰 자체를 검증하는 최신 연구([#38](/blog/2026/reasongrm/)\~[#42](/blog/2026/one-token-to-fool-judge/)). 하나하나는 특정 논문이 특정 문제 하나에 답한 결과였다.
+43편 동안 이 시리즈는 reward를 부품 단위로 뜯어봤다. 사람 선호를 스칼라로 압축하는 Bradley-Terry([#4](/blog/2026/bradley-terry-rethinking/)), 그 스칼라가 hacking당하는 방식과 방어법([#10](/blog/2026/reward-model-overoptimization/)\~[#14](/blog/2026/warm-weight-averaged-reward/)), reward를 정책 업데이트로 바꾸는 PPO·GRPO·DPO([#20](/blog/2026/ppo/)\~[#24](/blog/2026/dpo/)), 검증 가능한 도메인에서 학습된 reward model 자체를 규칙으로 대체하는 RLVR([#31](/blog/2026/lets-verify-step-by-step/)\~[#33](/blog/2026/deepseek-r1/)), 학습된 RM을 생성형 judge로 재구성하는 흐름([#34](/blog/2026/prometheus-2/)\~[#38](/blog/2026/deepseek-grm-spct/)), 그리고 그 judge가 스스로 생각하고 그 신뢰 자체를 검증하는 최신 연구([#39](/blog/2026/reasongrm/)\~[#43](/blog/2026/one-token-to-fool-judge/)). 하나하나는 특정 논문이 특정 문제 하나에 답한 결과였다.
 
-그런데 실제로 프론티어급 모델을 학습시키는 팀은 이 부품 중 무엇을, 어떤 조합으로, 왜 골랐을까. 이 글은 "논문 1편 = 포스트 1편" 형식을 벗어나 열한 개 공개 자료 — DeepSeek-V4, Qwen3, Llama 4, Kimi K3, Solar Open 2, K-EXAONE 2.0, A.X K2, MiniMax-M1, GLM-4.5, Magistral, Gemma 4 — 를 가로질러 reward 설계의 실전 선택지를 비교한다. 그리고 이 비교에서 뽑아낸 설계 원칙은 다음 글 [#45](/blog/2026/reward-model-design/)에서 한 장의 실무 가이드로 정리한다.
+그런데 실제로 프론티어급 모델을 학습시키는 팀은 이 부품 중 무엇을, 어떤 조합으로, 왜 골랐을까. 이 글은 "논문 1편 = 포스트 1편" 형식을 벗어나 열한 개 공개 자료 — DeepSeek-V4, Qwen3, Llama 4, Kimi K3, Solar Open 2, K-EXAONE 2.0, A.X K2, MiniMax-M1, GLM-4.5, Magistral, Gemma 4 — 를 가로질러 reward 설계의 실전 선택지를 비교한다. 그리고 이 비교에서 뽑아낸 설계 원칙은 다음 글 [#46](/blog/2026/reward-model-design/)에서 한 장의 실무 가이드로 정리한다.
 
 미리 결론의 윤곽을 말하면 세 가지다.
 
@@ -57,9 +57,9 @@ related_posts: true
 
 | 축                                       | 선택지                                                        | 관련 편                                                                                                                                                                                                                                                |
 | ---------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| reward를 어디서 조달하는가               | 학습된 스칼라 RM / 규칙 기반 verifiable reward / judge·rubric | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)), 6부([#30](/blog/2026/lets-verify-step-by-step/)\~[#32](/blog/2026/deepseek-r1/)), 6·8부([#33](/blog/2026/prometheus-2/)\~[#42](/blog/2026/one-token-to-fool-judge/)) |
-| 그 reward로 정책을 어떻게 업데이트하는가 | PPO / GRPO / DPO                                              | 5부([#19](/blog/2026/ppo/)\~[#23](/blog/2026/dpo/))                                                                                                                                                                                                    |
-| 도메인을 어떻게 가르는가                 | 검증 가능(정답 존재) / 검증 불가능(정답 부재)                 | [#32 DeepSeek-R1](/blog/2026/deepseek-r1/)                                                                                                                                                                                                             |
+| reward를 어디서 조달하는가               | 학습된 스칼라 RM / 규칙 기반 verifiable reward / judge·rubric | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)), 6부([#31](/blog/2026/lets-verify-step-by-step/)\~[#33](/blog/2026/deepseek-r1/)), 6·8부([#34](/blog/2026/prometheus-2/)\~[#43](/blog/2026/one-token-to-fool-judge/)) |
+| 그 reward로 정책을 어떻게 업데이트하는가 | PPO / GRPO / DPO                                              | 5부([#20](/blog/2026/ppo/)\~[#24](/blog/2026/dpo/))                                                                                                                                                                                                    |
+| 도메인을 어떻게 가르는가                 | 검증 가능(정답 존재) / 검증 불가능(정답 부재)                 | [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)                                                                                                                                                                                                             |
 
 ## reward 조달처를 4분류로: 이 글의 렌즈
 
@@ -67,10 +67,10 @@ related_posts: true
 
 | 조달처                               | 어떻게 점수를 매기나                                      | 파라미터 유무       | 시리즈 대응                                                                                      |
 | ------------------------------------ | --------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
-| ① 규칙 기반 verifiable reward        | 파서 + 비교 로직 (정답 일치, 테스트 통과)                 | 없음 (hacking 불가) | 6부 [#32 RLVR](/blog/2026/deepseek-r1/)                                                          |
+| ① 규칙 기반 verifiable reward        | 파서 + 비교 로직 (정답 일치, 테스트 통과)                 | 없음 (hacking 불가) | 6부 [#33 RLVR](/blog/2026/deepseek-r1/)                                                          |
 | ② 스칼라 RM (reference 없음)         | 사람 선호로 학습한 신경망이 스칼라 점수                   | 있음                | 2부 [#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)                  |
-| ③ reference 기반 judge               | 정답 예시를 주고 그에 비추어 채점 (rubric 조건부)         | 있음 (판정 모델)    | 7부 [#33 Prometheus 2](/blog/2026/prometheus-2/)                                                 |
-| ④ generative RM (GRM, self-critique) | 모델이 근거를 생성하며 채점, 때로 자기 출력을 스스로 평가 | 있음 (생성 모델)    | 6·8부 [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#39 J1](/blog/2026/j1-thinking-judge/) |
+| ③ reference 기반 judge               | 정답 예시를 주고 그에 비추어 채점 (rubric 조건부)         | 있음 (판정 모델)    | 7부 [#34 Prometheus 2](/blog/2026/prometheus-2/)                                                 |
+| ④ generative RM (GRM, self-critique) | 모델이 근거를 생성하며 채점, 때로 자기 출력을 스스로 평가 | 있음 (생성 모델)    | 6·8부 [#38 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#40 J1](/blog/2026/j1-thinking-judge/) |
 
 이 4분류를 머리에 넣고 보면, 열한 모델의 선택이 한눈에 정렬된다. ①은 검증 가능 도메인의 표준이 됐고, ②·③·④는 검증 불가능 도메인을 두고 갈라진다.
 
@@ -80,16 +80,16 @@ reward를 정책으로 옮기는 알고리즘도 이 글에 여럿 등장한다.
 
 | 알고리즘 | 핵심 아이디어                                         | 이 글의 채택 모델                                 | 편                                   |
 | -------- | ----------------------------------------------------- | ------------------------------------------------- | ------------------------------------ |
-| PPO      | clipped surrogate + value network                     | (기준선)                                          | [#19](/blog/2026/ppo/)               |
-| GRPO     | value network를 버리고 그룹 상대 advantage            | DeepSeek-V4·Qwen3·Solar 2·GLM-4.5·Magistral(변형) | [#21](/blog/2026/grpo-deepseekmath/) |
-| DPO      | RM·RL 루프 없이 선호 쌍에서 직접 학습                 | Llama 4(가볍게)                                   | [#23](/blog/2026/dpo/)               |
+| PPO      | clipped surrogate + value network                     | (기준선)                                          | [#20](/blog/2026/ppo/)               |
+| GRPO     | value network를 버리고 그룹 상대 advantage            | DeepSeek-V4·Qwen3·Solar 2·GLM-4.5·Magistral(변형) | [#22](/blog/2026/grpo-deepseekmath/) |
+| DPO      | RM·RL 루프 없이 선호 쌍에서 직접 학습                 | Llama 4(가볍게)                                   | [#24](/blog/2026/dpo/)               |
 | CISPO    | token이 아니라 **IS 가중치**를 클립(결정적 토큰 보존) | MiniMax-M1(원조)·A.X K2                           | 본문                                 |
 | GSPO     | importance ratio를 **sequence-level**로               | (Solar 2는 명시적으로 회피)                       | 본문                                 |
 | GDPO     | 여러 reward를 **각각 정규화 후 결합**                 | A.X K2                                            | 본문                                 |
 | GrouPER  | 그룹 상대 선호(SimPER류)                              | K-EXAONE 2.0                                      | 본문                                 |
 | AGAPO    | off-policy PG, **오답 추론에 음의 보상**              | K-EXAONE 2.0                                      | 본문                                 |
 | MOPD     | 여러 전문가(teacher)를 on-policy 증류로 통합          | Kimi K3·Solar 2                                   | 본문                                 |
-| DAPO     | dynamic sampling(정답률 0/1 프롬프트 제거)            | ([#45](/blog/2026/reward-model-design/)에서 다룸) | #45                                  |
+| DAPO     | dynamic sampling(정답률 0/1 프롬프트 제거)            | ([#46](/blog/2026/reward-model-design/)에서 다룸) | #46                                  |
 
 두 축만 기억하면 된다 — **위 4분류가 "reward를 어디서 얻나", 이 표가 "그 reward를 정책으로 어떻게 옮기나"**다. 대부분은 GRPO의 변형이고, 갈리는 지점은 (a) 무엇을 클립하나(token vs IS 가중치 vs sequence), (b) 여러 reward를 어떻게 섞나(GDPO), (c) 전문가를 어떻게 합치나(MOPD)다.
 
@@ -119,7 +119,7 @@ reward를 정책으로 옮기는 알고리즘도 이 글에 여럿 등장한다.
 
 두 가지를 짚어둘 만하다. 첫째, **같은 랩도 세대에 따라 층이 바뀐다.** Meta는 Llama 3에서 rejection sampling 라운드 수·margin term 제거·DPO의 NLL 계수까지 적은 상세 논문([arXiv:2407.21783](https://arxiv.org/abs/2407.21783))을 냈지만, Llama 4는 블로그로 대체했다. 즉 "미국 랩은 감춘다"가 아니라 **문서 형식이 바뀌면 공개 수준도 바뀐다**가 사실에 가깝다.
 
-둘째, **OpenAI는 제품 레시피 대신 방법론을 논문으로 공개하는 쪽**이다. 안전 reward 설계인 [Rule-Based Rewards](https://arxiv.org/abs/2411.01111)([#15](/blog/2026/rule-based-rewards/))와 [Deliberative Alignment](https://arxiv.org/abs/2412.16339)([#16](/blog/2026/deliberative-alignment/))는 방법 자체를 상세히 밝히지만, 그것이 어느 제품에 어떤 배합으로 들어갔는지는 밝히지 않는다. gpt-oss의 model card도 "large-scale distillation and reinforcement learning"이라는 한 줄이 전부다.
+둘째, **OpenAI는 제품 레시피 대신 방법론을 논문으로 공개하는 쪽**이다. 안전 reward 설계인 [Rule-Based Rewards](https://arxiv.org/abs/2411.01111)([#16](/blog/2026/rule-based-rewards/))와 [Deliberative Alignment](https://arxiv.org/abs/2412.16339)([#17](/blog/2026/deliberative-alignment/))는 방법 자체를 상세히 밝히지만, 그것이 어느 제품에 어떤 배합으로 들어갔는지는 밝히지 않는다. gpt-oss의 model card도 "large-scale distillation and reinforcement learning"이라는 한 줄이 전부다.
 
 비공개 구간은 이 글이 매번 명시한다.
 
@@ -127,7 +127,7 @@ reward를 정책으로 옮기는 알고리즘도 이 글에 여럿 등장한다.
 
 ## DeepSeek-V4: 도메인 전문가를 각자 키운 뒤 하나로 증류한다
 
-[#32](/blog/2026/deepseek-r1/)에서 다룬 DeepSeek-R1은 **하나의 정책**에 규칙 기반 reward를 꽂아 GRPO로 밀어붙이는 구조였다. DeepSeek-V4는 이 구조를 정면으로 바꾼다. 후처리를 **두 단계**로 나눈다.
+[#33](/blog/2026/deepseek-r1/)에서 다룬 DeepSeek-R1은 **하나의 정책**에 규칙 기반 reward를 꽂아 GRPO로 밀어붙이는 구조였다. DeepSeek-V4는 이 구조를 정면으로 바꾼다. 후처리를 **두 단계**로 나눈다.
 
 1. **도메인 전문가의 독립 육성.** 수학, 코딩, 에이전트, instruction following 같은 도메인마다 **별도의 전문가 모델**을 따로 학습시킨다. 각 전문가는 같은 베이스에서 출발해 (a) 도메인 특화 데이터로 SFT를 받아 기초를 잡고, (b) 그 위에 GRPO를 얹어 "그 도메인의 성공 기준에 맞춘 reward"로 최적화된다.
 2. **통합 모델로의 on-policy 증류.** 이렇게 만든 N개의 전문가를 하나의 모델로 합친다. 통합 모델(student)이 각 전문가(teacher)를 향해 **reverse KL을 최소화**하며 배우는 on-policy distillation이다.
@@ -140,7 +140,7 @@ $$
 - $$\pi_{\text{teacher}}$$: 해당 도메인 전문가 (가르치는 쪽)
 - $$y \sim \pi_{\text{student}}$$: **student가 스스로 생성한** 출력 위에서 손실을 잰다는 것이 "on-policy"의 핵심 — 오프라인 데이터셋이 아니라 student의 현재 분포에서 샘플링한다.
 
-reward 관점에서 V4의 결정적 변화는 **조달처를 도메인마다 갈아 끼운다**는 점이다. 수학·코드처럼 규칙으로 검증되는 도메인은 R1과 같은 ① 규칙 기반 reward를 쓴다. 반면 규칙으로 검증하기 어려운 도메인에는 **④ Generative Reward Model(GRM)** 을 도입한다 — 전통적인 스칼라 RM 대신, **rubric으로 안내된 RL 데이터**로 학습해 actor가 출력을 **생성하면서 동시에 스스로 평가**하게 만드는 방식이다. 이는 [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 연구 단계에서 제안한 생성형 reward가 같은 팀의 프로덕션 모델로 넘어온 사례다.
+reward 관점에서 V4의 결정적 변화는 **조달처를 도메인마다 갈아 끼운다**는 점이다. 수학·코드처럼 규칙으로 검증되는 도메인은 R1과 같은 ① 규칙 기반 reward를 쓴다. 반면 규칙으로 검증하기 어려운 도메인에는 **④ Generative Reward Model(GRM)** 을 도입한다 — 전통적인 스칼라 RM 대신, **rubric으로 안내된 RL 데이터**로 학습해 actor가 출력을 **생성하면서 동시에 스스로 평가**하게 만드는 방식이다. 이는 [#38 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)가 연구 단계에서 제안한 생성형 reward가 같은 팀의 프로덕션 모델로 넘어온 사례다.
 
 다만 report는 각 도메인이 정확히 어떤 reward 함수를 썼는지까지는 상세히 공개하지 않는다. "reward models tailored to specific success criteria"라는 표현과 GRM 도입 사실이 확인되는 수준이며, 도메인별 세부 레시피는 R1만큼 투명하지 않다.
 
@@ -173,8 +173,8 @@ Qwen3의 후처리는 네 단계로 정연하게 나뉜다.
 
 | reward 종류                              | 작동 방식                                                     | 이 시리즈 대응                                 |
 | ---------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
-| Rule-based Reward                        | 규칙으로 정오를 높은 정밀도로 판정 — "reward hacking을 예방"  | ① [#32 RLVR](/blog/2026/deepseek-r1/)          |
-| Model-based Reward **with reference**    | 정답 reference를 주고 Qwen2.5-72B-Instruct가 그에 비추어 채점 | ③ [#33 Prometheus 2](/blog/2026/prometheus-2/) |
+| Rule-based Reward                        | 규칙으로 정오를 높은 정밀도로 판정 — "reward hacking을 예방"  | ① [#33 RLVR](/blog/2026/deepseek-r1/)          |
+| Model-based Reward **with reference**    | 정답 reference를 주고 Qwen2.5-72B-Instruct가 그에 비추어 채점 | ③ [#34 Prometheus 2](/blog/2026/prometheus-2/) |
 | Model-based Reward **without reference** | 사람 선호 데이터로 학습한 RM이 스칼라 점수를 부여             | ② 2부 스칼라 RM                                |
 
 이 세 줄이 정확히 Background의 4분류 중 ①②③에 대응한다. Qwen3가 흥미로운 건, 하나의 모델이 도메인에 따라 **세 조달처를 동시에 운용**한다는 것이다 — 정답이 있으면 규칙, 정답 예시가 있으면 reference judge, 둘 다 없으면 스칼라 RM. 작은 모델은 이 비싼 RL을 직접 돌리지 않고 **strong-to-weak distillation**으로 큰 모델을 증류해 받는데, RL 대비 약 1/10 GPU 시간이면 된다고 밝힌다.
@@ -224,7 +224,7 @@ reward 조달처는 도메인에 따라 갈린다.
 - **검증 가능 도메인**: 5,120만 개(51.2M) 규모의 RL 샌드박스에서 규칙 기반 verifiable reward로 학습한다 (①).
 - **검증 불가능한 일반 태스크**: **Agentic Generative Reward Model(GRM)**을 쓴다 (④). judge가 강제된 프로토콜을 따른다 — (1) 출력을 읽고, (2) **rubric을 생성**하고, (3) 각 후보를 그 rubric으로 채점하고, (4) 점수를 **scorepad**에 기록한다. K2.5의 토너먼트식 그룹 비교(binary comparison)를 이어받되, **judge가 채점 기준(rubric)을 스스로 만든다**는 점이 핵심이다.
 
-이 Agentic GRM은 [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)의 "judge가 평가 원칙을 스스로 생성한다"와 [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)의 "rubric을 보상 기준으로 쓴다"를 프로덕션에서 합친 형태다. DeepSeek-V4의 GRM과 더불어 **생성형 reward가 더 이상 논문 안에만 있지 않다**는 이번 세대의 증거다.
+이 Agentic GRM은 [#38 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/)의 "judge가 평가 원칙을 스스로 생성한다"와 [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)의 "rubric을 보상 기준으로 쓴다"를 프로덕션에서 합친 형태다. DeepSeek-V4의 GRM과 더불어 **생성형 reward가 더 이상 논문 안에만 있지 않다**는 이번 세대의 증거다.
 
 여기에 두 가지 reward-shaping·방어 장치가 붙는다.
 
@@ -241,7 +241,7 @@ Solar Open 2(2026-07, 250B MoE)의 reward 설계는 이전 세대(Solar Open)와
 - **에이전트**: 다차원 rubric — 대화 에이전트는 과정 품질·결과 품질을 분리하고 실행 가능한 read-back으로 검증, 코딩 에이전트는 fail-to-pass 테스트 + 5차원 LLM rubric + 실행 가능성, 오피스 에이전트는 규칙 기반 checker + LLM judge.
 - **전통적 스칼라 RM도, DPO도, KL 정규화도 쓰지 않는다** — 검증 가능한 실행 신호 + LLM-as-judge로 대체한다.
 
-가장 눈에 띄는 건 통합 방식이다. **열두 개의 전문가(teacher)를 MOPD(Multi-teacher On-Policy Distillation)로 하나로 합친다** — student가 자기 궤적 위에서 routed teacher에 대한 per-position reverse KL을 최소화하되, **outcome reward를 전혀 얹지 않는 KL-only 목적함수**다. 논문은 이를 "λ로 균형 잡을 것도, reward-hacking 표면도 없다"고 표현한다. [#37](/blog/2026/deepseek-grm-spct/) 이후 DeepSeek-V4·Kimi K3가 택한 "전문가→증류"에 Solar Open 2가 합류한 것이고, **Kimi K3와는 MOPD라는 이름까지 같다.**
+가장 눈에 띄는 건 통합 방식이다. **열두 개의 전문가(teacher)를 MOPD(Multi-teacher On-Policy Distillation)로 하나로 합친다** — student가 자기 궤적 위에서 routed teacher에 대한 per-position reverse KL을 최소화하되, **outcome reward를 전혀 얹지 않는 KL-only 목적함수**다. 논문은 이를 "λ로 균형 잡을 것도, reward-hacking 표면도 없다"고 표현한다. [#38](/blog/2026/deepseek-grm-spct/) 이후 DeepSeek-V4·Kimi K3가 택한 "전문가→증류"에 Solar Open 2가 합류한 것이고, **Kimi K3와는 MOPD라는 이름까지 같다.**
 
 ## K-EXAONE 2.0: 오답에서도 신호를 뽑는다
 
@@ -252,15 +252,15 @@ K-EXAONE 2.0(2026-08, 750B MoE, LG AI Research)은 도메인마다 "선호 응�
 - **GrouPER**: 한 쿼리에 네 개 응답을 뽑아 도메인별 reward로 채점하고, 그 점수로 **그룹 상대 advantage**를 만들어 **SimPER 계열의 선호 최적화 목적함수**에 넣는다. 규칙 reward와 rubric 기반 생성형 reward를 함께 쓴다.
 - **AGAPO**: off-policy policy-gradient(truncated importance sampling)인데, 핵심은 **틀린 답에서도 학습 신호를 뽑는다**는 것이다 — 오답으로 이어진 잘못된 추론 경로에 **음의 reward(penalty)**를 매겨, 모델이 스스로 논리 오류를 피하도록 유도한다.
 
-대부분의 RLVR이 "정답이면 +, 오답이면 0"으로 오답을 그냥 버리는 데 반해, AGAPO는 **오답의 잘못된 부분을 명시적으로 벌한다**는 점에서 신호를 더 촘촘하게 쓴다. 안전성은 별도의 safety-aware preference 최적화 단계로 다룬다([#44](/blog/2026/frontier-safety-design/)).
+대부분의 RLVR이 "정답이면 +, 오답이면 0"으로 오답을 그냥 버리는 데 반해, AGAPO는 **오답의 잘못된 부분을 명시적으로 벌한다**는 점에서 신호를 더 촘촘하게 쓴다. 안전성은 별도의 safety-aware preference 최적화 단계로 다룬다([#45](/blog/2026/frontier-safety-design/)).
 
 ## A.X K2: 네 그룹으로 나누고 mixture를 control surface로 다룬다
 
 A.X K2(2026, SKT)는 학습 mixture를 **네 그룹 — instruction following, human preference, agentic tool use, safety — 으로 나누고**, 그 비율을 미리 고정하지 않고 중간 RL 체크포인트로 모델의 약점을 짚어가며 조정하는 "control surface"로 다룬다. 그룹마다 reward 조달처가 다르다.
 
-- **Instruction following**: **규칙 기반 verifiable reward**(형식·길이·필수 표현·스키마 준수 검사) + **난이도 필터링** — 인하우스 소형 모델로 이미 잘 푸는 프롬프트를 걸러내 on-policy 신호를 정보량 큰 사례에 집중시킨다([#45](/blog/2026/reward-model-design/)의 프롬프트 큐레이션 그대로다).
-- **Human preference**: **pointwise LLM-as-judge**. 프롬프트마다 강한 외부 모델로 **reference 답안**을 얻어 judge에 few-shot 채점 앵커와 함께 준다. judge는 태스크를 6개 도메인(사실·추론·코딩·추출·창작·개방)으로 분류한 뒤 **도메인별 4축 rubric**(정확성·완결성·명료성·helpfulness)으로 채점하되, **verbosity bias와 reward hacking을 막는 안전장치**를 명시한다 — [#33 Prometheus 2](/blog/2026/prometheus-2/) 계열의 reference 기반 rubric judge(③).
-- **Safety**: 별도 그룹으로 두고 principle 기반 rubric으로 채점한다. 이 그룹의 설계는 [#44](/blog/2026/frontier-safety-design/)에서 자세히 다룬다.
+- **Instruction following**: **규칙 기반 verifiable reward**(형식·길이·필수 표현·스키마 준수 검사) + **난이도 필터링** — 인하우스 소형 모델로 이미 잘 푸는 프롬프트를 걸러내 on-policy 신호를 정보량 큰 사례에 집중시킨다([#46](/blog/2026/reward-model-design/)의 프롬프트 큐레이션 그대로다).
+- **Human preference**: **pointwise LLM-as-judge**. 프롬프트마다 강한 외부 모델로 **reference 답안**을 얻어 judge에 few-shot 채점 앵커와 함께 준다. judge는 태스크를 6개 도메인(사실·추론·코딩·추출·창작·개방)으로 분류한 뒤 **도메인별 4축 rubric**(정확성·완결성·명료성·helpfulness)으로 채점하되, **verbosity bias와 reward hacking을 막는 안전장치**를 명시한다 — [#34 Prometheus 2](/blog/2026/prometheus-2/) 계열의 reference 기반 rubric judge(③).
+- **Safety**: 별도 그룹으로 두고 principle 기반 rubric으로 채점한다. 이 그룹의 설계는 [#45](/blog/2026/frontier-safety-design/)에서 자세히 다룬다.
 
 RL 알고리즘은 **CISPO**(MiniMax) — token-level 업데이트가 아니라 importance-sampling 가중치를 클립해, 확률은 낮지만 행동에 결정적인 토큰이 계속 그래디언트에 기여하게 한다 — 에 **GDPO**(Liu et al. 2026)를 얹는다. GDPO는 **여러 reward를 각각 따로 정규화한 뒤 합쳐** 각 신호의 해상도를 보존하고 multi-reward 학습을 안정화한다([#12 ODIN](/blog/2026/odin-disentangled-reward/)의 "신호 분리" 발상을 여러 reward로 일반화한 셈이다). KL penalty는 쓰지 않고 프롬프트당 16 rollout을 뽑으며, verbosity가 심한 데이터엔 group-relative length penalty를 더한다.
 
@@ -298,7 +298,7 @@ Magistral(2025-06, Mistral)은 이 비교에서 유일한 유럽 랩 모델이�
 - **length penalty**: `lmax` 초과 시 최대 −0.1의 soft penalty.
 - **language consistency +0.1**: 문제·사고·답이 같은 언어인지 fastText로 확인(다국어 혼용 방지).
 
-GRPO도 손본다 — **KL penalty를 완전히 제거**하고, group 길이로 손실을 정규화하고, advantage를 minibatch에서 정규화하고, 상단 클립을 키우는 **Clip-Higher**(ε_high≈0.26–0.28)로 탐색을 늘리고, **advantage가 0인 그룹을 걸러낸다**([#45](/blog/2026/reward-model-design/)의 프롬프트 큐레이션과 정확히 같은 장치다). Magistral은 "reward 설계 = 검증 가능한 부품을 어떻게 조합하느냐"를 가장 투명하게 보여주는 레시피다.
+GRPO도 손본다 — **KL penalty를 완전히 제거**하고, group 길이로 손실을 정규화하고, advantage를 minibatch에서 정규화하고, 상단 클립을 키우는 **Clip-Higher**(ε_high≈0.26–0.28)로 탐색을 늘리고, **advantage가 0인 그룹을 걸러낸다**([#46](/blog/2026/reward-model-design/)의 프롬프트 큐레이션과 정확히 같은 장치다). Magistral은 "reward 설계 = 검증 가능한 부품을 어떻게 조합하느냐"를 가장 투명하게 보여주는 레시피다.
 
 ## Gemma 4: 연구실의 reward 논문을 그대로 제품에 얹는다
 
@@ -316,11 +316,11 @@ reward 조달은 도메인별로 갈린다.
 
 | 방법                                                      | 무엇을 하나                                                      | 시리즈 위치                                    |
 | --------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
-| **WARM** ([2401.12187](https://arxiv.org/abs/2401.12187)) | 여러 RM을 weight averaging해 hacking·노이즈를 상쇄               | [#13](/blog/2026/warm-weight-averaged-reward/) |
-| **BOND** ([2407.14622](https://arxiv.org/abs/2407.14622)) | Best-of-N 분포를 증류해 N배 추론 비용 없이 그 품질을 얻는다      | [#28](/blog/2026/bond/)                        |
-| **WARP** ([2406.16768](https://arxiv.org/abs/2406.16768)) | 정책을 weight space에서 세 번 병합해 KL-reward 파레토를 밀어올림 | [#29](/blog/2026/warp/)                        |
+| **WARM** ([2401.12187](https://arxiv.org/abs/2401.12187)) | 여러 RM을 weight averaging해 hacking·노이즈를 상쇄               | [#14](/blog/2026/warm-weight-averaged-reward/) |
+| **BOND** ([2407.14622](https://arxiv.org/abs/2407.14622)) | Best-of-N 분포를 증류해 N배 추론 비용 없이 그 품질을 얻는다      | [#29](/blog/2026/bond/)                        |
+| **WARP** ([2406.16768](https://arxiv.org/abs/2406.16768)) | 정책을 weight space에서 세 번 병합해 KL-reward 파레토를 밀어올림 | [#30](/blog/2026/warp/)                        |
 
-특히 **WARM은 [#13](/blog/2026/warm-weight-averaged-reward/)에서 "reward hacking 방어 연구"로 다룬 논문인데, Gemma가 그것을 실제 제품 학습에 쓴다.** [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)의 아이디어가 DeepSeek-V4로 넘어간 것과 같은 연구→프로덕션 루프가, 여기서는 DeepMind 내부에서 일어난 셈이다.
+특히 **WARM은 [#14](/blog/2026/warm-weight-averaged-reward/)에서 "reward hacking 방어 연구"로 다룬 논문인데, Gemma가 그것을 실제 제품 학습에 쓴다.** [#38 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)의 아이디어가 DeepSeek-V4로 넘어간 것과 같은 연구→프로덕션 루프가, 여기서는 DeepMind 내부에서 일어난 셈이다.
 
 다만 report는 방법의 **이름과 reward의 종류까지만** 밝히고, 각 reward의 가중치나 BOND/WARM/WARP의 배합 비율·하이퍼파라미터는 공개하지 않는다. 앞의 공개 층위 표에서 Gemma를 ②로 분류한 이유다.
 
@@ -346,7 +346,7 @@ reward 조달은 도메인별로 갈린다.
 
 ## 공통 수렴점: 검증 가능 도메인은 규칙이 표준이 됐다
 
-수학·코드처럼 정답이 프로그램적으로 판정 가능한 도메인에서, 열한 모델은 예외 없이 **① 규칙 기반 verifiable reward**를 쓴다. [#32](/blog/2026/deepseek-r1/)에서 짚었듯 이유는 명확하다 — 규칙 검증기는 파라미터가 없는 함수이므로 hacking할 대상 자체가 없고, RM을 학습·재학습하는 비용도 들지 않는다.
+수학·코드처럼 정답이 프로그램적으로 판정 가능한 도메인에서, 열한 모델은 예외 없이 **① 규칙 기반 verifiable reward**를 쓴다. [#33](/blog/2026/deepseek-r1/)에서 짚었듯 이유는 명확하다 — 규칙 검증기는 파라미터가 없는 함수이므로 hacking할 대상 자체가 없고, RM을 학습·재학습하는 비용도 들지 않는다.
 
 DeepSeek-R1(2025-01)이 이 선택지를 대중화한 뒤, 이후 발표된 모델들이 그대로 채택했다는 사실이 흐름을 보여준다. Qwen3는 "rule-based reward가 높은 정밀도로 정오를 판정해 reward hacking을 예방한다"고 명문화했고, Solar Open 2·K-EXAONE 2.0·A.X K2도 수학·코드·형식 검사에 규칙 검증기를 쓴다. Llama 4조차 (reward 신호 자체는 비공개지만) 추론·코딩·수학을 별도 취급하며 난이도 커리큘럼을 그 도메인에 집중한다. **RLVR이 "만능 표준"이라고 단정하기는 여전히 이르지만, 검증 가능한 도메인에서 규칙을 1순위로 두는 것은 사실상 공통 문법이 됐다.**
 
@@ -356,14 +356,14 @@ DeepSeek-R1(2025-01)이 이 선택지를 대중화한 뒤, 이후 발표된 모�
 
 | 접근                       | 채택 모델                                                                         | 조달처 | 관련 편                                                                                                                               |
 | -------------------------- | --------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 사람 선호 쌍 + DPO         | Llama 4                                                                           | 선호   | [#23 DPO](/blog/2026/dpo/)                                                                                                            |
-| 스칼라 RM                  | Qwen3, **Gemma 4**(weight averaged RM)                                            | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)), [#13 WARM](/blog/2026/warm-weight-averaged-reward/) |
-| reference 기반 judge       | Qwen3, A.X K2                                                                     | ③      | [#33 Prometheus 2](/blog/2026/prometheus-2/)                                                                                          |
-| generative RM·rubric judge | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#40 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)                           |
+| 사람 선호 쌍 + DPO         | Llama 4                                                                           | 선호   | [#24 DPO](/blog/2026/dpo/)                                                                                                            |
+| 스칼라 RM                  | Qwen3, **Gemma 4**(weight averaged RM)                                            | ②      | 2부([#4](/blog/2026/bradley-terry-rethinking/)\~[#9](/blog/2026/rewardbench-2/)), [#14 WARM](/blog/2026/warm-weight-averaged-reward/) |
+| reference 기반 judge       | Qwen3, A.X K2                                                                     | ③      | [#34 Prometheus 2](/blog/2026/prometheus-2/)                                                                                          |
+| generative RM·rubric judge | **DeepSeek-V4**, **Kimi K3**, **MiniMax-M1**, Solar Open 2, K-EXAONE 2.0, GLM-4.5 | ④      | [#38 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/), [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)                           |
 
-마지막 행이 핵심이다. [#37 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 프로덕션에 넣었고, Kimi K3·MiniMax-M1·Solar Open 2·K-EXAONE 2.0·GLM-4.5까지 여섯 모델이 생성형 rubric judge를 쓴다.** Qwen3·A.X K2의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. (그 씨앗은 전신 Kimi K2의 self-critique였다 — 위 Kimi K3 절 참고.) 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
+마지막 행이 핵심이다. [#38 DeepSeek-GRM](/blog/2026/deepseek-grm-spct/)이 "judge가 채점 근거를 스스로 생성하고 rubric을 조건으로 받는다"는 아이디어를 연구 단계에서 제안했는데, **같은 팀의 DeepSeek-V4가 그 GRM을 프로덕션에 넣었고, Kimi K3·MiniMax-M1·Solar Open 2·K-EXAONE 2.0·GLM-4.5까지 여섯 모델이 생성형 rubric judge를 쓴다.** Qwen3·A.X K2의 reference-judge(③)까지 합치면, 생성형·조건부 평가가 더 이상 논문 안에만 있지 않다는 것이 이번 세대의 가장 큰 변화다. (그 씨앗은 전신 Kimi K2의 self-critique였다 — 위 Kimi K3 절 참고.) 연구와 프로덕션 사이의 시차가 눈에 띄게 좁혀졌다.
 
-다만 **스칼라 RM이 사라진 것은 아니다.** Gemma 4는 judge나 GRM이 아니라 여전히 **학습된 RM(②)** 에 기댄다 — 대신 RM 하나를 믿는 대신 [#13 WARM](/blog/2026/warm-weight-averaged-reward/)처럼 **여러 RM을 weight averaging해서** 개별 RM의 특이한 취약점을 상쇄한다. 즉 이번 세대의 분기는 "스칼라 RM이냐 생성형 judge냐"의 이분법이 아니라, **스칼라 RM을 쓰더라도 그 RM을 어떻게 견고하게 만들 것인가**라는 축이 하나 더 있는 셈이다.
+다만 **스칼라 RM이 사라진 것은 아니다.** Gemma 4는 judge나 GRM이 아니라 여전히 **학습된 RM(②)** 에 기댄다 — 대신 RM 하나를 믿는 대신 [#14 WARM](/blog/2026/warm-weight-averaged-reward/)처럼 **여러 RM을 weight averaging해서** 개별 RM의 특이한 취약점을 상쇄한다. 즉 이번 세대의 분기는 "스칼라 RM이냐 생성형 judge냐"의 이분법이 아니라, **스칼라 RM을 쓰더라도 그 RM을 어떻게 견고하게 만들 것인가**라는 축이 하나 더 있는 셈이다.
 
 ## 숨은 reward 설계: 프롬프트를 고르는 것도 reward다
 
@@ -376,14 +376,14 @@ reward 설계를 "어떤 함수로 점수를 매기나"로만 보면 절반만 �
 | DeepSeek-V4 | 도메인별 고품질 데이터로 전문가를 따로 육성                                       | 도메인 간 간섭 없이 각 reward에 집중                                          |
 | A.X K2      | 인하우스 소형 모델로 이미 잘 푸는 프롬프트를 걸러냄(난이도 필터)                  | on-policy 신호를 정보량 큰 사례에 집중                                        |
 | GLM-4.5     | 추론 RL에 2단계 난이도 커리큘럼(중간→극난도)                                      | 난이도를 점증시켜 신호를 유지                                                 |
-| Magistral   | advantage 0 그룹 필터 + length penalty                                            | 신호 없는 그룹 제거([#45](/blog/2026/reward-model-design/) 프롬프트 큐레이션) |
+| Magistral   | advantage 0 그룹 필터 + length penalty                                            | 신호 없는 그룹 제거([#46](/blog/2026/reward-model-design/) 프롬프트 큐레이션) |
 | MiniMax-M1  | 규칙 추론 → general 점진 혼합 커리큘럼                                            | 특화 능력 catastrophic forgetting 방지                                        |
 
 이것이 [#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/)가 다룬 "선호 데이터 노이즈" 문제의 실전판이다. 노이즈가 큰(변별력 없는) 프롬프트를 애초에 걸러내면, 같은 reward 함수라도 hacking 여지가 줄고 학습이 안정된다. **reward 함수를 바꾸지 않고도 reward의 질을 끌어올리는 방법이 프롬프트 큐레이션**인 셈이다.
 
 ## DPO vs RL 트레이드오프
 
-[#23 DPO](/blog/2026/dpo/)는 reward model과 온라인 RL 루프를 통째로 없애고 선호 쌍에서 바로 정책을 학습하는 방법이었다. 열한 모델을 이 스펙트럼 위에 놓으면 이렇게 갈린다.
+[#24 DPO](/blog/2026/dpo/)는 reward model과 온라인 RL 루프를 통째로 없애고 선호 쌍에서 바로 정책을 학습하는 방법이었다. 열한 모델을 이 스펙트럼 위에 놓으면 이렇게 갈린다.
 
 | 위치                          | 모델                                                                       | 특징                                                              |
 | ----------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -396,7 +396,7 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 
 ## reward hacking 방어: 각자의 방식
 
-[#10](/blog/2026/reward-model-overoptimization/)\~[#13](/blog/2026/warm-weight-averaged-reward/)이 다룬 방어 기법들이 실제로 어떻게 쓰이는지 정리하면 이렇다.
+[#10](/blog/2026/reward-model-overoptimization/)\~[#14](/blog/2026/warm-weight-averaged-reward/)이 다룬 방어 기법들이 실제로 어떻게 쓰이는지 정리하면 이렇다.
 
 | 모델         | 방어 장치                                                          | 원리                                                                                                                                           |
 | ------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -407,7 +407,7 @@ Llama 3가 "DPO만으로 충분"했다면, Llama 4는 한 발 물러나 **"DPO�
 | Solar Open 2 | MOPD를 KL-only(outcome reward 없음)로                              | reward를 아예 안 얹어 증류 단계의 hacking 표면을 제거                                                                                          |
 | A.X K2       | GDPO(reward별 분리 정규화) + judge의 anti-verbosity·length penalty | 여러 reward를 섞을 때 한 신호가 다른 신호를 잡아먹는 것과 장황함 편향을 차단                                                                   |
 | MiniMax-M1   | GenRM length bias 실시간 모니터링 → recalibration                  | judge가 "길수록 이긴다"로 새면 학습 중 즉시 재보정                                                                                             |
-| Gemma 4      | **WARM(weight averaged reward models)** + WARP의 EMA 앵커          | RM을 평균해 개별 RM의 특이 취약점을 상쇄([#13](/blog/2026/warm-weight-averaged-reward/)의 프로덕션 적용), 정책 쪽은 동적 KL 앵커로 이탈을 억제 |
+| Gemma 4      | **WARM(weight averaged reward models)** + WARP의 EMA 앵커          | RM을 평균해 개별 RM의 특이 취약점을 상쇄([#14](/blog/2026/warm-weight-averaged-reward/)의 프로덕션 적용), 정책 쪽은 동적 KL 앵커로 이탈을 억제 |
 | Magistral    | KL 제거하되 length penalty + zero-advantage 필터                   | 길이 편법과 신호 없는 그룹을 명시적으로 차단                                                                                                   |
 
 표현은 달라도 원리는 하나로 수렴한다 — **reward 신호와 "정책이 참조점에서 얼마나 벗어났는가"를 분리해서 다룬다.** DeepSeek·Solar는 KL을 손실 안에서 명시적으로 떼어놓고, Qwen·Llama는 애초에 노이즈가 크거나 신호가 없는 데이터를 걸러낸다. [#11 Length Correlations](/blog/2026/rlhf-length-correlations/)가 지적한 "성능 향상처럼 보이지만 실은 길이·문체 편향"이라는 함정을, 열한 모델 모두 나름의 방식으로 피해 가려 한 흔적이다.
@@ -421,7 +421,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 | 선택                     | 모델                          | 근거                                                                                                                                                            |
 | ------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | token 단위 유지          | Solar Open 2                  | 논문이 "GSPO의 sequence-level이 아니라 GRPO의 token-level 비율을 유지한다"고 명시. token 단위 trust-region masking을 씀                                         |
-| **sequence 단위로 올림** | GSPO([#26](/blog/2026/gspo/)) | token 비율은 고분산 노이즈를 누적시킨다. MoE에서 업데이트마다 활성 expert의 약 10%가 바뀌어 token 비율이 요동치는 문제를 해결                                   |
+| **sequence 단위로 올림** | GSPO([#27](/blog/2026/gspo/)) | token 비율은 고분산 노이즈를 누적시킨다. MoE에서 업데이트마다 활성 expert의 약 10%가 바뀌어 token 비율이 요동치는 문제를 해결                                   |
 | **IS 가중치를 클립**     | MiniMax-M1, A.X K2            | CISPO — token 업데이트가 아니라 importance-sampling 가중치를 클립해, 확률은 낮지만 행동에 결정적인 토큰("However", "Recheck")이 계속 그래디언트에 기여하게 한다 |
 
 **(2) KL 앵커를 어떻게 두나** — 고정할지, 움직일지, 아예 뺄지.
@@ -434,7 +434,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **(3) 그래디언트가 죽거나 폭주하지 않게** — 배치와 클립 범위를 손본다.
 
-- **Clip-Higher**(DAPO [#27](/blog/2026/dapo/), Magistral): 상한 클립을 키워($$\epsilon_{high} \approx 0.28$$) 낮은 확률 토큰이 오를 여지를 준다. **entropy collapse** 방지.
+- **Clip-Higher**(DAPO [#28](/blog/2026/dapo/), Magistral): 상한 클립을 키워($$\epsilon_{high} \approx 0.28$$) 낮은 확률 토큰이 오를 여지를 준다. **entropy collapse** 방지.
 - **advantage 0 제거**(DAPO, Magistral, Llama 4): 그룹 reward가 전부 같으면 그래디언트가 0이라 배치만 낭비된다. 오버샘플링해 채운다.
 - **off-policy 내성**(Kimi K3): partial rollout으로 긴 궤적이 여러 iteration에 걸치면서 생기는 staleness를, **per-token regularization**으로 업데이트를 국소 이웃에 묶어 버틴다.
 - **truncated importance sampling**(K-EXAONE 2.0의 AGAPO), **off-policy rollout 재활용**(Qwen3의 reasoning RL): 샘플 효율과 안정성의 절충.
@@ -443,7 +443,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 | 모델             | 장치                                                      | 무엇을 막나                                                                    |
 | ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **Gemma 4**      | **WARM** — 여러 RM을 weight averaging                     | RM 하나의 특이한 취약점·노이즈([#13](/blog/2026/warm-weight-averaged-reward/)) |
+| **Gemma 4**      | **WARM** — 여러 RM을 weight averaging                     | RM 하나의 특이한 취약점·노이즈([#14](/blog/2026/warm-weight-averaged-reward/)) |
 | **MiniMax-M1**   | GenRM의 length bias를 학습 중 실시간 감시 → recalibration | judge가 "길수록 이긴다"로 새는 것                                              |
 | **A.X K2**       | GDPO — reward별로 따로 정규화한 뒤 결합                   | 여러 reward를 섞을 때 한 신호가 다른 신호를 잡아먹는 것                        |
 | **Kimi K3**      | budget 기반 verbosity 제어                                | Agentic GRM이 장황한 출력에 속는 것                                            |
@@ -455,27 +455,27 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 지금까지 본 것은 전부 **능력(helpfulness) 축**이다 — 정확성·추론·코딩·지시 따르기를 어떻게 보상하나. 그런데 여러 모델이 **안전성(harmlessness) reward를 능력 reward와 명시적으로 분리해** 설계한다. [#8 Llama 2](/blog/2026/llama2-rlhf/)가 helpfulness RM과 safety RM을 아예 두 개로 나눈 데서 시작된 흐름이다.
 
-안전 축은 성격이 다르다. 능력 도메인이 규칙(①)으로 수렴한 것과 달리 **"이 응답이 안전한가"는 프로그램으로 판정되지 않아** 대부분 rubric·judge로 가고, 게다가 **over-refusal**이라는 능력 축에 없는 고유한 실패 모드가 있다. 공개 수준도 딴판이라 — 안전을 아예 문서화하지 않는 report가 흔하다. 그래서 이 축은 분량이 따로 필요하고, **[#44 프론티어 모델은 harmlessness reward를 어떻게 설계했나](/blog/2026/frontier-safety-design/)** 에서 따로 다룬다.
+안전 축은 성격이 다르다. 능력 도메인이 규칙(①)으로 수렴한 것과 달리 **"이 응답이 안전한가"는 프로그램으로 판정되지 않아** 대부분 rubric·judge로 가고, 게다가 **over-refusal**이라는 능력 축에 없는 고유한 실패 모드가 있다. 공개 수준도 딴판이라 — 안전을 아예 문서화하지 않는 report가 흔하다. 그래서 이 축은 분량이 따로 필요하고, **[#45 프론티어 모델은 harmlessness reward를 어떻게 설계했나](/blog/2026/frontier-safety-design/)** 에서 따로 다룬다.
 
 # Conclusion
 
-42편에 걸쳐 쌓아온 재료를 열한 개 프론티어 모델에 겹쳐보면 이렇게 정리된다.
+43편에 걸쳐 쌓아온 재료를 열한 개 프론티어 모델에 겹쳐보면 이렇게 정리된다.
 
-1. **검증 가능한 도메인은 규칙으로 수렴한다.** 열한 모델 모두 수학·코드에서 ① 규칙 기반 verifiable reward를 1순위로 둔다. [#32](/blog/2026/deepseek-r1/)의 RLVR이 하나의 논문에서 그친 아이디어가 아니라 공통 문법이 됐다.
-2. **검증 불가능한 도메인에서 생성형 reward가 프로덕션에 진입했다.** DeepSeek-V4의 GRM과 Kimi K3의 Agentic GRM이 [#37](/blog/2026/deepseek-grm-spct/)·[#40](/blog/2026/rubrics-as-rewards/)의 연구 아이디어(judge가 원칙·rubric을 스스로 생성)를 실제 학습에 얹었고, DeepSeek-V4·Kimi K3·Solar Open 2·GLM-4.5 네 모델이 "전문가를 따로 키워 증류로 합친다"는 구조(가운데 둘은 이름까지 MOPD)까지 공유한다. 이전 세대 비교에서 "생성형 judge는 아직 논문 안에만 있다"던 결론은 이번 세대에서 갱신된다. 같은 연구→프로덕션 루프가 DeepMind에서도 보인다 — [#13 WARM](/blog/2026/warm-weight-averaged-reward/)이 Gemma의 실제 RL 레시피(BOND·WARM·WARP)에 들어가 있다.
+1. **검증 가능한 도메인은 규칙으로 수렴한다.** 열한 모델 모두 수학·코드에서 ① 규칙 기반 verifiable reward를 1순위로 둔다. [#33](/blog/2026/deepseek-r1/)의 RLVR이 하나의 논문에서 그친 아이디어가 아니라 공통 문법이 됐다.
+2. **검증 불가능한 도메인에서 생성형 reward가 프로덕션에 진입했다.** DeepSeek-V4의 GRM과 Kimi K3의 Agentic GRM이 [#38](/blog/2026/deepseek-grm-spct/)·[#41](/blog/2026/rubrics-as-rewards/)의 연구 아이디어(judge가 원칙·rubric을 스스로 생성)를 실제 학습에 얹었고, DeepSeek-V4·Kimi K3·Solar Open 2·GLM-4.5 네 모델이 "전문가를 따로 키워 증류로 합친다"는 구조(가운데 둘은 이름까지 MOPD)까지 공유한다. 이전 세대 비교에서 "생성형 judge는 아직 논문 안에만 있다"던 결론은 이번 세대에서 갱신된다. 같은 연구→프로덕션 루프가 DeepMind에서도 보인다 — [#14 WARM](/blog/2026/warm-weight-averaged-reward/)이 Gemma의 실제 RL 레시피(BOND·WARM·WARP)에 들어가 있다.
 3. **reward 설계는 함수 선택 + 프롬프트 선택 + 오프라인/온라인 배분의 삼중 문제다.** Qwen의 분산 선별, Llama 4의 난이도 커리큘럼, DeepSeek-V4의 도메인 분리는 모두 "함수를 안 바꾸고 reward의 질을 올리는" 설계였다.
 4. **reward hacking 방어는 형태가 달라도 원리는 하나다.** reward 신호와 참조점 이탈 신호를 분리한다는 것 — DeepSeek·Solar의 손실 내 KL, Qwen·Llama의 데이터 큐레이션 모두 [#10](/blog/2026/reward-model-overoptimization/)\~[#12](/blog/2026/odin-disentangled-reward/)이 정량화한 문제에 대한 실무적 응답이다.
-5. **능력 축과 안전 축은 분리해서 설계된다.** [#8 Llama 2](/blog/2026/llama2-rlhf/)가 시작한 helpfulness·safety 분리가 이번 세대에도 이어진다. 안전 축은 판정 방식도, 실패 모드(over-refusal)도, 공개 수준도 능력 축과 달라 [#44](/blog/2026/frontier-safety-design/)에서 따로 다룬다.
+5. **능력 축과 안전 축은 분리해서 설계된다.** [#8 Llama 2](/blog/2026/llama2-rlhf/)가 시작한 helpfulness·safety 분리가 이번 세대에도 이어진다. 안전 축은 판정 방식도, 실패 모드(over-refusal)도, 공개 수준도 능력 축과 달라 [#45](/blog/2026/frontier-safety-design/)에서 따로 다룬다.
 
 이 시리즈를 여는 [#1 Christiano 2017](/blog/2026/deep-rl-human-preferences/)은 "사람의 선호로 보상 함수를 배울 수 있는가"라는 질문 하나로 시작했다. 열 프론티어 모델을 지나 도착한 답은, 그 질문이 하나의 답을 갖지 않는다는 것이다. 정답이 있으면 규칙이 reward가 되고, 정답 예시가 있으면 reference judge가, 기준은 있지만 예시가 없으면 생성형 RM이, 그조차 흐릿하면 사람의 선호 쌍이 reward를 대신한다.
 
-**reward 설계는 하나의 정답을 찾는 문제가 아니라, 내가 가진 도메인이 이 스펙트럼의 어디에 있는지를 정확히 진단하는 문제였다.** 그 진단을 실제 설계 절차로 옮기는 방법은 다음 글 [#45 reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/)에서 한 장의 체크리스트로 정리한다.
+**reward 설계는 하나의 정답을 찾는 문제가 아니라, 내가 가진 도메인이 이 스펙트럼의 어디에 있는지를 정확히 진단하는 문제였다.** 그 진단을 실제 설계 절차로 옮기는 방법은 다음 글 [#46 reward를 어떻게 설계할 것인가](/blog/2026/reward-model-design/)에서 한 장의 체크리스트로 정리한다.
 
 ---
 
 # RLHF Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 마흔세 번째 글이다.
+이 글은 RLHF Reward 설계 시리즈의 마흔네 번째 글이다.
 
 **1부. 지형도**
 
@@ -502,12 +502,13 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
   <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
   <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
   <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
   <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
 </ol>
 
 **4부. 안전성 정렬**
 
-<ol start="14">
+<ol start="15">
   <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
   <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
   <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
@@ -517,7 +518,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **5부. reward를 정책으로**
 
-<ol start="19">
+<ol start="20">
   <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
   <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
   <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
@@ -533,7 +534,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **6부. Process & Verifiable Reward**
 
-<ol start="30">
+<ol start="31">
   <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
   <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
   <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
@@ -541,7 +542,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **7부. Generative Reward Model**
 
-<ol start="33">
+<ol start="34">
   <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
   <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
   <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
@@ -551,7 +552,7 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **8부. 생각하는 Judge, 그리고 그 신뢰**
 
-<ol start="38">
+<ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
   <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
   <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
@@ -561,18 +562,18 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 
 **9부. 실전 종합**
 
-<ol start="43">
+<ol start="44">
   <li><strong>(현재 글)</strong> 프론티어의 helpfulness reward 설계 — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 45편으로 구성된다.
+본 시리즈는 46편으로 구성된다.
 
 # 참고 문헌
 
 - DeepSeek-AI, 2026. [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348).
-- DeepSeek-AI, 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — [#32](/blog/2026/deepseek-r1/)에서 다룬 RLVR 원형.
+- DeepSeek-AI, 2025. [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948) — [#33](/blog/2026/deepseek-r1/)에서 다룬 RLVR 원형.
 - Shao et al. (DeepSeek-AI), 2024. [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) — GRPO 원 논문.
 - Qwen Team, 2025. [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388).
 - Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
@@ -590,10 +591,10 @@ reward를 잘 설계해도 RL이 발산하면 소용이 없다. 그래서 열한
 - Mistral AI, 2025. [Magistral](https://arxiv.org/abs/2506.10910) — 순수 RLVR, reward 부품 분해 + GRPO 변형(Clip-Higher).
 - Gemma Team (Google DeepMind), 2026. [Gemma 4 Technical Report](https://arxiv.org/abs/2607.02770) — post-training은 Gemma 3 레시피 계승.
 - Gemma Team (Google DeepMind), 2025. [Gemma 3 Technical Report](https://arxiv.org/abs/2503.19786) — BOND·WARM·WARP 기반 RL, 코드 실행·수학 ground-truth reward.
-- Ramé et al. (Google DeepMind), 2024. [WARM: On the Benefits of Weight Averaged Reward Models](https://arxiv.org/abs/2401.12187) — [#13](/blog/2026/warm-weight-averaged-reward/).
-- Sessa et al. (Google DeepMind), 2024. [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622) — [#28](/blog/2026/bond/).
-- Ramé et al. (Google DeepMind), 2024. [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768) — [#29](/blog/2026/warp/).
+- Ramé et al. (Google DeepMind), 2024. [WARM: On the Benefits of Weight Averaged Reward Models](https://arxiv.org/abs/2401.12187) — [#14](/blog/2026/warm-weight-averaged-reward/).
+- Sessa et al. (Google DeepMind), 2024. [BOND: Aligning LLMs with Best-of-N Distillation](https://arxiv.org/abs/2407.14622) — [#29](/blog/2026/bond/).
+- Ramé et al. (Google DeepMind), 2024. [WARP: On the Benefits of Weight Averaged Rewarded Policies](https://arxiv.org/abs/2406.16768) — [#30](/blog/2026/warp/).
 - OpenAI, 2025. [gpt-oss-120b & gpt-oss-20b Model Card](https://arxiv.org/abs/2508.10925) — 공개 층위 ③의 예(post-training 세부 미공개).
-- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#23](/blog/2026/dpo/)에서 다룬 DPO 원 논문.
-- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#33](/blog/2026/prometheus-2/) 참고.
-- Liu et al. (DeepSeek-AI), 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495) — [#37 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/) 참고.
+- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290) — [#24](/blog/2026/dpo/)에서 다룬 DPO 원 논문.
+- Kim et al., 2024. [Prometheus 2](https://arxiv.org/abs/2405.01535) — [#34](/blog/2026/prometheus-2/) 참고.
+- Liu et al. (DeepSeek-AI), 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495) — [#38 DeepSeek-GRM/SPCT](/blog/2026/deepseek-grm-spct/) 참고.
