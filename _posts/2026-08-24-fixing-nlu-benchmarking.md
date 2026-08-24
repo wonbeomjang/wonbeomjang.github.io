@@ -1,0 +1,313 @@
+---
+layout: post
+title: "벤치마킹을 고치려면 무엇이 필요한가 — Bowman & Dahl의 네 기준"
+date: 2026-08-24 09:03:00 +0900
+description: "LLM 평가 체계 시리즈 #3 — NLU 벤치마킹이 깨졌다는 진단을 validity, reliable annotation, statistical power, disentangling social bias라는 네 가지 채점 기준으로 바꾼 Bowman & Dahl(NAACL 2021)의 포지션 논문"
+categories: [paper]
+tags: [evaluation, benchmark, nlu, statistics, paper]
+giscus_comments: true
+related_posts: true
+---
+
+> [What Will it Take to Fix Benchmarking in Natural Language Understanding?](https://arxiv.org/abs/2104.02145) (Bowman & Dahl, New York University / Google Research, NAACL-HLT 2021)
+
+# Introduction
+
+이 시리즈 [#4](/blog/2026/benchmark-construct-validity/)에는 원래 이 논문을 27줄로 요약한 문단이 있었다. 압축하다 보니 "네 가지 기준이 있다"는 결론만 남고, 그 기준이 왜 그렇게 나뉘었는지, 각 기준이 구체적으로 어떤 벤치마크를 겨냥했는지, 그리고 그 기준이 이후 4년(2021→2025) 동안 시리즈의 어느 편으로 갈라져 나갔는지는 빠져 있었다. 이 포스트는 그 27줄을 원문으로 되돌려 놓는 작업이다.
+
+2021년 초, NLU 벤치마킹은 이상한 상태에 있었다. GLUE는 아홉 개 태스크 전부에서 사람 성능과 비슷하거나 그것을 넘어서는 리더보드 점수를 냈고, 후속작 SuperGLUE는 2019년 출범하자마자 곤란을 겪었다 — 제출된 태스크 대부분을 리더보드에서 빼야 했는데, 이미 BERT가 사람 크라우드워커 다수결보다 높은 점수를 내고 있었기 때문이다. BERT가 눈에 띄게 못한 여덟 개 태스크만 헤드룸이 남아 있었는데, 그 여덟 개마저 이후 모두 사실상 포화됐다. SQuAD 2.0 리더보드 성능은 사람 주석자 점수를 오래전에 넘어섰다. 그런데 같은 시기에 McCoy et al.(2019)과 Ribeiro et al.(2020) 같은 연구는 이 "초인적" 모델들이 리더보드가 겨냥한 바로 그 능력을 테스트하는 단순한 사례에서 극적으로 실패한다는 것을 보여주고 있었다.
+
+즉 점수는 천장을 뚫었는데, 그 점수가 측정하려던 능력은 여전히 부족했다. 이 모순 앞에서 커뮤니티가 택한 대응은 두 갈래로 갈렸다. 하나는 "벤치마크가 포화됐으니 더 어려운 새 벤치마크를 만들자"는 실무적 대응이었고 — DynaBench류의 적대적 데이터 수집(adversarial data collection)이 대표적이다 — 다른 하나는 "벤치마크가 왜 깨졌는지 원인을 구조화하자"는 이 논문의 대응이었다. Bowman과 Dahl은 후자를 택했고, 그 결과가 이 시리즈 전체가 뒤에서 계속 참조하게 될 **네 가지 기준**이다.
+
+이 포스트가 답할 질문은 세 가지다.
+
+1. 저자들이 정확히 어떤 문구로 네 기준을 정의했나 (원문 Figure 1).
+2. 각 기준을 오늘날의 어느 벤치마크에 적용하면 통과/미달이 갈리나.
+3. 이 시리즈의 어느 편이 각 기준을 물려받아 더 깊이 다루는가 — **이 포스트가 다른 24편에 대해 갖는 값어치는 바로 이 지도(map) 역할이다.**
+
+미리 결론부터 말하면: 이 논문은 실험 논문이 아니라 포지션 페이퍼(position paper)다. 새로운 벤치마크나 새로운 모델을 내놓지 않는다. 대신 "벤치마크가 좋다/나쁘다"라는 막연한 판단을, 통과·미달을 가릴 수 있는 **네 개의 체크박스**로 바꿔놓았다. 이 체크리스트화가 이 논문의 유일하지만 결정적인 기여다.
+
+# Background
+
+## Task와 Benchmark의 구분
+
+논문은 본론에 들어가기 전에 용어를 하나 고정한다. **task**는 모델이 보여주길 바라는 언어 관련 능력·기능 자체를 가리키는 추상적 개념이고, **benchmark**는 그 task를 특정 텍스트 도메인에 붙박고 구체적 데이터셋과 평가 지표로 구현한 것이다. 예를 들어 "객관식 독해"는 task이고, 영어 개인 서사 지문에서 정확도를 재는 Cosmos QA는 그 task를 구현한 하나의 benchmark다.
+
+이 구분이 왜 중요한가. 구체적 벤치마크 하나가 추상적 task를 충실히 재고 있다는 것을 증명할 일반적 방법은 없다고 저자들은 인정한다. 그럼에도 우리는 구체적 벤치마크로만 모델을 평가할 수 있으므로, 이 둘의 대응 관계를 최대한 강화하는 수밖에 없다. 이 "대응 관계를 강화한다"는 목표가 바로 첫 번째 기준(validity)이 노리는 것이다.
+
+## 이 논문이 설정한 목표와 제외한 범위
+
+저자들은 벤치마크가 궁극적으로 봉사해야 할 목표를 이렇게 적는다: "everyday natural language text에 대한 포괄적이고 신뢰할 수 있는 이해를 보여줄 수 있는 기계를 만드는 것"(구체적 task, 언어 변이, 도메인의 맥락에서). 이 목표에 비추어 두 가지는 의도적으로 논의에서 제외한다.
+
+- **계산 효율성 · 데이터 효율성**: few-shot 학습(당시 GPT-3가 대표적으로 쓰던 인위적 데이터 제약)은 이 논문의 관심사가 아니다. 이 논문은 "충분한 자원을 들여 그 task에서 우수한 성능에 도달하려는" 상황에 집중한다.
+- **사회적 편향의 완전한 해소**: 논문은 이 문제를 완전히 제쳐두지 않는다(4번째 기준이 이것이다). 다만 "모델이 뛰어난 언어 이해와 유해한 사회적 편향을 동시에 보일 수 있다"는 점은 인정하고 넘어간다 — RoBERTa나 T5가 SuperGLUE류 벤치마크에서 높은 점수를 내면서도 편향을 그대로 갖고 있는 것이 그 예다.
+
+## 왜 지금 이 문제가 급한가
+
+저자들이 짚는 두 가지 구조적 위험이 있다.
+
+- **신뢰할 수 있는 지표의 부재가 진입장벽을 왜곡한다.** Church and Hestness(2019)를 인용하며, 믿을 만한 벤치마크가 없으면 신참·비전문가는 기여를 시도하기 어려워지고, 반대로 전문가는 임시방편적(ad-hoc) 평가 설정을 마음대로 골라 진전 없음을 가릴 수 있는 재량을 얻는다.
+- **엔지니어와 연구 속도가 편향을 실사용으로 실어 나른다.** 과학적 목표로 설계된 시스템이 실제로는 그 편향이 real harm을 낼 수 있는 환경에 배포되는 일이 흔하다. 데이터 문서화 관행(datasheets 등)이 이를 줄이겠지만, 저자들은 "아직 갈 길이 멀다"고 본다.
+
+이 배경 위에서 논문은 4절(Section 3, "Four Challenges")로 넘어간다.
+
+# Method
+
+논문 Figure 1은 네 기준을 아래처럼 정리한다. 원문 표현을 그대로 옮긴다.
+
+1. **Good performance on the benchmark should imply robust in-domain performance on the task.** → We need more work on dataset design and data collection methods.
+2. **Benchmark examples should be accurately and unambiguously annotated.** → Test examples should be validated thoroughly enough to remove erroneous examples and to properly handle ambiguous ones.
+3. **Benchmarks should offer adequate statistical power.** → Benchmark datasets need to be much harder and/or much larger.
+4. **Benchmarks should reveal plausibly harmful social biases in systems, and should not incentivize the creation of biased systems.** → We need to better encourage the development and use of auxiliary bias evaluation metrics.
+
+논문 본문에서는 이 네 개에 각각 **Validity**, **Reliable Annotation**, **Statistical Power**, **Disincentives for Biased Models**라는 절 제목이 붙는다(3.1\~3.4절). 브리프에서 부르는 이름은 마지막 것만 약간 다르게 "Disentangling Social Bias"라 요약했지만, 논문 자체의 절 제목은 "biased model에 대한 유인을 없앤다"는 능동태 표현이다. 하나씩 보자.
+
+## Validity
+
+논문의 정의: "만약 어떤 시스템이 벤치마크에서 다른 시스템을 유의미하게 앞선다면, 그 결과는 더 높은 점수를 낸 시스템이 그 벤치마크가 테스트하는 task를 실제로 더 잘한다는 강력한 증거여야 한다." 다시 말해, 벤치마크가 언어 이해 연구에 쓸모 있으려면 **정말로 언어 이해를 재야 한다.** 위키피디아 지문에 대한 독해를 표방하는 범용 벤치마크는, 위키피디아 지문을 이해·추론하는 데 실제로 필요한 능력 전체를 테스트할 때만 유효하다.
+
+저자들은 이 기준을 완전히 형식화할 방법도, 어떤 벤치마크가 유효한지 판정할 간단한 테스트도 모른다고 인정한다. 대신 최소 조건 세 가지를 제시한다.
+
+- 평가 데이터셋은 해당 도메인·맥락·언어 변이에서 실제로 쓰이는 **언어 변이의 전 범위**(단어부터 고차 구문까지)를 반영해야 한다.
+- 평가 데이터셋은 모델이 보여주길 기대하는 **모든 언어 관련 행동을 테스트할 그럴듯한 수단**을 가져야 한다.
+- 평가 데이터셋은 **주석 인공물(annotation artifact)로부터 충분히 자유로워야** 한다 — 시스템이 요구되는 언어 관련 행동을 실제로 보이는 것 외의 다른 방법으로 사람 수준에 가까운 성능에 도달할 수 없어야 한다(Si et al., 2019; Sugawara et al., 2020b; Niven and Kao, 2019).
+
+**위반 사례 — 데이터셋 구축 방식 4가지 모두 이 기준을 못 채운다.** 논문은 벤치마크를 만드는 네 가지 흔한 패러다임을 훑으며, 그중 어느 것도 validity를 직접적으로 보장하지 않는다고 지적한다.
+
+- _자연 발생 데이터(naturally-occurring examples)_: 직관적으로 매력적이지만, 독해나 자연어추론처럼 관련된 두 텍스트(지문+질문)를 요구하는 태스크에는 애초에 관련 행동만 골라낼 자연 분포가 거의 없다. Natural Questions(Kwiatkowski et al., 2019)처럼 자연 분포를 쓴 사례도 있지만 특정 제품의 사용 맥락에 묶여 한계가 있다. 단일 입력 태스크(coreference resolution 등)조차 사실 지식(world knowledge)이 과도하게 지배해 task 고유 능력을 분리하지 못한다.
+- _전문가 저작 데이터(expert-authored examples)_: FraCaS(Cooper et al., 1996), Winograd Schema Challenge(Levesque et al., 2012) 같은 사례가 새 task를 정의하는 데는 결정적이었지만, 광범위한 벤치마크를 만드는 용도로는 바람직하지 않다. 전문가가 데이터를 직접 통제하면 (의도했든 아니든) 널리 연구되고 알려진 언어 현상 쪽으로 데이터가 쏠린다.
+- _크라우드소싱(crowdsourcing)_: 최근 벤치마크 대부분이 쓰는 방식. 비전문가에게 단순한 가이드라인만 주고 예시를 만들게 하면 비용도 낮고 전문가 편향 위험도 낮다. 그러나 SNLI(Bowman et al., 2015), SQuAD 같은 표준 관행은 **어려운 데이터셋을 만드는 데는 상대적으로 서투르다.** 반복적이고 쉬운 사례에 쏠리고, 핵심 행동을 분리하는 데 실패하는 경우가 잦다(Jia and Liang, 2017; Tsuchiya, 2018; McCoy et al., 2019).
+- _적대적 필터링(adversarial filtering)_: 아래에서 별도로 다룬다.
+
+**Adversarial filtering의 부작용 — 이 절의 핵심 논점.** 예시 후보 파이프라인(대개 크라우드소싱)을 만든 다음, 그중 하나 이상의 모델이 틀리는 예시만 골라 데이터셋을 구성하는 방식이다. DynaBench가 이 계열의 대표 사례로 등장한다(DynaBench 소개 문서는 "벤치마크가 포화된다", "벤치마크에 인공물이 있다", "연구자들이 벤치마크에 과적합한다", "벤치마크가 기만적일 수 있다"는 주장을 근거로 IID 패러다임을 버리고, 광범위한 주석자 풀에게 참조 신경망 모델을 속이도록(fool) 요청해 적대적으로 데이터를 모으자고 주장한다).
+
+논문의 반박은 명확하다. **현재 모델이 실패하는 예시를 모으는 것은 좋은 벤치마크의 필요조건도 충분조건도 아니다.** 이유는 세 가지로 나뉜다.
+
+1. 적대적 필터링은 사소한 인공물 때문에 쉬운 예시를 제거할 수는 있지만, 결과물이 모델 능력에 대한 유효한 테스트라는 것을 보장하지는 않는다.
+2. 이미 그 adversary 모델이 잘 풀고 있는, task에 필요한 언어 현상·능력의 커버리지를 오히려 체계적으로 없애버릴 수 있다. 적대적 필터링은 **mode-seeking**(특정 실패 모드를 추적) 동작이지 **mass-covering**(전체 분포를 고르게 덮는) 동작이 아니어서, 방치하면 언어 다양성을 줄이고 오히려 validity를 달성하기 어렵게 만든다.
+3. 연구자에게 **역유인(counterproductive incentive)**을 만든다. 리더보드에서 이기는 방법이 "더 나은" 모델을 만드는 것뿐 아니라 "다른" 모델을 만드는 것으로도 가능해진다 — adversary보다 오류를 적게 내도 이기지만, 단순히 다른 오류를 내도 이긴다. 새 오류가 테스트될 평가셋 자체에 옛 adversary의 특이한 실수와 겹치는 예시가 없기 때문이다. 극단적으로는 새 모델을 옛 adversary와 다른 사전학습 데이터로 일부러 학습시켜, 새 모델의 실수가 옛 모델과 겹치지 않도록 만드는 것으로도 리더보드를 이길 수 있다. 이는 진전을 늦추고 발견을 가장한 허위 주장(spurious claims of discovery)에 기여한다.
+
+저자들은 대신 **적대적 경쟁(adversarial competitions)** — 여러 시스템 각각에 대해 적대적인 유효 task 예시를 수집하는 난이도를 비교하는 형태 — 이라면 정적 IID 벤치마크와 병행해 건강한 평가 생태계의 일부가 될 수 있다고 본다. 즉 저자들이 거부하는 것은 "적대적 데이터로 IID 벤치마크를 대체하는 것"이지, "적대적 방법 자체"가 아니다.
+
+**진단·처방(4.1절, Improving Validity).** 논문은 validity를 직접 구현하는 완성된 레시피는 없다고 인정하면서도 두 방향을 제시한다.
+
+- 상대적으로 고품질인 크라우드소싱 데이터셋에서 출발해, 전문가 노력으로 주석 인공물을 완화하는 방향. Build-it-Break-it challenge(Ettinger et al., 2017), Open Reading Benchmark(Dua et al., 2019), Gardner et al.(2020)의 대조 집합(contrast sets)이 이 방향의 예다 — 전문가 주석자가 커버리지 공백을 메우거나 인공물을 교정하는 예시를 시작 데이터셋에 추가한다.
+- 전산언어학자를 크라우드소싱 과정에 직접 투입하는 방향. Hu et al.(2020)의 OCNLI가 소규모로 이를 입증했다 — 남용된 단어·구문을 피한 예시에 보너스를 지급하는 등 작은 개입만으로, 주석자의 창의적 자유를 크게 제한하지 않으면서 데이터 품질 문제를 눈에 띄게 개선했다.
+
+**시리즈 연결.** validity는 이 시리즈의 척추 중 척추다. [#1 측정으로서의 평가](/blog/2026/what-is-evaluation/)가 "타당도(validity)"라는 개념 자체를 측정이론으로 도입하고, [#4 벤치마크는 무엇을 재고 있나](/blog/2026/benchmark-construct-validity/)는 이 개념을 445편의 최신 LLM 벤치마크에 실증적으로 적용한 2025년 리뷰를 다루며, [#5 표층 특징이 정답을 예측한다](/blog/2026/clever-hans-benchmarks/)는 이 절이 경고한 "주석 인공물" 문제의 가장 노골적인 현대판 — Clever Hans 효과 — 을 다룬다.
+
+## Reliable Annotation
+
+논문의 정의: 벤치마크가 견실한 새 방법의 개발을 유인하려면, 테스트 예시의 라벨이 신뢰성 있게 정확해야 한다. 이를 위해 세 가지 실패 사례를 피해야 한다고 논문은 못박는다.
+
+1. 부주의하게 오라벨링된 예시(carelessly mislabeled).
+2. 불명확하거나 미비한 task 가이드라인 때문에 명확한 정답이 없는 예시.
+3. 주석자 사이의 **정당한 해석 차이(legitimate disagreements)** 때문에, 관련 지표 아래에서 명확한 정답이 없는 예시.
+
+앞의 두 경우는 벤치마크의 유효성(validity)을 직접적으로 훼손하지만, 세 번째는 좀 더 미묘하다고 저자들은 짚는다.
+
+**토이 예시.** 정당한 해석 차이는 예시가 텍스트에 대한 합리적 해석들 사이에서 주석자의 선택에 따라 여러 방식으로 라벨될 수 있을 때 생긴다. 방언 차이나 단어·구문의 서로 다른 합리적 해석, 세상에 대한 서로 다른 합리적 이해에서 비롯될 수 있다. 논문이 드는 예: "Ed ate a burrito"가 "Ed ate a sandwich"를 함의(entail)하는가? 미국 영어 화자 대부분은 "아니오"라고 답하겠지만, 일부 규범주의자와 규제 당국자는 "그렇다"고 주장해왔다(부리토가 샌드위치냐는 논쟁은 실제로 미국에서 법정 다툼까지 간 사례다, Florestall, 2008).
+
+**왜 이 문제가 "사람보다 뛰어난 성능"이라는 착시를 만드는가.** 벤치마크에 이런 종류의 정당한 불일치가 많이 들어 있으면, 머신러닝 모델은 학습셋을 뒤져 전형적인 사람 행동에 대한 단서를 얻을 수 있고, 이 덕분에 단일 사람 주석자보다 더 잘 수행할 수 있다. 이 효과는 이런 벤치마크에서 나오는 "초인간적(super-human) 성능" 보고를 오도할 수 있다 — 여기서 "사람 성능"이 실제로 반영하는 것은, 가장 흔히 부여된 라벨을 예측하려는 시도(모델이 하는 것)가 아니라, 자기 자신의 판단을 그대로 보고하는 사람들의 행동이기 때문이다.
+
+**위반 사례 — 구체적 수치.** 논문은 기존 벤치마크에서 이런 모호성의 증거를 직접 제시한다.
+
+- Pavlick and Kwiatkowski(2019): 여러 텍스트 함의(entailment) 데이터셋 전반에서 예시의 **20%**가 유의미하게 모호하다는 것을 발견.
+- Kwiatkowski et al.(2019): Natural Questions의 단답형 주석 중 **36%**가 다수결 답과 유의미하게 다르다는 것을 보임.
+
+**진단·처방(4.2절).** 다중 중복 주석 같은 표준 크라우드소싱 기법을 쓰면 오라벨링 문제는 크게 해결할 수 있고, 데이터 수집 전 신중한 계획·파일럿 작업이 모호한 가이드라인 문제를 크게 해결할 수 있다. 정당한 주석자 불일치는 목표에 따라 두 접근으로 나뉜다.
+
+- **가장 단순한 접근**: 모호하게 라벨된 예시를 오라벨링된 예시와 똑같이 취급해, 검증 단계에서 체계적으로 식별·폐기한다. 일부 task에서는 **모호하지 않은(unambiguous) 예시만으로** 모델의 모호성 처리 능력을 테스트할 수도 있다 — 예를 들어 객관식 문제에서 한 후보만 논쟁적으로 정답이고 나머지는 명백히 오답인 예시를 구성하면, 건전한 모델이라면 그 논쟁적 정답을 고를 것으로 기대할 수 있다.
+- **대안적 접근**: 모호한 예시에 단일 이산 라벨을 부여하기를 아예 거부한다. 신뢰할 수 있는 주석자들이 부여하는 라벨의 **경험적 분포**를 모델이 예측하게 하거나(Pavlick and Kwiatkowski, 2019; Poesio et al., 2019), 신뢰할 수 있는 주석자들이 지지하는 여러 정답 후보 중 하나를 맞히면 인정하는 방식(SQuAD가 이미 이렇게 한다)이다. 이 방식은 예시당 훨씬 많은 주석자 판단을 요구하므로 비용이 커진다.
+
+**시리즈 연결.** [#16 사람 평가 설계](/blog/2026/human-evaluation-design/)가 이 절이 요구한 "다중 주석·파일럿" 관행을 실무 프로토콜로 구체화하고, [#17 우연을 빼다 — κ 계열](/blog/2026/kappa-agreement/)이 "정당한 불일치"를 정량화하는 표준 도구(Cohen's/Fleiss' κ)를 다루며, [#18 κ의 역설](/blog/2026/kappa-paradox/)은 그 κ 자체가 가진 함정을 파고든다. 이 논문의 3.2절이 통계적으로 무엇을 재야 하는지 던진 문제를, [#17](/blog/2026/kappa-agreement/)\~[#18](/blog/2026/kappa-paradox/)이 "어떻게 잴 것인가"로 받는다.
+
+## Statistical Power
+
+논문의 정의: 벤치마크 평가 데이터셋은 두 모델 사이의 질적으로 의미 있는 성능 차이라면 무엇이든 탐지할 수 있을 만큼 크고 변별력 있어야(discriminative) 한다. 이 기준은 트레이드오프를 하나 도입한다. 신뢰할 수 있으면서(reliable) 동시에 평가하려는 시스템들에게 매우 어려운(highly difficult) 벤치마크 데이터셋을 만들 수 있다면 적당한 크기로 충분하다. 그러나 데이터셋에 현재나 가까운 미래의 시스템에게 쉬운 예시가 많이 섞여 있다면, 적절한 검정력에 도달하려면 극적으로 더 큰 평가셋이 필요하다.
+
+**논문이 제시한 구체 수치 — 이 시리즈에서 가장 중요하게 이어받을 지점.** 신뢰할 수 있고 현재 시스템에게 어려운 데이터셋이라는 맥락에서, 80%에서 81%로의 향상 같은 **1퍼센트포인트 절대 정확도 향상**은 받아들일 만한 최소 탐지 가능 효과(minimum detectable effect, MDE)일 수 있다. 이 경우 NLU에서 흔히 보이는 전형적 조건 아래서는 **수천 개** 규모의 평가셋이면 충분하다(Card et al., 2020). 인기 있는 벤치마크 데이터셋 다수가(전부는 아니지만) 이 크기 기준을 충족한다.
+
+그러나 시스템이 계속 빠르게 개선되고 있으므로, 앞으로는 난이도 분포의 긴 꼬리에서 더 많은 시간을 보내게 될 것이라고 논문은 예상한다. 신뢰할 수 있는 데이터셋을 만든다면, 그 데이터셋의 미래 가치는 이미 정확도가 매우 높은 시스템들 사이의 향상을 측정하는 능력에 있을 것이다. 예를 들어 98%에서 98.1%로의 향상은, 80%에서 81%로의 향상과 **같은 5%의 상대적 향상**을 나타낸다. 그러나 이 더 작은 절대적 향상을 신뢰성 있게 탐지하려면 **두 자릿수(two orders of magnitude, 즉 100배) 더 많은 평가 데이터**가 필요하다(Card et al., 2020).
+
+**같은 시기 Card et al.(2020)이 이미 실증했다는 사실.** Bowman & Dahl이 statistical power를 벤치마크 품질의 정식 기준으로 못박은 논문이 2021년 4월 NAACL에 실렸다면, Dallas Card, Peter Henderson, Urvashi Khandelwal, Robin Jia, Kyle Mahowald, Dan Jurafsky가 함께 쓴 "With Little Power Comes Great Responsibility"(EMNLP 2020)는 그보다 반 년 앞서 같은 문제를 **경험적으로** 보여줬다. 기존 NLP 논문·데이터셋을 메타분석해 다양한 세팅에서 전형적인 검정력을 특성화했고, 결론은 "저검정력 실험이 NLP 문헌에서 흔하다"는 것이었다. 구체적으로:
+
+- GLUE 벤치마크의 여러 태스크에서, 작은 테스트셋 크기 때문에 최신 모델과의 비교 대부분이 적절한 검정력을 갖추지 못한다.
+- 기계번역에서 전형적인 2,000문장 테스트셋은 **1 BLEU 포인트** 차이를 탐지하는 데 약 **75%**의 검정력을 갖는다.
+- 사람 평가(human rating study)에 가장 흔히 쓰이는 실험 설계는 작은 모델 간 차이를 탐지하기에는 검정력이 부족하다.
+
+즉 2021년 Bowman & Dahl이 "검정력이 벤치마크 품질의 기준이어야 한다"고 **규범적으로** 주장하던 바로 그 순간, Card et al.은 이미 "실제로 검정력이 부족하다"는 **실증**을 손에 쥐고 있었다. 두 논문을 나란히 읽으면 이 시기(2020\~2021)가 NLP 커뮤니티가 통계적 검정력을 "당연히 있겠거니" 여기던 태도에서 "명시적으로 계산해야 하는 것"으로 바뀐 전환점이었음을 알 수 있다.
+
+**진단·처방(4.3절, Improving Statistical Power) — 원칙은 쉽지만 비용이 발목을 잡는다.** 원리상 적절한 검정력을 달성하는 것은 직접적이다: task에 대한 그럴듯한 단·중기 시스템 평가에 필요한 검정력을 얻기 위해 필요한 예시 수를 추정하고, 그만큼 수집하면 된다. 실전에서는 비용이 감당하기 어려워질 수 있다.
+
+논문은 이를 구체적 숫자로 보여준다. 비교적 단순한 task인 자연어추론(NLI)에서, 기존 예시를 라벨링하는 데는 최소 45초가 필요하고(Vania et al., 2020), 새 예시를 만드는 데는 최소 1분이 필요하다(Bowman et al., 2020). 이 매우 낙관적인 수치를 그대로 쓰더라도, **10-way로 주석된 50만 개 예시** 데이터셋은 시간당 \$15의 임금으로 **\$100만 이상**이 든다(각주: 이 수치는 플랫폼 수수료를 무시하고, 주석자 불일치 때문에 완전히 주석된 예시 중 10%만 버려진다는 낙관적 가정까지 깔고 있다). 참고로 OpenAI GPT-3의 학습 비용 공개 추정치는 \$1,000만을 넘고(Wiggers, 2020), 기계번역에서 Meng et al.(2019)이 쓴 512개 V100 GPU 3개월 사용은 상용 클라우드 인프라 기준으로 \$100만을 넘는 비용이었을 것이다. NLP처럼 자금이 풍부한 분야에서도 이 정도 비용은 자주 감당할 수 있는 규모가 아니며, 이런 투자는 소수의 고자원 언어·태스크에 데이터와 노력이 집중되는 현상을 오히려 강화할 위험이 있다.
+
+대안으로 게이미피케이션(ESP game, ZombiLingo 같은)이 무료 노동을 제공할 수 있지만, task 정의를 널리 즐길 만한 게임으로 다듬는 전문가 시간이라는 대가가 따르고, 사용 가능한 데이터 수집 프로토콜에 심각한 제약을 걸며, 까다로운 윤리적 쟁점을 새로 일으킨다(Morschheuser and Hamari, 2019). 결국 커뮤니티는 더 나은 벤치마크에 진지하게 투자하는 비용을, 진전을 측정하지 못해 연구자 시간과 계산 자원을 낭비하는 비용과 저울질해야 한다.
+
+**시리즈 연결 — 이 포스트가 가장 강조해야 할 대목.** 2021년에 Bowman & Dahl이 "검정력을 갖춰라"라고 처방만 내렸다면, 이 시리즈의 5부는 그 처방을 실행 가능한 계산으로 바꾼다. [#19 점수는 추정치다](/blog/2026/confidence-intervals/)는 벤치마크 점수 하나를 점추정이 아니라 신뢰구간으로 다루는 법을, [#21 몇 개를 재야 하나](/blog/2026/statistical-power/)는 이 절이 인용한 Card et al.의 방법론을 이어받아 **주어진 MDE·유의수준·검정력에서 필요한 문항 수를 정확히 계산하는 절차**를 다룬다. 아래 Experiments 절에서 하는 어림 계산의 엄밀한 버전이 그곳에 있다.
+
+## Disincentives for Biased Models
+
+논문의 정의: 벤치마크는 일반적으로, 사회적으로 관련 있는 편향을 지닌 모델보다 그렇지 않은 (다른 조건이 같은) 모델을 선호해야 한다. 많은 현재 벤치마크가 이 테스트를 통과하지 못한다. 벤치마크가 흔히 자연 발생 텍스트나 크라우드소싱 텍스트를 기반으로 만들어지기 때문에, 시스템이 잠재적으로 유해한 편향을 재생산하는 휴리스틱을 채택함으로써 오히려 성능을 높일 수 있는 경우가 흔하다(Rudinger et al., 2017).
+
+**왜 이 기준이 형식화하기 가장 어려운가.** 사회적 편향에는 응용과 문화적 맥락 전반에서 두루 만족스러울 만한 정밀한 열거(enumeration)가 존재하지 않는다고 논문은 인정한다. 이를 잘 보여주는 예가 미국 영어 단어 표현(word representation)에서의 편향된 연관관계다(Bolukbasi et al., 2016) — 전형적으로 흑인 여성 이름(예: Keisha)이 lawyer 같은 전문직 명칭보다 전형적으로 백인 남성 이름(예: Scott)에 더 가깝게 인코딩된다면, 그런 표현을 쓰는 모델은 콘텐츠 모더레이션이나 예측 텍스트 시스템 등 하위 응용에서 유해한 인종·젠더 편향을 강화할 가능성이 높다.
+
+사회적 속성을 적절히 열거하는 일 자체도 어렵다. 인도의 카스트(caste)가 좋은 예다. 카스트는 이름으로 신호가 새어나가는 경우가 많다는 점에서 미국의 인종 범주와 유사한 축이며, 인도 내에서는 채용 차별의 대상이 되는 법적·제도적으로 인정된 사회적 편향의 축이다. 그러나 이 편향은 미국 내에서도 일부 존재하는데(Tiku, 2020), 미국에는 이에 대한 그런 (법적) 인정이 없어서 비전문 편향 연구자에게 쉽게 간과될 수 있다.
+
+**이 기준이 "깊게 정치적"이라는 논문의 직설.** 어떤 속성을 편향 평가 지표에 포함시킬지 선택하는 일은 곧 어떤 정치적 이슈에서 어떤 집단 편에 설지를 선택하는 것과 같다고 논문은 못박는다. 인종, 젠더, 젠더 표현, 성적 지향, 장애 등에 대한 대중적·법적 태도는 살아 있는 기억 안에서도 크게 바뀌어 왔고, 새 범주가 인정과 보호를 얻는 일도 계속 일어난다. 명확한 윤리적 원칙(예: "여러 집단의 이해가 충돌할 때 더 불리한 집단에 더 많은 관심을 기울여야 한다"는 ACM 윤리강령)이 있어도, 특정 선택을 하는 것은 여전히 빠르게 바뀔 수 있는 방식으로 연구자를 기존 제도와 갈등시킬 수 있다.
+
+**위반 사례 — SuperGLUE의 요구사항이 무시되는 구체적 장면.** 논문은 이미 존재하는 처방이 어떻게 실무에서 무시되는지를 실명으로 보여준다. 여러 task에서 이미 젠더에 대한 이런 지표가 (기존 학습셋과 결합해 쓰도록 만들어진 보조 테스트셋 형태로) 존재한다(Rudinger et al., 2018; Webster et al., 2018; Kiritchenko and Mohammad, 2018; Li et al., 2020). **SuperGLUE는 사용자가 DNC Winogender 테스트셋에 대한 테스트셋 지표를 계산해 임의의 target task에 대한 테스트셋 결과를 공개하도록 요구한다.** 그런데도 테스트셋 수치를 보고하는 논문 대다수가 이 지표를 생략하고, 잠재적으로 불리한 편향 수치를 보고하기를 거부한다(Raffel et al., 2020; Pruksachatkun et al., 2020; Schick and Schütze, 2020; He et al., 2020). 이는 "측정 방법이 없다"가 아니라 "측정 방법이 이미 강제돼 있는데도 실제로는 지켜지지 않는다"는, 앞의 세 기준과는 결이 다른 실패 유형이다.
+
+**진단·처방(4.4절).** 저자들은 "언어 이해를 위한 벤치마크가 유해하게 편향된 모델 개발을 결코 보상하지 않는다고 보장할 완전하고 만족스러운 해법은 없다"고 인정하면서도, "이것이 현상 유지(status quo)를 받아들일 설득력 있는 이유는 아니다"라고 강조한다. 이들이 제시하는 실질적 방향은 **보조 지표(auxiliary metrics)의 확대**다 — 하나의 일반 데이터셋·지표 안에서 편향을 완전히 완화하려 하기보다는, 특정 유형의 편향을 각각 분리해 측정하는 전문가 구축 추가 테스트셋·지표 군을 벤치마크 창작자가 도입하는 것이다. 모델이 주 task 테스트셋에서 평가될 때마다 이 추가 편향 테스트셋에서도 병렬로 평가되도록 하면, 주 지표가 편향된 모델을 은연중에 보상하는 것을 막지는 못해도 그 효과를 편향을 더 직접적으로 드러내고 벌점을 매김으로써 상쇄할 수 있다.
+
+더 큰 과제는 커뮤니티 구조와 유인 설계의 문제라고 논문은 결론짓는다. 이미 지표가 존재하는 task를 다루는 방법론 논문조차 그 지표에 대한 수치를 좀처럼 보고하지 않는다. 해법 후보로는 동료심사 규범, 명시적 학회 게재 정책, "주 지표와 편향 지표를 정밀하게 분리하지 않고 집계 성능 수치만 조회할 수 있게" 하는 SuperGLUE식 접근의 더 엄격한 버전, 심지어 전문 라이선싱 표준의 도입까지 거론된다.
+
+**시리즈 연결.** [#7 분류 지표](/blog/2026/classification-metrics/)가 다루는 macro 평균은, 이 절이 요구하는 "특정 하위집단에 대한 성능을 전체 평균에 묻히지 않게 드러내는" 통계적 도구를 정확히 제공한다. [#25 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)는 이 절이 짚은 "편향 taxonomy를 어떻게 설계할 것인가"라는 문제 — 사회적으로 합의된 열거가 존재하지 않는다는 바로 그 어려움 — 를 체계 설계 차원에서 정면으로 다룬다.
+
+# Experiments
+
+이 논문은 실험이 없는 포지션 페이퍼이므로, 여기서는 논문의 네 기준을 **오늘의 벤치마크에 채점표로 적용**해본다. 대상은 지식(MMLU), 코드(HumanEval), 개방형 대화(MT-Bench, Chatbot Arena), 한국어(KMMLU) 다섯 개로, 이 시리즈 3부에서 다룰 벤치마크들을 미리 훑는 성격도 겸한다.
+
+## 채점표
+
+| 벤치마크                              | Validity                                                                                                                                      | Reliable Annotation                                                                                                                                                             | Statistical Power                                                                                                  | Disentangling Bias                                                                                                         |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| MMLU (test, n=14,042)                 | 미달 — 표층 단서로 정답을 맞히는 사례가 보고됨, [#5](/blog/2026/clever-hans-benchmarks/)                                                      | 미달 — MMLU-Redux 재주석 결과 전체 오류율 약 9%, virology 등 일부 과목은 최대 57%까지                                                                                           | 통과 — n이 커서 1\~2%p 수준 MDE도 탐지 가능(아래 계산)                                                             | 미달 — 과목별 정확도만 보고, 인구집단·문화권별 성능 격차는 설계에 없음                                                     |
+| HumanEval (n=164)                     | 미달 — 164문항이 "코딩 능력"이라는 폭넓은 construct를 대표하는지 논쟁적, [#11](/blog/2026/math-code-benchmarks/)                              | 미달 — EvalPlus 분석에서 참조 정답(reference solution) 자체의 약 11%가 결함을 가진 것으로 드러남, 테스트 케이스도 평균 9.6개뿐이라 false positive(약한 테스트를 통과) 다수 발생 | 미달 — n=164는 소수점 %p 차이를 통계적으로 못 가른다(아래 계산)                                                    | 해당 없음 — 코드 정확성 태스크라 사회적 편향 축 자체가 설계되지 않음                                                       |
+| MT-Bench (n=80)                       | 미달 — LLM judge의 position bias·verbosity bias가 보고됨(Zheng et al., 2023), [#23](/blog/2026/judge-statistics/)                             | 부분 통과 — GPT-4 judge와 사람 선호 일치율이 사람 간 일치율과 비슷한 수준(약 80%대)으로 보고되지만, 단일 judge 의존이라는 구조적 한계는 남음                                    | 미달 — n=80은 이 다섯 벤치마크 중 가장 취약(아래 계산)                                                             | 미측정 — 편향 관련 보조 지표 없음                                                                                          |
+| Chatbot Arena (모델당 배틀 수는 가변) | 미달 — "Leaderboard Illusion" 분석에서 일부 사업자가 최대 27개 비공개 변형을 사전 테스트해 최적 버전만 공개하는 등 구조적 편향이 지적됨(2025) | 부분 통과 — Bradley-Terry 모델 + 부트스트랩 신뢰구간을 공식 제공, 그러나 투표자 구성·이탈 편향은 별도 통제 안 됨                                                                | 조건부 — 정착 모델은 수만 배틀로 2%p대까지 탐지 가능하지만, 신규 모델은 초기 수백\~수천 배틀뿐이라 미달(아래 계산) | 미측정 — 스타일·길이 선호가 편향과 혼입될 위험이 지적됨                                                                    |
+| KMMLU (test, n=35,030)                | 미달 — 원 시험 문항을 그대로 가져와 "한국어 이해"보다 "특정 자격시험 암기"를 재는 문항이 섞여 있음, [#14](/blog/2026/korean-benchmarks/)      | 미달 — 후속 KMMLU-Redux/Pro 작업이 원본에서 critical error 약 7.66%와 지나치게 쉬운(trivial) 문항 약 38.6%를 제거                                                               | 통과 — n이 가장 커서 1%p 초반 MDE까지 탐지 가능(아래 계산)                                                         | 미달 — 문항의 약 5분의 1이 한국 문화 지식을 요구한다고 원 논문이 밝혔지만, 지역·세대별 성능 격차를 분리해 재는 설계는 없음 |
+
+## Statistical Power 열을 숫자로 채우기
+
+Bowman & Dahl 자신도 3.3절에서 "80%→81%면 수천 문항으로 충분, 98%→98.1%면 100배 더 필요하다"는 구체적 앵커를 제시했다. 이 감을 다섯 벤치마크에 그대로 적용해보자.
+
+두 모델의 정확도를 독립 이표본으로 비교한다고 가정하면(McNemar류 짝지은 설계보다 보수적인 상한이다 — 실제 짝지은 검정은 이보다 적은 문항으로도 같은 검정력을 낼 수 있다), 유의수준 5%(양측), 검정력 80%를 목표로 할 때 필요한 문항 수 $$n$$과 최소 탐지 가능 차이(MDE) $$d$$ 사이에는 대략 다음 관계가 성립한다.
+
+$$n \approx \frac{2(z_{\alpha/2} + z_\beta)^2 \cdot p(1-p)}{d^2}$$
+
+기호를 풀면:
+
+- $$z_{\alpha/2} \approx 1.96$$ — 양측 5% 유의수준에 해당하는 표준정규분포 임계값.
+- $$z_\beta \approx 0.84$$ — 검정력 80%에 해당하는 값.
+- $$p(1-p)$$ — 정확도 근처의 분산. 분산이 가장 큰 최악의 경우인 $$p=0.5$$를 대입하면 $$p(1-p)=0.25$$.
+- $$d$$ — 탐지하고 싶은 최소 절대 정확도 차이(MDE).
+
+$$(z_{\alpha/2}+z_\beta)^2 \approx 7.84$$이므로 식을 정리하면:
+
+$$n \approx \frac{2 \times 7.84 \times 0.25}{d^2} = \frac{3.92}{d^2} \quad \Longleftrightarrow \quad d_{min} \approx \sqrt{\frac{3.92}{n}}$$
+
+이 식에 각 벤치마크의 문항 수를 넣어 "이 벤치마크가 통계적으로 구분할 수 있는 최소 차이"를 역산한 결과가 아래 표다.
+
+| 벤치마크                                   | 문항 수 $$n$$ | 근사 MDE $$d_{min}$$ |
+| ------------------------------------------ | ------------- | -------------------- |
+| MT-Bench                                   | 80            | 약 22%p              |
+| HumanEval                                  | 164           | 약 15%p              |
+| Chatbot Arena (신규 모델, 배틀 약 1,000회) | 약 1,000      | 약 6%p               |
+| Chatbot Arena (정착 모델, 배틀 약 1만 회)  | 약 10,000     | 약 2%p               |
+| MMLU (test)                                | 14,042        | 약 1.7%p             |
+| KMMLU (test)                               | 35,030        | 약 1.1%p             |
+
+숫자가 말하는 것은 분명하다. "GPT 신모델이 MT-Bench에서 0.2점 올랐다"거나 "HumanEval pass@1이 2%p 개선됐다" 같은 흔한 보도자료식 문구는, 이 어림 계산 기준으로 보면 **해당 벤치마크가 애초에 구분할 수 없는 차이**를 유의미한 개선처럼 말하고 있을 가능성이 크다. 반대로 MMLU·KMMLU처럼 문항 수가 만 단위인 벤치마크는 1\~2%p대 차이도 통계적으로 뒷받침할 여력이 있다 — 다만 그 차이가 [#5](/blog/2026/clever-hans-benchmarks/)가 지적하는 표층 단서 때문이 아니라 실제 능력 차이인지는 별개 문제다. Validity와 statistical power는 서로 다른 축이라는 것, 이것이 애초에 Bowman & Dahl이 네 기준을 하나로 뭉치지 않고 따로 나눈 이유이기도 하다.
+
+여기서 쓴 계산은 어디까지나 최악 분산($$p=0.5$$)을 가정한 독립 이표본 근사이자 상한 추정이다. 실제 벤치마크 비교는 같은 문항을 여러 모델이 공유하는 짝지은(paired) 설계이고, 모델 간 정답 상관관계 덕분에 필요한 문항 수가 이보다 줄어들 수 있다. 짝지은 검정력을 정확히 계산하는 방법은 [#21 몇 개를 재야 하나](/blog/2026/statistical-power/)에서 다룬다.
+
+# 통계 요약
+
+| 기준                | 위반 사례(논문)                                                                                                                                     | 처방(논문)                                                                                       | 계승 편                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Validity            | 크라우드소싱은 어려운 데이터를 만드는 데 서투름, adversarial filtering은 mode-seeking이라 다양성을 줄임                                             | 고품질 크라우드소싱 + 전문가 보강(contrast sets), 전산언어학자를 크라우드소싱에 직접 투입(OCNLI) | [#1](/blog/2026/what-is-evaluation/), [#4](/blog/2026/benchmark-construct-validity/), [#5](/blog/2026/clever-hans-benchmarks/) |
+| Reliable Annotation | 텍스트 함의 데이터셋의 20%가 유의미하게 모호(Pavlick & Kwiatkowski, 2019), Natural Questions 단답의 36%가 다수결과 불일치(Kwiatkowski et al., 2019) | 다중 중복 주석, 모호 예시는 폐기하거나 라벨 분포/복수 정답으로 처리                              | [#16](/blog/2026/human-evaluation-design/), [#17](/blog/2026/kappa-agreement/), [#18](/blog/2026/kappa-paradox/)               |
+| Statistical Power   | GLUE 다수 태스크가 저검정력(Card et al., 2020), 98%→98.1% 탐지에 80%→81% 대비 100배 더 많은 데이터 필요                                             | 목표 검정력에서 역산한 표본 크기 산정, 다만 비용이 수백만 달러 규모로 치솟을 수 있음             | [#19](/blog/2026/confidence-intervals/), [#21](/blog/2026/statistical-power/)                                                  |
+| Disentangling Bias  | SuperGLUE가 DNC Winogender 보고를 요구하지만 대다수 논문이 생략                                                                                     | 편향 유형별 보조 테스트셋·지표를 주 지표와 병렬 보고                                             | [#7](/blog/2026/classification-metrics/), [#25](/blog/2026/safety-evaluation-statistics/)                                      |
+
+# Conclusion
+
+이 논문의 값은 새로운 벤치마크나 새로운 알고리즘에 있지 않다. **"이 벤치마크는 좋은가?"라는 막연한 질문을, "validity·reliable annotation·statistical power·disentangling bias 네 개 중 몇 개를 통과하는가?"라는 체크리스트로 바꿔놓았다는 것**, 그것이 전부이자 핵심이다. 논문 스스로도 "우리가 아는 한 어려운 광범위 도메인 NLU task를 다루는 현재 벤치마크 중 이 네 기준을 모두 만족하는 것은 없다"고 못박는다.
+
+**2021년의 진단은 2025년에도 유효한가.** [#4](/blog/2026/benchmark-construct-validity/)가 다룬 445개 LLM 벤치마크 리뷰(Bean et al., NeurIPS 2025 Datasets and Benchmarks Track)는 이 질문에 대한 4년 뒤 성적표에 가깝다. 그 리뷰의 여덟 개 권고 중 하나가 정확히 "Use statistical methods to compare models" — 표본 크기를 보고하고 그 통계적 검정력을 정당화하라는, Bowman & Dahl의 3.3절과 글자 그대로 같은 요구다. 그런데 리뷰 결과는 **"현재 리뷰된 벤치마크 중 오직 16.0%만이 어떤 형태로든 통계적 검정을 수행했다"**는 것이었다. 네 기준 중 가장 계산 가능하고 가장 형식화하기 쉬운 기준 — "표본 크기를 역산해서 채우면 된다"고 논문 스스로 "원리상 직접적(straightforward in principle)"이라 표현했던 바로 그 기준 — 조차, 4년 뒤에도 벤치마크의 6곳 중 5곳 이상이 지키지 않고 있다는 뜻이다. 나머지 세 기준(validity, reliable annotation, disentangling bias)은 애초에 "쉬운 계산 문제"가 아니었으니 사정이 더 낫다고 보기도 어렵다.
+
+이 대조가 말해주는 것은 두 가지다. 첫째, Bowman & Dahl의 2021년 진단은 낡지 않았다 — 오히려 2025년 대규모 리뷰가 같은 네 개 축(정의하기, phenomenon만 재기, 대표성 있는 데이터셋 구성하기, 통계적 방법 쓰기 등)으로 벤치마크를 다시 채점했다는 사실 자체가, 이 체크리스트가 4년의 검증을 견뎠다는 증거다. 둘째, 진단을 처방으로 바꾸는 일은 진단 자체보다 훨씬 느리다. "검정력을 계산하라"는 요구는 이해하기도 쉽고 실행 비용도(다른 세 기준에 비하면) 상대적으로 낮은 축에 속하는데도, 커뮤니티 차원의 관행 변화는 4년이 지나도록 일어나지 않았다. 나머지 시리즈, 특히 5부(정량평가의 통계)와 6부(신뢰할 수 있는 평가 체계)가 이 격차를 좁히려는 시도들의 기록이다.
+
+**한계 — 논문 스스로가 인정하는 것.** 이 논문은 포지션 페이퍼이므로 네 기준을 실제로 만족시키는 벤치마크를 직접 만들어 보이지는 않는다. 결론부에서 저자들 스스로 두 가지 열린 질문을 남긴다. 첫째, 크라우드소싱 데이터 수집에 전문가 노력을 어떻게 가장 잘 통합할지가 여전히 불명확하다. 둘째, 편향 지표가 정말 필요할 때 그것이 만들어지고 쓰이도록 보장할 제도적 모델을 아직 갖고 있지 않다. Ethical Considerations 절에서도 "이 논문은 완전하고 만족스러운 해법을 제시하지 않는다"고 스스로 못박는다 — 다만 harm reduction에 기여할 조치를 제안할 뿐이라고. 즉 이 논문의 기여는 "문제를 네 조각으로 정확히 자른 것"이지 "네 조각을 다 푼 것"이 아니다. 그 미해결 조각들을 하나씩 메우는 것이 이 시리즈 나머지 22편의 일이다.
+
+# 참고 문헌
+
+- Bowman, S. R., & Dahl, G. E. (2021). [What Will it Take to Fix Benchmarking in Natural Language Understanding?](https://arxiv.org/abs/2104.02145) NAACL-HLT 2021. ([ACL Anthology](https://aclanthology.org/2021.naacl-main.385/))
+- Card, D., Henderson, P., Khandelwal, U., Jia, R., Mahowald, K., & Jurafsky, D. (2020). [With Little Power Comes Great Responsibility](https://arxiv.org/abs/2010.06595). EMNLP 2020.
+- Bean, A. M. et al. (2025). [Measuring what Matters: Construct Validity in Large Language Model Benchmarks](https://arxiv.org/abs/2511.04703). NeurIPS 2025, Datasets and Benchmarks Track.
+- Wang, A., Singh, A., Michael, J., Hill, F., Levy, O., & Bowman, S. R. (2019). GLUE: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding. ICLR 2019.
+- Wang, A. et al. (2019). SuperGLUE: A Stickier Benchmark for General-Purpose Language Understanding Systems. NeurIPS 2019.
+- Pavlick, E., & Kwiatkowski, T. (2019). Inherent Disagreements in Human Textual Inferences. TACL, 7:677-694.
+- Kwiatkowski, T. et al. (2019). Natural Questions: A Benchmark for Question Answering Research. TACL, 7:452-466.
+- Rudinger, R., Naradowsky, J., Leonard, B., & Van Durme, B. (2018). Gender Bias in Coreference Resolution. NAACL 2018.
+- Bolukbasi, T., Chang, K.-W., Zou, J., Saligrama, V., & Kalai, A. (2016). Man is to Computer Programmer as Woman is to Homemaker? Debiasing Word Embeddings. NeurIPS 2016.
+- Gema, A. P. et al. (2024). [Are We Done with MMLU?](https://arxiv.org/abs/2406.04127) (MMLU-Redux).
+- Liu, J., Xia, C. S., Wang, Y., & Zhang, L. (2023). [Is Your Code Generated by ChatGPT Really Correct? Rigorous Evaluation of Large Language Models for Code Generation](https://arxiv.org/abs/2305.01210). NeurIPS 2023. (EvalPlus)
+- Zheng, L. et al. (2023). [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685). NeurIPS 2023.
+- Singh, S. et al. (2025). [The Leaderboard Illusion](https://arxiv.org/abs/2504.20879).
+- Son, G. et al. (2024). [KMMLU: Measuring Massive Multitask Language Understanding in Korean](https://arxiv.org/abs/2402.11548). NAACL 2025.
+- (2025). [From KMMLU-Redux to KMMLU-Pro: A Professional Korean Benchmark Suite for LLM Evaluation](https://arxiv.org/abs/2507.08924). EMNLP 2025 Findings.
+
+---
+
+# LLM 평가 체계 시리즈
+
+이 글은 LLM 평가 체계 시리즈의 세 번째 글이다.
+
+**1부. 평가란 무엇인가**
+
+<ol start="1">
+  <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><strong>(현재 글)</strong> 벤치마킹을 고치려면 — Bowman & Dahl의 네 기준</li>
+  <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
+</ol>
+
+**2부. 무엇을 숫자로 만드나 — 평가 metric**
+
+<ol start="6">
+  <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
+  <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
+  <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
+  <li><a href="/blog/2026/mcqa-fragility/">객관식 평가는 왜 흔들리나</a> — 위치 편향과 포맷 민감도</li>
+</ol>
+
+**3부. LLM 벤치마크 지형도**
+
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
+  <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
+  <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
+  <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
+  <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
+</ol>
+
+**4부. 사람이 읽는다 — 정성평가와 일치도**
+
+<ol start="16">
+  <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
+  <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
+  <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
+</ol>
+
+**5부. 차이는 진짜인가 — 정량평가의 통계**
+
+<ol start="19">
+  <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
+  <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
+  <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
+  <li><a href="/blog/2026/error-bars-for-evals/">LLM eval의 통계 실무</a> — 클러스터 SE·IQM·분산 분해</li>
+</ol>
+
+**6부. 신뢰할 수 있는 평가 체계**
+
+<ol start="23">
+  <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
+  <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
+  <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
+</ol>
+
+본 시리즈는 25편으로 구성된다.

@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "객관식 평가는 왜 흔들리나 — 위치 편향과 포맷 민감도"
-date: 2026-08-24 09:06:00 +0900
-description: "LLM 평가 체계 시리즈 #6 — 선택지 순서와 프롬프트 포맷만 바꿔도 정확도와 순위가 흔들리는 이유"
+date: 2026-08-24 09:09:00 +0900
+description: "LLM 평가 체계 시리즈 #9 — 선택지 순서와 프롬프트 포맷만 바꿔도 정확도와 순위가 흔들리는 이유"
 categories: [paper]
 tags: [evaluation, mcqa, benchmark, prompt-sensitivity, position-bias, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-MMLU가 사실상 모델 평가의 기본값이 된 이유는 단순하다. 정답이 A/B/C/D 중 하나로 고정되어 있어 **채점이 기계적이고 논쟁의 여지가 없다.** [#5](/blog/2026/generation-metrics/)에서 다룬 BLEU·ROUGE 같은 생성 지표는 "정답이 여럿일 수 있다"는 문제를 안고 출발했지만, 객관식은 그 문제 자체가 존재하지 않는다. 문자열이 A인지 B인지만 비교하면 되니 judge도, 사람 채점자도, 애매한 기준도 필요 없다. 이것이 지난 몇 년간 지식·추론 평가가 거의 예외 없이 객관식으로 수렴한 이유다.
+MMLU가 사실상 모델 평가의 기본값이 된 이유는 단순하다. 정답이 A/B/C/D 중 하나로 고정되어 있어 **채점이 기계적이고 논쟁의 여지가 없다.** [#8](/blog/2026/generation-metrics/)에서 다룬 BLEU·ROUGE 같은 생성 지표는 "정답이 여럿일 수 있다"는 문제를 안고 출발했지만, 객관식은 그 문제 자체가 존재하지 않는다. 문자열이 A인지 B인지만 비교하면 되니 judge도, 사람 채점자도, 애매한 기준도 필요 없다. 이것이 지난 몇 년간 지식·추론 평가가 거의 예외 없이 객관식으로 수렴한 이유다.
 
 그런데 이 편의성에는 대가가 있다는 것이 이번 글의 주제다. **선택지의 순서만 뒤바꿔도, 프롬프트의 포맷만 바꿔도 정확도가 요동치고 리더보드 순위가 뒤집힌다.** 같은 모델에 같은 지식을 물었는데, 정답이 "C"의 자리에 있느냐 "A"의 자리에 있느냐에 따라 점수가 달라진다면, 그 점수는 모델의 지식을 재는 것이 아니라 **정답의 위치를 재고 있는 것**이다.
 
@@ -29,7 +29,7 @@ MMLU가 사실상 모델 평가의 기본값이 된 이유는 단순하다. 정�
 4. **Alzahrani et al. (2024)** — 이런 사소한 변경이 실제 리더보드 순위를 얼마나 뒤바꾸는가.
 5. **Mizrahi et al. (2024)** — 그래서 프롬프트 하나가 아니라 여러 개로 평가해야 한다는 제안.
 
-결론을 먼저 말하면, 이 글은 **프롬프트 하나를 고정하는 것은 표본 크기 1을 뽑는 것과 같다**는 명제로 끝난다. 그 명제가 참이라면 점수에는 표본오차가 있고, 오차 막대 없는 단일 숫자는 애초에 불완전한 보고다. 그 통계적 처방은 [#15](/blog/2026/confidence-intervals/)와 [#18](/blog/2026/error-bars-for-evals/)에서 이어받는다. MMLU 자체의 내용적 결함(오류 문항, 모호성)은 이 글의 범위가 아니다 — 그것은 [#7](/blog/2026/knowledge-benchmarks/)에서 다룬다. 이 글이 묻는 것은 "문항이 맞았나"가 아니라 **"채점 절차 자체가 안정적인가"**다.
+결론을 먼저 말하면, 이 글은 **프롬프트 하나를 고정하는 것은 표본 크기 1을 뽑는 것과 같다**는 명제로 끝난다. 그 명제가 참이라면 점수에는 표본오차가 있고, 오차 막대 없는 단일 숫자는 애초에 불완전한 보고다. 그 통계적 처방은 [#19](/blog/2026/confidence-intervals/)와 [#22](/blog/2026/error-bars-for-evals/)에서 이어받는다. MMLU 자체의 내용적 결함(오류 문항, 모호성)은 이 글의 범위가 아니다 — 그것은 [#10](/blog/2026/knowledge-benchmarks/)에서 다룬다. 이 글이 묻는 것은 "문항이 맞았나"가 아니라 **"채점 절차 자체가 안정적인가"**다.
 
 # Background
 
@@ -50,7 +50,7 @@ MMLU가 사실상 모델 평가의 기본값이 된 이유는 단순하다. 정�
 
 예를 들어 채점 스크립트가 `정답은 \(([A-D])\)` 같은 패턴만 인식하도록 짜여 있다고 하자. 모델이 "9는 소수가 아니므로 정답은 B번입니다"라고 답하면, 내용은 완전히 맞았는데도 괄호 표기가 아니라서 파서가 답을 뽑아내지 못해 오답으로 채점된다. 지식 그 자체가 아니라 **"괄호를 쳤는가"**가 점수를 가른 것이다. 이런 실패는 특히 지시를 잘 따르지 않는 소형 모델이나, 사고 과정을 길게 쓰는 reasoning 모델에서 잦다.
 
-같은 모델, 같은 벤치마크에서도 (a)와 (b) 중 무엇을 쓰느냐, (a) 안에서도 어떤 정규화를 쓰느냐에 따라 숫자가 달라진다. lm-evaluation-harness가 `acc`, `acc_norm` 같은 옵션을 나란히 제공하는 이유가 이것이고, 실제로 이 옵션 조합 차이가 같은 벤치마크에서 논문마다 다른 숫자를 낳는 사고로 이어진다 — 그 재현성 문제는 [#20](/blog/2026/contamination-reproducibility/)에서 본격적으로 다룬다. 지금 짚어야 할 것은 하나다: **채점 방식의 선택 자체가 이미 구성개념과 무관한 분산의 원천**이라는 것.
+같은 모델, 같은 벤치마크에서도 (a)와 (b) 중 무엇을 쓰느냐, (a) 안에서도 어떤 정규화를 쓰느냐에 따라 숫자가 달라진다. lm-evaluation-harness가 `acc`, `acc_norm` 같은 옵션을 나란히 제공하는 이유가 이것이고, 실제로 이 옵션 조합 차이가 같은 벤치마크에서 논문마다 다른 숫자를 낳는 사고로 이어진다 — 그 재현성 문제는 [#24](/blog/2026/contamination-reproducibility/)에서 본격적으로 다룬다. 지금 짚어야 할 것은 하나다: **채점 방식의 선택 자체가 이미 구성개념과 무관한 분산의 원천**이라는 것.
 
 ## 위치 편향은 어디서 오는가
 
@@ -239,7 +239,7 @@ $$
 
 | 분산의 원천          | 구체적 개입                                           | 이 글에서 확인한 전형적 변동폭                                     | 처방                                                                |
 | -------------------- | ----------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| 채점 방식            | 로그확률 비교 vs 생성+파싱, 정규화 방식(raw/길이/PMI) | (정량 비교는 [#20](/blog/2026/contamination-reproducibility/)에서) | 정규화 방식을 명시하고 하이브리드 채점 사용                         |
+| 채점 방식            | 로그확률 비교 vs 생성+파싱, 정규화 방식(raw/길이/PMI) | (정량 비교는 [#24](/blog/2026/contamination-reproducibility/)에서) | 정규화 방식을 명시하고 하이브리드 채점 사용                         |
 | 선택지 순서          | 순열·순환 배치                                        | 13%p\~76%p (Pezeshkpour & Hruschka, Sclar et al.)                  | 순환 배치 평가 + 일관성 지표 병기                                   |
 | 옵션 ID/위치         | 정답을 특정 위치로 고정                               | 최대 +15.2%p / -6.3%p, 모델 순위 역전 (Zheng et al.)               | PriDe 같은 라벨 없는 디바이싱                                       |
 | 프롬프트·지시문 포맷 | 구분자·대소문자·레이블 스타일·지시문 문구             | 중앙값 6\~17%p, 최대 56\~88%p (Sclar et al., Mizrahi et al.)       | 다중 포맷 범위 보고(FormatSpread), 목적별 요약 통계(Mizrahi et al.) |
@@ -256,7 +256,7 @@ $$
 - **다중 프롬프트 평균과 분산 보고**: 단일 포맷·단일 지시문 점수 대신 여러 조건에 걸친 범위(FormatSpread)나 요약 통계 세트(Mizrahi et al.)를 함께 보고한다.
 - **포맷을 고정했다면 그 사실을 명시**: 단일 조건 평가가 불가피할 때도 있다. 그렇다면 최소한 "이 숫자는 이 특정 포맷·순서에서 나온 것"이라고 밝혀, 독자가 그 한계를 알고 읽게 한다.
 
-그리고 여기서 이 시리즈의 다음 다리를 놓는다. **프롬프트를 하나 고정하는 것은, 가능한 프롬프트(순서·포맷·지시문 문구)의 분포에서 표본 크기 1을 뽑는 것과 다르지 않다.** 표본이 하나면 그 표본이 우연히 모집단 평균보다 높게 나올 수도, 낮게 나올 수도 있다 — 이것이 정확히 이 글에서 본 76%p, 87.6%p짜리 spread의 정체다. 표본에서 얻은 값에는 표본오차가 따르고, 표본오차가 있다면 점수는 점추정치가 아니라 **구간**으로 보고되어야 한다. "이 모델의 MMLU 점수는 71.2%다"라는 문장은 완결된 사실이 아니라, 어떤 조건 분포 위에서의 한 점일 뿐이다. 그 점에 오차 막대를 그리는 방법이 [#15](/blog/2026/confidence-intervals/)의 신뢰구간이고, LLM 평가 실무에 그 오차 막대를 실제로 붙이는 절차가 [#18](/blog/2026/error-bars-for-evals/)이다.
+그리고 여기서 이 시리즈의 다음 다리를 놓는다. **프롬프트를 하나 고정하는 것은, 가능한 프롬프트(순서·포맷·지시문 문구)의 분포에서 표본 크기 1을 뽑는 것과 다르지 않다.** 표본이 하나면 그 표본이 우연히 모집단 평균보다 높게 나올 수도, 낮게 나올 수도 있다 — 이것이 정확히 이 글에서 본 76%p, 87.6%p짜리 spread의 정체다. 표본에서 얻은 값에는 표본오차가 따르고, 표본오차가 있다면 점수는 점추정치가 아니라 **구간**으로 보고되어야 한다. "이 모델의 MMLU 점수는 71.2%다"라는 문장은 완결된 사실이 아니라, 어떤 조건 분포 위에서의 한 점일 뿐이다. 그 점에 오차 막대를 그리는 방법이 [#19](/blog/2026/confidence-intervals/)의 신뢰구간이고, LLM 평가 실무에 그 오차 막대를 실제로 붙이는 절차가 [#22](/blog/2026/error-bars-for-evals/)이다.
 
 # 참고 문헌
 
@@ -273,18 +273,21 @@ $$
 
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 여섯 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 아홉 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="3">
+<ol start="6">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -293,17 +296,18 @@ $$
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="7">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH·HELM</li>
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
   <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
   <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
 </ol>
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="12">
+<ol start="16">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -311,7 +315,7 @@ $$
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="15">
+<ol start="19">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -320,10 +324,10 @@ $$
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="19">
+<ol start="23">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 21편으로 구성된다.
+본 시리즈는 25편으로 구성된다.

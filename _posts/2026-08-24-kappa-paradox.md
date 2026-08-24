@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "κ의 역설 — 일치율 90%인데 κ가 0.21"
-date: 2026-08-24 09:14:00 +0900
-description: "LLM 평가 체계 시리즈 #14 — prevalence·bias 역설과 PABAK·Gwet's AC1로 κ를 바로 읽는 법"
+date: 2026-08-24 09:18:00 +0900
+description: "LLM 평가 체계 시리즈 #18 — prevalence·bias 역설과 PABAK·Gwet's AC1로 κ를 바로 읽는 법"
 categories: [paper]
 tags: [evaluation, statistics, kappa, inter-rater-agreement, human-evaluation, paper]
 giscus_comments: true
@@ -15,7 +15,7 @@ related_posts: true
 
 # Introduction
 
-[#13](/blog/2026/kappa-agreement/)에서 κ를 유도했다. $$\kappa = (p_o - p_e)/(1 - p_e)$$ — 관측 일치율 $$p_o$$에서 우연 기대 일치율 $$p_e$$를 빼고, 우연이 만들 수 있었던 나머지 여지 $$1-p_e$$로 나눈다. 우연을 뺐으니 κ는 "진짜 합의"를 잰다고 믿기 쉽다.
+[#17](/blog/2026/kappa-agreement/)에서 κ를 유도했다. $$\kappa = (p_o - p_e)/(1 - p_e)$$ — 관측 일치율 $$p_o$$에서 우연 기대 일치율 $$p_e$$를 빼고, 우연이 만들 수 있었던 나머지 여지 $$1-p_e$$로 나눈다. 우연을 뺐으니 κ는 "진짜 합의"를 잰다고 믿기 쉽다.
 
 그런데 안전성 라벨링 실무에서 이런 일이 반복해서 일어난다. 라벨러 두 명이 1,000건의 대화를 "유해/안전"으로 판정했다. 서로 다른 판정을 내린 건은 50건뿐이다. 일치율 $$p_o$$는 95%. 그런데 κ를 계산하면 0.3대가 나온다. Landis & Koch (1977) 표를 펴 보면 0.21\~0.40은 "fair"다. 팀은 "가이드라인이 부실하다"고 결론짓고 가이드라인을 다시 쓴다. 다시 라벨링한다. κ는 또 0.3대다. 세 번째로 다시 쓴다. 또 0.3대다.
 
@@ -46,7 +46,7 @@ $$
 p_e = p_{1+} \cdot p_{+1} + (1-p_{1+})(1-p_{+1})
 $$
 
-[#13](/blog/2026/kappa-agreement/)에서 다룬 대로 $$\kappa = (p_o - p_e)/(1 - p_e)$$다. 여기까지는 복습이다. 이 글의 질문은 이거다 — **κ가 낮게 나왔을 때, 그게 진짜 낮은 합의 때문인지, 아니면 $$p_e$$ 자체가 어떤 라벨 분포에서 구조적으로 커지거나 작아지기 때문인지 어떻게 구별하나?**
+[#17](/blog/2026/kappa-agreement/)에서 다룬 대로 $$\kappa = (p_o - p_e)/(1 - p_e)$$다. 여기까지는 복습이다. 이 글의 질문은 이거다 — **κ가 낮게 나왔을 때, 그게 진짜 낮은 합의 때문인지, 아니면 $$p_e$$ 자체가 어떤 라벨 분포에서 구조적으로 커지거나 작아지기 때문인지 어떻게 구별하나?**
 
 ## 유병률 지수와 편향 지수 — κ를 세 숫자로 다시 쓰기
 
@@ -175,7 +175,7 @@ $$p_o=0.50$$은 이진 판단에서 "동전 던지기와 다를 바 없다"는 �
 
 ## Landis & Koch 기준 비판
 
-[#13](/blog/2026/kappa-agreement/)에서 예고한 대로, Landis & Koch (1977)의 "0\~0.20 slight, 0.21\~0.40 fair, 0.41\~0.60 moderate, 0.61\~0.80 substantial, 0.81\~1 almost perfect"라는 구간 표는 **경험적 근거로 도출된 게 아니라 저자들이 그 논문에서만 쓰겠다고 선언한 편의상의 관습**이다. 저자들 스스로 이 구간이 "임의적(arbitrary)"이라고 명시했다. 그런데도 지금까지 나온 수많은 논문이 이 표에 κ 값을 대입해 "substantial" 같은 단어를 붙였다. Ludbrook (2002)은 이 관행에 "이론적 근거가 없고 연구자를 오도할 수 있다(no sound theoretical basis and can be positively misleading)"고 비판했다.
+[#17](/blog/2026/kappa-agreement/)에서 예고한 대로, Landis & Koch (1977)의 "0\~0.20 slight, 0.21\~0.40 fair, 0.41\~0.60 moderate, 0.61\~0.80 substantial, 0.81\~1 almost perfect"라는 구간 표는 **경험적 근거로 도출된 게 아니라 저자들이 그 논문에서만 쓰겠다고 선언한 편의상의 관습**이다. 저자들 스스로 이 구간이 "임의적(arbitrary)"이라고 명시했다. 그런데도 지금까지 나온 수많은 논문이 이 표에 κ 값을 대입해 "substantial" 같은 단어를 붙였다. Ludbrook (2002)은 이 관행에 "이론적 근거가 없고 연구자를 오도할 수 있다(no sound theoretical basis and can be positively misleading)"고 비판했다.
 
 이 글의 유도 결과가 그 비판에 수학적 근거를 더한다. $$\kappa$$는 $$p_o, PI, BI$$ 세 변수의 함수이므로, **유병률($$PI$$)이 다른 두 연구의 κ 원값을 그대로 나란히 놓고 "둘 다 substantial이니 비슷한 신뢰도"라고 말하는 것은 통계적으로 무의미하다.** 다음 두 표를 보자.
 
@@ -234,7 +234,7 @@ Cohen's κ의 $$p_e = (1+PI^2-BI^2)/2$$와 비교하면 **$$PI^2$$ 항의 부호
 
 ## 대안 3: Krippendorff's α — 얼마나 강한가
 
-[#13](/blog/2026/kappa-agreement/)에서 α를 다중 평가자·결측치·다양한 척도로 일반화된 지표로 소개했다. 얼마나 강한지 정확히 짚으려면 먼저 κ를 다른 형태로 다시 써 보는 게 도움이 된다.
+[#17](/blog/2026/kappa-agreement/)에서 α를 다중 평가자·결측치·다양한 척도로 일반화된 지표로 소개했다. 얼마나 강한지 정확히 짚으려면 먼저 κ를 다른 형태로 다시 써 보는 게 도움이 된다.
 
 $$
 \kappa = \frac{p_o-p_e}{1-p_e} = 1 - \frac{1-p_o}{1-p_e} = 1 - \frac{D_o}{D_e}
@@ -345,9 +345,9 @@ $$
 
 **이게 실제로 유용한 숫자다.** 라벨러 둘 중 하나라도 "유해"라고 부른 65건(=$$a+b+c$$) 중 실제로 둘 다 동의한 것은 37.5%뿐이다. 반면 안전 판정에서는 97.4%가 겹친다. κ=0.349라는 하나의 숫자가 이 두 이야기(양성 클래스는 진짜 애매하고, 음성 클래스는 거의 완벽히 일치한다)를 뭉쳐서 가려버린다. 안전 라벨링에서 실제로 관심 있는 건 "유해를 얼마나 일관되게 잡아내는가"이므로, 희소 클래스에서는 $$PA$$가 κ보다 정보량이 많다.
 
-## [#4](/blog/2026/classification-metrics/)와의 연결 — 같은 구조, 반대 방향
+## [#7](/blog/2026/classification-metrics/)와의 연결 — 같은 구조, 반대 방향
 
-[#4 분류 지표](/blog/2026/classification-metrics/)에서 본 것과 정확히 같은 구조다. 그 글에서는 유해 비율이 5%인 데이터에서 "전부 안전"이라고만 찍는 분류기가 accuracy 95%를 받는 문제를 다뤘다 — 다수 클래스가 스칼라 지표의 기준선을 유리하게 왜곡한다. 여기서는 방향이 반대다. accuracy는 불균형이 심할수록 **부풀려지고**, κ는 불균형이 심할수록 **무너진다.** 하지만 원인은 똑같다 — **스칼라 지표 하나가 암묵적으로 "기준선"을 유병률에서 끌어오는데, 그 기준선이 유병률에 따라 크게 흔들리면서 지표의 원값을 다른 데이터셋·다른 연구 사이에서 비교할 수 없게 만든다.** 해법도 같은 형태다. 분류에서는 accuracy 대신 precision·recall·PR-AUC로 클래스별로 쪼개 봤다. 여기서는 κ 대신 $$PA, NA$$로 클래스별로 쪼개 본다. **κ에게 accuracy가 하던 역할(단일 숫자로 전체를 요약)을 시킨 것 자체가 문제였다.**
+[#7 분류 지표](/blog/2026/classification-metrics/)에서 본 것과 정확히 같은 구조다. 그 글에서는 유해 비율이 5%인 데이터에서 "전부 안전"이라고만 찍는 분류기가 accuracy 95%를 받는 문제를 다뤘다 — 다수 클래스가 스칼라 지표의 기준선을 유리하게 왜곡한다. 여기서는 방향이 반대다. accuracy는 불균형이 심할수록 **부풀려지고**, κ는 불균형이 심할수록 **무너진다.** 하지만 원인은 똑같다 — **스칼라 지표 하나가 암묵적으로 "기준선"을 유병률에서 끌어오는데, 그 기준선이 유병률에 따라 크게 흔들리면서 지표의 원값을 다른 데이터셋·다른 연구 사이에서 비교할 수 없게 만든다.** 해법도 같은 형태다. 분류에서는 accuracy 대신 precision·recall·PR-AUC로 클래스별로 쪼개 봤다. 여기서는 κ 대신 $$PA, NA$$로 클래스별로 쪼개 본다. **κ에게 accuracy가 하던 역할(단일 숫자로 전체를 요약)을 시킨 것 자체가 문제였다.**
 
 # 통계 요약
 
@@ -368,10 +368,10 @@ $$
 
 1. **κ 하나만 보고하지 않는다.** 항상 $$p_o$$, 각 라벨러의 주변분포($$p_{1+}, p_{+1}$$), κ, PABAK, AC1을 함께 보고한다.
 2. **유병률이 다른 두 연구·두 라운드의 κ 원값을 직접 비교하지 않는다.** Landis & Koch (1977) 등급표는 그 저자들 스스로 "임의적"이라 밝힌 관습일 뿐이고, $$PI$$가 다르면 같은 κ도 다른 뜻이다.
-3. **희소 클래스(유해)의 실질 합의는 PA(양성 특이 일치도)로 따로 본다.** 이게 [#4](/blog/2026/classification-metrics/)에서 본 "불균형에서 accuracy가 오도한다"는 문제와 구조적으로 같은 문제이고, 해법도 같은 형태(전체 요약 대신 클래스별 분해)다.
+3. **희소 클래스(유해)의 실질 합의는 PA(양성 특이 일치도)로 따로 본다.** 이게 [#7](/blog/2026/classification-metrics/)에서 본 "불균형에서 accuracy가 오도한다"는 문제와 구조적으로 같은 문제이고, 해법도 같은 형태(전체 요약 대신 클래스별 분해)다.
 4. **목표 κ 값을 KPI로 삼지 말 것.** "이번 분기 κ를 0.6 이상으로 올려라"는 목표는 유병률이 고정된 한 종류의 안전 라벨링 태스크에서는 애초에 달성 불가능한 수치를 강제할 수 있다. 개선해야 할 것은 κ 자체가 아니라 $$b, c$$(실제 불일치 건수)와 PA다.
 
-여기까지가 **신뢰도(reliability)** — 같은 데이터를 다른 사람이 봐도 같은 라벨이 나오는가 — 를 다룬 4부의 마지막 편이다. 신뢰도가 확보됐다고 해서 끝난 게 아니다. 다음 편 [#15 신뢰구간](/blog/2026/confidence-intervals/)부터는 **유의성(significance)** — 라벨이 일관된다고 해서 두 모델의 점수 차이가 통계적으로 유의한 것은 아니다 — 로 넘어간다. 라벨러들이 κ=0.9로 완벽히 합의해도, 그 합의된 라벨로 계산한 모델 A와 모델 B의 점수 차이 2%p가 표본 변동 안에 있는 잡음인지는 전혀 다른 질문이다.
+여기까지가 **신뢰도(reliability)** — 같은 데이터를 다른 사람이 봐도 같은 라벨이 나오는가 — 를 다룬 4부의 마지막 편이다. 신뢰도가 확보됐다고 해서 끝난 게 아니다. 다음 편 [#19 신뢰구간](/blog/2026/confidence-intervals/)부터는 **유의성(significance)** — 라벨이 일관된다고 해서 두 모델의 점수 차이가 통계적으로 유의한 것은 아니다 — 로 넘어간다. 라벨러들이 κ=0.9로 완벽히 합의해도, 그 합의된 라벨로 계산한 모델 A와 모델 B의 점수 차이 2%p가 표본 변동 안에 있는 잡음인지는 전혀 다른 질문이다.
 
 # 참고 문헌
 
@@ -383,25 +383,28 @@ $$
 - Landis, J.R. & Koch, G.G., 1977. The Measurement of Observer Agreement for Categorical Data. Biometrics, 33(1), 159-174.
 - Shankar, V. & Bangdiwala, S.I., 2014. [Observer Agreement Paradoxes in 2x2 Tables: Comparison of Agreement Measures](https://pmc.ncbi.nlm.nih.gov/articles/PMC4236536/). BMC Medical Research Methodology, 14, 100.
 - Gwet, K.L., 2013. [The Paradoxes of Agreement Coefficients: An Impossible Justification](https://inter-rater-reliability.blogspot.com/2013/12/the-paradoxes-of-agreement-coefficients.html) (blog).
-- [#13 우연을 빼다 — κ 계열](/blog/2026/kappa-agreement/) — 이 글의 κ, Krippendorff's α 기본 정의.
-- [#4 분류 지표](/blog/2026/classification-metrics/) — 불균형 데이터에서 accuracy가 오도하는 것과 같은 구조.
+- [#17 우연을 빼다 — κ 계열](/blog/2026/kappa-agreement/) — 이 글의 κ, Krippendorff's α 기본 정의.
+- [#7 분류 지표](/blog/2026/classification-metrics/) — 불균형 데이터에서 accuracy가 오도하는 것과 같은 구조.
 
 ---
 
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 열네 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 열여덟 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="3">
+<ol start="6">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -410,17 +413,18 @@ $$
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="7">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH·HELM</li>
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
   <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
   <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
 </ol>
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="12">
+<ol start="16">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><strong>(현재 글)</strong> κ의 역설 — 일치율 90%인데 κ가 0.21</li>
@@ -428,7 +432,7 @@ $$
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="15">
+<ol start="19">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -437,10 +441,10 @@ $$
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="19">
+<ol start="23">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 21편으로 구성된다.
+본 시리즈는 25편으로 구성된다.

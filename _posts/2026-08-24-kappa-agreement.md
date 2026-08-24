@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "우연을 빼다 — κ 계열"
-date: 2026-08-24 09:13:00 +0900
-description: "LLM 평가 체계 시리즈 #13 — Cohen's κ부터 Krippendorff's α, ICC까지 우연을 뺀 라벨러 간 신뢰도 측정법"
+date: 2026-08-24 09:17:00 +0900
+description: "LLM 평가 체계 시리즈 #17 — Cohen's κ부터 Krippendorff's α, ICC까지 우연을 뺀 라벨러 간 신뢰도 측정법"
 categories: [paper]
 tags: [evaluation, agreement, kappa, inter-rater-reliability, statistics, paper]
 giscus_comments: true
@@ -27,12 +27,12 @@ $$
 
 | 축                    | 묻는 질문                              | 대표 통계량                                 | 이 시리즈에서                                           |
 | --------------------- | -------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| 신뢰도 (reliability)  | 라벨러들이 서로 얼마나 일관되게 재는가 | Cohen's κ, Fleiss' κ, Krippendorff's α, ICC | 이번 글 (#13)                                           |
-| 유의성 (significance) | 모델 A와 B의 점수 차이가 우연인가      | paired bootstrap, 순열검정, McNemar         | [#16 차이는 유의한가](/blog/2026/significance-testing/) |
+| 신뢰도 (reliability)  | 라벨러들이 서로 얼마나 일관되게 재는가 | Cohen's κ, Fleiss' κ, Krippendorff's α, ICC | 이번 글 (#17)                                           |
+| 유의성 (significance) | 모델 A와 B의 점수 차이가 우연인가      | paired bootstrap, 순열검정, McNemar         | [#20 차이는 유의한가](/blog/2026/significance-testing/) |
 
 둘은 **직교(orthogonal)한다.** κ가 0.9로 매우 높아도, 표본이 100개뿐이면 모델 A와 B의 점수 차이는 유의하지 않을 수 있다. 반대로 라벨러들이 개별 문항 하나하나에서는 자주 다투어 κ가 0.3에 불과해도(라벨 각각은 잡음이 심해도), 그 잡음이 평균적으로 상쇄되는 방향이라면 수천 개를 모아 평균을 내면 모델 A와 B의 평균 차이는 통계적으로 매우 유의할 수 있다. "라벨이 서로 잘 맞는가"와 "평균 차이가 우연이 아닌가"는 답이 다른 질문이다. 이 둘을 섞으면 "라벨러도 잘 못 맞추는 항목이니 모델 비교가 무의미하다"거나 반대로 "κ가 낮다고 신경 쓸 필요 없다, 표본이 크니까"처럼 서로 다른 문제에 서로의 답을 갖다 붙이는 오류가 생긴다.
 
-이 글은 다음 순서로 간다. ① raw agreement가 왜 속이는지(Background), ② Cohen's κ부터 ICC까지 κ 계열 전체를 계보 순으로(Method), ③ 상황별로 무엇을 쓸지 고르는 표, ④ 토이 예제로 손 계산(Experiments), ⑤ 관습적 해석 기준의 위험을 예고. 앞 편 [#12 사람 평가 설계](/blog/2026/human-evaluation-design/)가 "무엇을, 어떻게 평가자에게 물을 것인가"를 다뤘다면, 이 글은 그렇게 모은 답이 "믿을 만한가"를 재는 도구를 다룬다.
+이 글은 다음 순서로 간다. ① raw agreement가 왜 속이는지(Background), ② Cohen's κ부터 ICC까지 κ 계열 전체를 계보 순으로(Method), ③ 상황별로 무엇을 쓸지 고르는 표, ④ 토이 예제로 손 계산(Experiments), ⑤ 관습적 해석 기준의 위험을 예고. 앞 편 [#16 사람 평가 설계](/blog/2026/human-evaluation-design/)가 "무엇을, 어떻게 평가자에게 물을 것인가"를 다뤘다면, 이 글은 그렇게 모은 답이 "믿을 만한가"를 재는 도구를 다룬다.
 
 # Background — 왜 raw agreement로는 부족한가
 
@@ -90,7 +90,7 @@ $$
 
 **언제 쓰나.** 평가자가 정확히 2명이고, 항목마다 같은 두 사람이 라벨링하고, 라벨이 명목척도일 때. 가장 널리 쓰이는 기본형이다.
 
-**함정.** 3명 이상으로는 확장되지 않는다(Fleiss' κ가 필요하다). 그리고 두 라벨러의 marginal이 서로 다르면 κ의 이론적 최댓값·최솟값이 그 marginal에 종속된다 — 즉 $$\kappa=1$$이 항상 도달 가능한 게 아니다. 이 문제는 다음 편 [#14 κ의 역설](/blog/2026/kappa-paradox/)에서 자세히 다룬다. 또한 marginal이 다를 때 그 차이를 "각자의 개인 성향"으로 볼지 "가이드라인이 흔들렸다는 신호"로 볼지에 대한 철학적 판단이 이미 이 공식 안에 숨어 있다 — 이 판단이 바로 다음 Scott's π와 갈리는 지점이다.
+**함정.** 3명 이상으로는 확장되지 않는다(Fleiss' κ가 필요하다). 그리고 두 라벨러의 marginal이 서로 다르면 κ의 이론적 최댓값·최솟값이 그 marginal에 종속된다 — 즉 $$\kappa=1$$이 항상 도달 가능한 게 아니다. 이 문제는 다음 편 [#18 κ의 역설](/blog/2026/kappa-paradox/)에서 자세히 다룬다. 또한 marginal이 다를 때 그 차이를 "각자의 개인 성향"으로 볼지 "가이드라인이 흔들렸다는 신호"로 볼지에 대한 철학적 판단이 이미 이 공식 안에 숨어 있다 — 이 판단이 바로 다음 Scott's π와 갈리는 지점이다.
 
 ## Scott's π (1955)
 
@@ -187,7 +187,7 @@ $$
 
 **Artstein & Poesio (2008)**의 정본 서베이가 바로 이 지점을 강조한다. 계산언어학의 코퍼스 주석 작업에서는 Cohen κ 계열보다 Scott π · Krippendorff α 계열의 pooled-marginal 방식이 더 적합하다고 이들은 본다 — 코퍼스 주석의 목적이 "이 두 특정 주석자가 얼마나 잘 맞는가"가 아니라 "이 코딩 스킴으로 만든 데이터가 누가 라벨링해도 재현 가능한가"를 재는 것이기 때문이다. 특정 개인의 marginal을 존중하는 Cohen 방식보다, 라벨러를 교체 가능한(interchangeable) 존재로 보는 pooled 방식이 이 목적에 맞다는 논리다.
 
-**함정.** 결측·가변 평가자 수를 다루는 만큼 계산은 손으로 하기엔 복잡하다(구체적인 조합 공식은 Krippendorff, 2004와 Hayes & Krippendorff, 2007을 참고한다). 순서형 $$\delta$$의 정의를 오해해서 그냥 $$(c-c')^2$$(등간형)을 순서형 데이터에 쓰는 실수도 흔하다 — 이러면 척도 간 간격이 실제로 등간이라고 암묵적으로 가정하는 셈이라 [#3 척도와 허용 연산](/blog/2026/measurement-scales/)의 문제가 그대로 재발한다.
+**함정.** 결측·가변 평가자 수를 다루는 만큼 계산은 손으로 하기엔 복잡하다(구체적인 조합 공식은 Krippendorff, 2004와 Hayes & Krippendorff, 2007을 참고한다). 순서형 $$\delta$$의 정의를 오해해서 그냥 $$(c-c')^2$$(등간형)을 순서형 데이터에 쓰는 실수도 흔하다 — 이러면 척도 간 간격이 실제로 등간이라고 암묵적으로 가정하는 셈이라 [#6 척도와 허용 연산](/blog/2026/measurement-scales/)의 문제가 그대로 재발한다.
 
 ## ICC — 급내상관 (Shrout & Fleiss, 1979)
 
@@ -262,7 +262,7 @@ $$
 
 이 표를 볼 때 반드시 알아야 할 것이 있다. **이 구간에는 경험적 근거가 없다.** Landis & Koch (1977) 본인들도 논문에서 이 구간을 "임의적(arbitrary)이지만 유용한 벤치마크"라고만 제시했다. 어떤 실증 연구나 이론에서 도출한 경계가 아니라, 저자들이 편의상 정한 눈금이다. 그런데도 이후 50년 가까이 의학·심리학·NLP 논문 수천 편이 이 표를 마치 통계적으로 검증된 기준인 것처럼 인용해 왔다.
 
-더 큰 문제는 다음 편에서 다룬다. 같은 κ 값이라도 라벨의 쏠림 정도(prevalence)에 따라 전혀 다르게 읽어야 하는 경우가 있다 — 관측 일치율이 90%인데 κ가 0.21밖에 안 나오는 역설적인 상황이 실제로 벌어진다. 안전성 라벨링처럼 "유해" 라벨이 원래 드문 데이터에서 특히 자주 일어난다. 이 역설과, Landis & Koch 표를 기계적으로 적용했을 때 생기는 구체적인 사고는 [#14 κ의 역설](/blog/2026/kappa-paradox/)에서 수치로 보여준다.
+더 큰 문제는 다음 편에서 다룬다. 같은 κ 값이라도 라벨의 쏠림 정도(prevalence)에 따라 전혀 다르게 읽어야 하는 경우가 있다 — 관측 일치율이 90%인데 κ가 0.21밖에 안 나오는 역설적인 상황이 실제로 벌어진다. 안전성 라벨링처럼 "유해" 라벨이 원래 드문 데이터에서 특히 자주 일어난다. 이 역설과, Landis & Koch 표를 기계적으로 적용했을 때 생기는 구체적인 사고는 [#18 κ의 역설](/blog/2026/kappa-paradox/)에서 수치로 보여준다.
 
 ## 선택 가이드 — 평가자 수 × 척도 × 결측
 
@@ -417,9 +417,9 @@ $$
 4. **상관은 일치가 아니다.** 이 하나만 기억해도 실무 사고를 하나 막는다.
 5. **관습적 해석 기준(Landis & Koch, 1977)은 경험적 근거가 없다.** κ 값 하나만 보고 "가이드라인이 나쁘다/좋다"를 판단하면 안 되는 이유가 다음 편에서 더 날카롭게 드러난다.
 
-그리고 서두에서 정리한 구분을 다시 강조한다. **신뢰도(이 글)와 유의성([#16](/blog/2026/significance-testing/))은 다른 질문이다.** 라벨이 서로 잘 맞는지는 이 글의 도구로 재고, 모델 A와 B의 점수 차이가 우연인지는 완전히 다른 도구([#16])로 재야 한다. 둘을 섞으면 "라벨러들도 잘 못 맞추는 항목인데 모델 차이가 유의하다고 우기는" 혹은 반대로 "라벨러 신뢰도가 낮으니 모델 비교 자체가 무의미하다고 단정하는" 식의 오류가 생긴다.
+그리고 서두에서 정리한 구분을 다시 강조한다. **신뢰도(이 글)와 유의성([#20](/blog/2026/significance-testing/))은 다른 질문이다.** 라벨이 서로 잘 맞는지는 이 글의 도구로 재고, 모델 A와 B의 점수 차이가 우연인지는 완전히 다른 도구([#16])로 재야 한다. 둘을 섞으면 "라벨러들도 잘 못 맞추는 항목인데 모델 차이가 유의하다고 우기는" 혹은 반대로 "라벨러 신뢰도가 낮으니 모델 비교 자체가 무의미하다고 단정하는" 식의 오류가 생긴다.
 
-다음 편 [#14 κ의 역설](/blog/2026/kappa-paradox/)에서는 이 글에서 미뤄둔 위험을 파헤친다. 관측 일치율이 90%인데 κ가 0.21까지 떨어지는 prevalence 역설, 그리고 그 반대로 라벨러 편향이 오히려 κ를 부풀리는 bias 역설이다. 안전성 라벨링처럼 한쪽 라벨이 원래 드문 데이터에서 이 역설이 상시로 벌어진다.
+다음 편 [#18 κ의 역설](/blog/2026/kappa-paradox/)에서는 이 글에서 미뤄둔 위험을 파헤친다. 관측 일치율이 90%인데 κ가 0.21까지 떨어지는 prevalence 역설, 그리고 그 반대로 라벨러 편향이 오히려 κ를 부풀리는 bias 역설이다. 안전성 라벨링처럼 한쪽 라벨이 원래 드문 데이터에서 이 역설이 상시로 벌어진다.
 
 # 참고 문헌
 
@@ -439,18 +439,21 @@ $$
 
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 열세 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 열일곱 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="3">
+<ol start="6">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -459,17 +462,18 @@ $$
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="7">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH·HELM</li>
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
   <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
   <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
 </ol>
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="12">
+<ol start="16">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><strong>(현재 글)</strong> 우연을 빼다 — κ 계열 — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -477,7 +481,7 @@ $$
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="15">
+<ol start="19">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -486,10 +490,10 @@ $$
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="19">
+<ol start="23">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 21편으로 구성된다.
+본 시리즈는 25편으로 구성된다.

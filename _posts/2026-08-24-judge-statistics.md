@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "judge를 통계로 다루기 — 편향, Bradley-Terry, PPI"
-date: 2026-08-24 09:19:00 +0900
-description: "LLM 평가 체계 시리즈 #19 — judge는 편향된 값싼 측정 도구다. Bradley-Terry로 순위의 불확실성을 다루고, Prediction-Powered Inference로 소량의 사람 라벨과 대량의 judge 라벨을 결합해 편향 없는 신뢰구간을 얻는 법"
+date: 2026-08-24 09:23:00 +0900
+description: "LLM 평가 체계 시리즈 #23 — judge는 편향된 값싼 측정 도구다. Bradley-Terry로 순위의 불확실성을 다루고, Prediction-Powered Inference로 소량의 사람 라벨과 대량의 judge 라벨을 결합해 편향 없는 신뢰구간을 얻는 법"
 categories: [paper]
 tags: [evaluation, llm-as-a-judge, bradley-terry, prediction-powered-inference, statistics, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#9](/blog/2026/mt-bench-to-arena/)에서 judge를 **벤치마크로서** 봤다. MT-Bench가 잰 것은 "GPT-4 judge가 사람과 얼마나 일치하는가"였고, 답은 80\~87%였다. 그런데 그 숫자를 "judge가 15\~20%를 틀린다"는 결함으로만 읽으면 안 된다는 게 [#9](/blog/2026/mt-bench-to-arena/)의 결론이었다 — **사람\~사람 일치율도 딱 그 정도(81%)**였기 때문이다. judge가 못 맞추는 나머지는 두 부류로 갈린다. 정말 judge가 틀린 경우와, 원래 사람도 못 맞추는 애매한 경우. [#9](/blog/2026/mt-bench-to-arena/)는 이 둘을 가르는 게 "이후 judge 연구 전체의 화두"라고 미뤄뒀다. 이 글이 그 화두를 받는다.
+[#12](/blog/2026/mt-bench-to-arena/)에서 judge를 **벤치마크로서** 봤다. MT-Bench가 잰 것은 "GPT-4 judge가 사람과 얼마나 일치하는가"였고, 답은 80\~87%였다. 그런데 그 숫자를 "judge가 15\~20%를 틀린다"는 결함으로만 읽으면 안 된다는 게 [#12](/blog/2026/mt-bench-to-arena/)의 결론이었다 — **사람\~사람 일치율도 딱 그 정도(81%)**였기 때문이다. judge가 못 맞추는 나머지는 두 부류로 갈린다. 정말 judge가 틀린 경우와, 원래 사람도 못 맞추는 애매한 경우. [#12](/blog/2026/mt-bench-to-arena/)는 이 둘을 가르는 게 "이후 judge 연구 전체의 화두"라고 미뤄뒀다. 이 글이 그 화두를 받는다.
 
 관점을 바꿔보면 질문이 더 명확해진다. judge는 **측정 도구(measuring instrument)**다. 온도계나 저울처럼, 참값을 정확히 재지 못하고 어느 정도의 편향(bias)과 분산(variance)을 갖는다. [#1](/blog/2026/what-is-evaluation/)의 언어로 말하면, judge라는 조작화(operationalization)에는 측정 오차가 낀다. 다른 점은 이 측정 도구가 **아주 값싸다**는 것이다. 사람 라벨러를 고용하는 데는 시간과 돈이 들지만, GPT-4를 10,000번 호출하는 데는 상대적으로 얼마 들지 않는다.
 
@@ -23,7 +23,7 @@ related_posts: true
 
 답은 **Prediction-Powered Inference(PPI)** 다. 대량의 judge 라벨로 점추정치를 만들고, 소량의 사람 라벨로 그 판단이 얼마나 치우쳐 있는지(rectifier, 보정항)를 추정해 빼준다. 이 아이디어 하나가 이 글 전체를 관통한다. 순서는 다음과 같다.
 
-1. **설계로 상쇄할 수 있는 편향**은 [#9](/blog/2026/mt-bench-to-arena/)에서 이미 다뤘으니 표로만 정리하고 넘긴다.
+1. **설계로 상쇄할 수 있는 편향**은 [#12](/blog/2026/mt-bench-to-arena/)에서 이미 다뤘으니 표로만 정리하고 넘긴다.
 2. **Bradley-Terry(BT) 모형**을 다시 보되, 이번에는 "점수"가 아니라 **순위 자체의 불확실성**에 초점을 맞춘다.
 3. **PPI와 PPI++**를 유도부터 직접 검증한다 — 왜 불편추정량인지, 분산이 왜 줄어드는지.
 4. PPI를 실제 LLM 평가에 적용한 **AutoEval Done Right**(Boyeau et al., ICML 2025)를 읽는다.
@@ -44,7 +44,7 @@ $$
 - $$\text{bias}(X)$$: judge가 특정 응답에 대해 체계적으로 치우치는 정도 — position, verbosity, self-enhancement 같은 것들이 여기 들어간다
 - $$\varepsilon(X)$$: 평균 0인 순수한 잡음
 
-이 분해가 중요한 이유는, 이 두 성분에 **완전히 다른 처방**이 필요하기 때문이다. 잡음 $$\varepsilon$$은 표본을 늘리면 저절로 줄어든다($$1/\sqrt{n}$$). 하지만 편향 $$\text{bias}(X)$$는 표본을 아무리 늘려도 사라지지 않는다 — judge를 10만 번 불러도 여전히 3%p만큼 치우쳐 있다. [#15](/blog/2026/confidence-intervals/)가 다룰 신뢰구간 이론은 잡음을 다루는 도구이지, 편향을 다루는 도구가 아니다. 편향을 다루려면 편향의 **크기 자체를 추정**해서 빼줘야 한다. 이 글의 나머지는 전부 "편향을 어떻게 추정해서 빼는가"의 이야기다.
+이 분해가 중요한 이유는, 이 두 성분에 **완전히 다른 처방**이 필요하기 때문이다. 잡음 $$\varepsilon$$은 표본을 늘리면 저절로 줄어든다($$1/\sqrt{n}$$). 하지만 편향 $$\text{bias}(X)$$는 표본을 아무리 늘려도 사라지지 않는다 — judge를 10만 번 불러도 여전히 3%p만큼 치우쳐 있다. [#19](/blog/2026/confidence-intervals/)가 다룰 신뢰구간 이론은 잡음을 다루는 도구이지, 편향을 다루는 도구가 아니다. 편향을 다루려면 편향의 **크기 자체를 추정**해서 빼줘야 한다. 이 글의 나머지는 전부 "편향을 어떻게 추정해서 빼는가"의 이야기다.
 
 ## 값싼 대량 측정 + 비싼 소량 측정이라는 공통 문제 설정
 
@@ -60,13 +60,13 @@ PPI, AutoEval, Dorner et al.의 논문 세 편은 전부 같은 데이터 구조
 
 ## 1. judge 편향을 설계로 상쇄하기
 
-[#9](/blog/2026/mt-bench-to-arena/)에서 이미 자세히 다룬 세 가지 편향을 표로만 정리한다. 수치와 실험 설계는 전부 [#9](/blog/2026/mt-bench-to-arena/)에 있다.
+[#12](/blog/2026/mt-bench-to-arena/)에서 이미 자세히 다룬 세 가지 편향을 표로만 정리한다. 수치와 실험 설계는 전부 [#12](/blog/2026/mt-bench-to-arena/)에 있다.
 
-| 편향 종류             | 무엇이 문제인가                                                                                  | 설계적 완화책                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| Position bias         | 순서만 바꿔도 판정이 뒤집힌다([#9](/blog/2026/mt-bench-to-arena/): GPT-4도 35%는 뒤집힘)         | 양쪽 순서 모두 물어, 둘 다 이겨야 승리 인정(swap)              |
-| Verbosity bias        | 내용이 같아도 긴 답을 선호([#9](/blog/2026/mt-bench-to-arena/): GPT-3.5·Claude-v1 91.3% 속음)    | 길이 통제 회귀(AlpacaEval 2.0 LC), 길이 페널티 규칙(WildBench) |
-| Self-enhancement bias | judge가 자기 계열 모델을 우대([#9](/blog/2026/mt-bench-to-arena/): GPT-4 +10%p, Claude-v1 +25%p) | judge를 다양화·앙상블, 평가 대상과 다른 계열의 judge 사용      |
+| 편향 종류             | 무엇이 문제인가                                                                                   | 설계적 완화책                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Position bias         | 순서만 바꿔도 판정이 뒤집힌다([#12](/blog/2026/mt-bench-to-arena/): GPT-4도 35%는 뒤집힘)         | 양쪽 순서 모두 물어, 둘 다 이겨야 승리 인정(swap)              |
+| Verbosity bias        | 내용이 같아도 긴 답을 선호([#12](/blog/2026/mt-bench-to-arena/): GPT-3.5·Claude-v1 91.3% 속음)    | 길이 통제 회귀(AlpacaEval 2.0 LC), 길이 페널티 규칙(WildBench) |
+| Self-enhancement bias | judge가 자기 계열 모델을 우대([#12](/blog/2026/mt-bench-to-arena/): GPT-4 +10%p, Claude-v1 +25%p) | judge를 다양화·앙상블, 평가 대상과 다른 계열의 judge 사용      |
 
 이 완화책들의 공통점을 짚어두자. 전부 **편향이 만들어낼 수 있는 최악의 영향에 상한을 씌우거나, 편향의 원인을 설계에서 미리 차단**하는 것이다. 편향의 크기를 정확히 추정해서 제거하는 것은 아니다. 스왑을 걸어도 남는 편향, 길이를 통제해도 남는 편향은 여전히 있다. 그 **남은 편향**을 통계로 추정해 없애는 것이 이 글의 나머지 전부다.
 
@@ -74,7 +74,7 @@ PPI, AutoEval, Dorner et al.의 논문 세 편은 전부 같은 데이터 구조
 
 ### BT 모형과 로지스틱 회귀의 동형성
 
-BT 모형은 [#9](/blog/2026/mt-bench-to-arena/)에서 이미 도입했다. 모델 $$i$$가 모델 $$j$$를 이길 확률을 잠재 강도(latent strength) $$\beta$$로 모형화한다.
+BT 모형은 [#12](/blog/2026/mt-bench-to-arena/)에서 이미 도입했다. 모델 $$i$$가 모델 $$j$$를 이길 확률을 잠재 강도(latent strength) $$\beta$$로 모형화한다.
 
 $$
 P(i \succ j) = \frac{e^{\beta_i}}{e^{\beta_i} + e^{\beta_j}}
@@ -99,11 +99,11 @@ $$
 
 ### Elo가 왜 문제인가 (요약)
 
-[#9](/blog/2026/mt-bench-to-arena/)에서 자세히 다뤘으니 결론만 다시 쓴다. Elo는 경기가 끝날 때마다 온라인으로 갱신하는 방식이라, **투표를 처리하는 순서에 최종값이 의존**한다. LLM은 체스 선수와 달리 가중치가 고정된 정적 객체이므로, "최근 경기에 더 큰 가중치"라는 Elo의 전제 자체가 맞지 않는다. BT MLE는 전체 데이터를 한 번에(batch) 보고 적합하므로 **순서 불변**이고, 점근적 표준오차 이론이 갖춰져 있어 원칙에 맞는 신뢰구간을 낼 수 있다. Chatbot Arena가 온라인 Elo를 버리고 BT MLE로 옮겨간 이유가 이것이다.
+[#12](/blog/2026/mt-bench-to-arena/)에서 자세히 다뤘으니 결론만 다시 쓴다. Elo는 경기가 끝날 때마다 온라인으로 갱신하는 방식이라, **투표를 처리하는 순서에 최종값이 의존**한다. LLM은 체스 선수와 달리 가중치가 고정된 정적 객체이므로, "최근 경기에 더 큰 가중치"라는 Elo의 전제 자체가 맞지 않는다. BT MLE는 전체 데이터를 한 번에(batch) 보고 적합하므로 **순서 불변**이고, 점근적 표준오차 이론이 갖춰져 있어 원칙에 맞는 신뢰구간을 낼 수 있다. Chatbot Arena가 온라인 Elo를 버리고 BT MLE로 옮겨간 이유가 이것이다.
 
 ### 순위의 신뢰구간 — 점수가 아니라 순위를 부트스트랩한다
 
-여기서부터 [#9](/blog/2026/mt-bench-to-arena/)와 다른 이야기를 한다. [#9](/blog/2026/mt-bench-to-arena/)는 **BT 계수 $$\beta$$ 자체의 CI**(피벗 부트스트랩, 샌드위치 표준오차)를 다뤘다. 이 글이 묻는 건 한 단계 더 실무적인 질문이다 — **"이 모델이 저 모델보다 순위가 높다"고 말해도 되는가?**
+여기서부터 [#12](/blog/2026/mt-bench-to-arena/)와 다른 이야기를 한다. [#12](/blog/2026/mt-bench-to-arena/)는 **BT 계수 $$\beta$$ 자체의 CI**(피벗 부트스트랩, 샌드위치 표준오차)를 다뤘다. 이 글이 묻는 건 한 단계 더 실무적인 질문이다 — **"이 모델이 저 모델보다 순위가 높다"고 말해도 되는가?**
 
 이 질문에 답하려면 점수의 CI를 순위의 CI로 바꿔야 한다. 절차는 다음과 같다.
 
@@ -122,7 +122,7 @@ $$
 
 C는 거의 항상 3위다(85%) — C의 순위는 확정적으로 말할 수 있다. 하지만 A와 B는 어떤가. A가 1위인 재표본이 62%지만, B가 1위인 재표본도 35%나 된다. 즉 **재표본의 3분의 1 이상에서 "B가 A보다 낫다"는 결론이 나온다.** 이 상황에서 "A가 B보다 낫다"고 자신 있게 말할 수 없다. 점 추정치만 보면 A가 앞서지만, 순위 분포를 보면 그 차이가 잡음 안에 있다.
 
-이것이 바로 [#9](/blog/2026/mt-bench-to-arena/)의 **separability(변별력)** 지표가 정량화하는 것과 정확히 같은 현상이다 — 두 모델의 신뢰구간이 겹치면 순위를 말할 근거가 없다. Arena-Hard-Auto의 separability 87.4%, MT-Bench의 22.6%라는 숫자는 바로 이런 부트스트랩(또는 그와 동등한 해석적 CI) 계산의 결과물이다. 점수의 CI를 내는 것과 순위의 CI를 내는 것은 서로 다른 질문이 아니라 **같은 부트스트랩 절차의 두 가지 요약**일 뿐이다.
+이것이 바로 [#12](/blog/2026/mt-bench-to-arena/)의 **separability(변별력)** 지표가 정량화하는 것과 정확히 같은 현상이다 — 두 모델의 신뢰구간이 겹치면 순위를 말할 근거가 없다. Arena-Hard-Auto의 separability 87.4%, MT-Bench의 22.6%라는 숫자는 바로 이런 부트스트랩(또는 그와 동등한 해석적 CI) 계산의 결과물이다. 점수의 CI를 내는 것과 순위의 CI를 내는 것은 서로 다른 질문이 아니라 **같은 부트스트랩 절차의 두 가지 요약**일 뿐이다.
 
 ### 여력이 되면: 이행성 위반
 
@@ -348,7 +348,7 @@ $$
 \tilde\pi - \beta < 0.5 \;\Longleftrightarrow\; \beta > \tilde\pi - 0.5 = 0.8(\pi-0.5)
 $$
 
-$$\pi=0.55$$인 경우 $$\beta > 0.8 \times 0.05 = 0.04$$ — 즉 **4%p의 비대칭 편향만으로도** 순위가 뒤집힌다. 참값 격차가 더 좁으면(예: $$\pi=0.52$$, 2%p 차이) 뒤집는 데 필요한 편향은 $$\beta > 0.8\times0.02=0.016$$, 겨우 1.6%p면 충분하다. 이 숫자를 [#9](/blog/2026/mt-bench-to-arena/)에서 실측한 self-enhancement bias 크기(GPT-4 +10%p, Claude-v1 +25%p)와 나란히 놓으면 결론이 분명해진다 — **실제로 관측되는 판정자 편향의 크기는, 웬만한 실전 모델 격차를 뒤집기에 충분하고도 남는다.** judge 정확도가 아무리 높아도(90%든 95%든), 그 오차가 대칭이 아니라면 순위 보장은 없다.
+$$\pi=0.55$$인 경우 $$\beta > 0.8 \times 0.05 = 0.04$$ — 즉 **4%p의 비대칭 편향만으로도** 순위가 뒤집힌다. 참값 격차가 더 좁으면(예: $$\pi=0.52$$, 2%p 차이) 뒤집는 데 필요한 편향은 $$\beta > 0.8\times0.02=0.016$$, 겨우 1.6%p면 충분하다. 이 숫자를 [#12](/blog/2026/mt-bench-to-arena/)에서 실측한 self-enhancement bias 크기(GPT-4 +10%p, Claude-v1 +25%p)와 나란히 놓으면 결론이 분명해진다 — **실제로 관측되는 판정자 편향의 크기는, 웬만한 실전 모델 격차를 뒤집기에 충분하고도 남는다.** judge 정확도가 아무리 높아도(90%든 95%든), 그 오차가 대칭이 아니라면 순위 보장은 없다.
 
 ## 3. 몇 개의 사람 라벨이 필요한가 — 수확 체감 지점
 
@@ -395,13 +395,13 @@ judge는 판사가 아니라 **측정 도구**다. 모든 측정 도구는 편�
 
 정리하면 실무 처방은 세 갈래다.
 
-1. **편향은 설계로 일부 상쇄한다.** 순서 스왑, 길이 통제, 판정자 다양화 — [#9](/blog/2026/mt-bench-to-arena/)가 다룬 것들이다. 이걸로 편향의 최악의 영향에 상한을 씌울 수 있지만, 편향을 정확히 제거하지는 못한다.
+1. **편향은 설계로 일부 상쇄한다.** 순서 스왑, 길이 통제, 판정자 다양화 — [#12](/blog/2026/mt-bench-to-arena/)가 다룬 것들이다. 이걸로 편향의 최악의 영향에 상한을 씌울 수 있지만, 편향을 정확히 제거하지는 못한다.
 2. **남은 편향은 소량의 사람 라벨로 추정해 빼낸다.** 이것이 PPI/PPI++다. rectifier라는 아주 단순한 산술(judge와 사람의 차이를 소량에서 평균 낸 것)이, 대량 judge 데이터의 편향을 통째로 상쇄한다. AutoEval Done Right가 보여준 20\~35%의 ESS 개선은, 이 아이디어를 실전 LLM 평가에 그대로 적용해서 얻은 결과다.
 3. **judge만으로 사람 라벨을 완전히 대체할 수는 없다.** Dorner et al.의 정리가 그 상한을 정확히 못 박는다 — judge가 평가 대상보다 강하지 않은 한(바로 프론티어 평가가 처한 상황), 어떤 디바이어싱 방법을 써도 얻을 수 있는 최선은 "사람 라벨을 두 배로 모은 것"과 같은 정밀도다. $$N$$을 무한히 늘려도 이 상한은 깨지지 않는다.
 
 **가장 실용적인 한 줄**: judge로 전부 채점하더라도, **사람 라벨 몇 백 개를 반드시 남겨두라.** 그것이 rectifier를 계산할 유일한 재료이고, 결국 유효한 신뢰구간의 유일한 근거다. judge에게 채점을 전부 맡기고 사람 라벨을 하나도 남기지 않는 순간, 이 글에서 본 모든 통계적 장치는 무력해진다 — 편향이 얼마인지조차 알 방법이 없기 때문이다.
 
-judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-arena/))에서, judge를 추정 문제로 다루는 이야기(이 글)까지 왔다. 다음 두 편은 이 시리즈의 마지막 갈래다 — [#20](/blog/2026/contamination-reproducibility/)은 오염과 재현성, [#21](/blog/2026/safety-evaluation-statistics/)은 안전 평가에 특화된 통계(희귀사건 추정, calibration)를 다루며 시리즈를 닫는다.
+judge를 벤치마크로 검증하는 이야기([#12](/blog/2026/mt-bench-to-arena/))에서, judge를 추정 문제로 다루는 이야기(이 글)까지 왔다. 다음 두 편은 이 시리즈의 마지막 갈래다 — [#24](/blog/2026/contamination-reproducibility/)은 오염과 재현성, [#25](/blog/2026/safety-evaluation-statistics/)은 안전 평가에 특화된 통계(희귀사건 추정, calibration)를 다루며 시리즈를 닫는다.
 
 # 참고 문헌
 
@@ -411,7 +411,7 @@ judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-aren
 - Dorner, F. E., Nastl, V. Y., and Hardt, M., 2024. [Limits to Scalable Evaluation at the Frontier: LLM as Judge Won't Beat Twice the Data](https://arxiv.org/abs/2410.13341) (ICLR 2025 Oral).
 - Lee, C., Zeng, T., Jeong, J., Sohn, J., and Lee, K., 2025. [How to Correctly Report LLM-as-a-Judge Evaluations](https://arxiv.org/abs/2511.21140). arXiv:2511.21140.
 - Feng, C., Shen, M., Balashankar, A., Gerner-Beuerle, C., and Rodrigues, M. R. D., 2026. [Noisy but Valid: Robust Statistical Evaluation of LLMs with Imperfect Judges](https://arxiv.org/abs/2601.20913) (ICLR 2026).
-- Zheng, L. et al., 2023. [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685) (NeurIPS 2023 D&B) — [#9](/blog/2026/mt-bench-to-arena/)에서 상세히 다룬 편향 실험의 원 논문.
+- Zheng, L. et al., 2023. [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685) (NeurIPS 2023 D&B) — [#12](/blog/2026/mt-bench-to-arena/)에서 상세히 다룬 편향 실험의 원 논문.
 - Chiang, W.-L. et al., 2024. [Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference](https://arxiv.org/abs/2403.04132) (ICML 2024).
 - Chaganty, A. T., Mussman, S., and Liang, P., 2018. [The price of debiasing automatic metrics in natural language evaluation](https://arxiv.org/abs/1807.02202) — PPI와 동등한 아이디어의 초기 형태.
 - 이행성 위반 관련: [Prompt Perturbation for Reliable LLM Evaluation over Comparison Graphs](https://arxiv.org/abs/2606.17634); [The Covariate-Assisted Bayesian Intransitive Bradley-Terry Model via Combinatorial Hodge Theory](https://arxiv.org/abs/2601.07158); [Beyond Bradley-Terry Models: A General Preference Model for Language Model Alignment](https://arxiv.org/abs/2410.02197).
@@ -420,18 +420,21 @@ judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-aren
 
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 열아홉 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 스물세 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="3">
+<ol start="6">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -440,17 +443,18 @@ judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-aren
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="7">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH·HELM</li>
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
   <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
   <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
 </ol>
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="12">
+<ol start="16">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -458,7 +462,7 @@ judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-aren
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="15">
+<ol start="19">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -467,10 +471,10 @@ judge를 벤치마크로 검증하는 이야기([#9](/blog/2026/mt-bench-to-aren
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="19">
+<ol start="23">
   <li><strong>(현재 글)</strong> judge를 통계로 다루기 — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 21편으로 구성된다.
+본 시리즈는 25편으로 구성된다.

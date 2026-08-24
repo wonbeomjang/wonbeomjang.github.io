@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "척도와 허용 연산: Likert 평균을 내도 되는가"
-date: 2026-08-24 09:03:00 +0900
-description: "LLM 평가 체계 시리즈 #3 — Likert 점수는 순서척도인데, 우리는 그걸 평균 내고 t-검정을 돌린다. 언제 괜찮고 언제 위험한가"
+date: 2026-08-24 09:06:00 +0900
+description: "LLM 평가 체계 시리즈 #6 — Likert 점수는 순서척도인데, 우리는 그걸 평균 내고 t-검정을 돌린다. 언제 괜찮고 언제 위험한가"
 categories: [paper]
 tags: [evaluation, measurement, likert-scale, ordinal-data, best-worst-scaling, statistics, paper]
 giscus_comments: true
@@ -26,7 +26,7 @@ related_posts: true
 3. **핵심 반례**: 평균이 3.0으로 똑같은 두 평가 결과를 만들 수 있다. 하나는 "다들 그저 그런" 모델이고, 다른 하나는 "반은 완벽하고 반은 최악인" 모델이다. 안전 평가에서 후자를 놓치면 사고가 난다.
 4. **대안**: 중앙값과 분위수, 순위 상관(Spearman, Kendall), 그리고 최근 주목받는 Best-Worst Scaling — 절대 점수 대신 상대 비교로 척도 사용 편차 자체를 지운다.
 
-이 글은 시리즈 2부("무엇을 숫자로 만드나 — 평가 metric")의 첫 편이다. [#1](/blog/2026/what-is-evaluation/)이 "우리가 재고 싶은 것과 실제로 재는 것의 간극"을 다뤘다면, 이 글은 그 간극이 **숫자를 만드는 첫 단계**, 즉 척도 설계에서부터 이미 벌어질 수 있다는 것을 보인다. 이어지는 [#4 분류 지표](/blog/2026/classification-metrics/), [#5 생성 지표](/blog/2026/generation-metrics/)가 다룰 모든 지표는 결국 이 척도 문제 위에 서 있다.
+이 글은 시리즈 2부("무엇을 숫자로 만드나 — 평가 metric")의 첫 편이다. [#1](/blog/2026/what-is-evaluation/)이 "우리가 재고 싶은 것과 실제로 재는 것의 간극"을 다뤘다면, 이 글은 그 간극이 **숫자를 만드는 첫 단계**, 즉 척도 설계에서부터 이미 벌어질 수 있다는 것을 보인다. 이어지는 [#7 분류 지표](/blog/2026/classification-metrics/), [#8 생성 지표](/blog/2026/generation-metrics/)가 다룰 모든 지표는 결국 이 척도 문제 위에 서 있다.
 
 # Background
 
@@ -104,7 +104,7 @@ Stevens와 Norman 둘 다 옳고 그름을 떠나서, 평균이라는 통계량 
 
 두 모델의 평균 점수는 **똑같이 3.0**이다. 통계 보고서에 "모델 A: 3.0, 모델 B: 3.0, 유의한 차이 없음"이라고 적힌다면, 이 둘을 같은 품질의 모델로 취급하게 된다.
 
-하지만 실제로는 완전히 다른 모델이다. A는 항상 "그저 그런" 응답을 낸다. B는 절반의 확률로 완벽하고(5점), 절반의 확률로 심각하게 실패한다(1점). 안전 평가 맥락에서 B는 "가끔 심각하게 실패하는 모델"이고, 이 실패가 유해 콘텐츠 생성이나 위험한 조언이라면 평균 3.0이라는 숫자는 이 위험을 완전히 감춘다. 안전성 평가에서는 평균이 아니라 **꼬리(tail)**를 봐야 하는 이유가 여기 있다 — 이 주제는 시리즈 후반 [#21 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)에서 희귀사건 추정과 함께 더 깊이 다룬다.
+하지만 실제로는 완전히 다른 모델이다. A는 항상 "그저 그런" 응답을 낸다. B는 절반의 확률로 완벽하고(5점), 절반의 확률로 심각하게 실패한다(1점). 안전 평가 맥락에서 B는 "가끔 심각하게 실패하는 모델"이고, 이 실패가 유해 콘텐츠 생성이나 위험한 조언이라면 평균 3.0이라는 숫자는 이 위험을 완전히 감춘다. 안전성 평가에서는 평균이 아니라 **꼬리(tail)**를 봐야 하는 이유가 여기 있다 — 이 주제는 시리즈 후반 [#25 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)에서 희귀사건 추정과 함께 더 깊이 다룬다.
 
 이 반례를 숫자로 정확히 풀어내는 계산은 아래 Experiments 절에서 한다.
 
@@ -203,7 +203,7 @@ $$
 - $$\sigma$$: 로지스틱 함수. $$\beta_i - \beta_j$$가 클수록 $$i$$가 $$j$$를 이길 확률이 1에 가까워진다.
 - 여러 쌍대비교 결과가 주어지면 최대우도추정(MLE)으로 모든 $$\beta$$를 동시에 추정한다.
 
-이 모델이 중요한 이유는, 순서만 있는 pairwise 승패 기록으로부터 **등간에 가까운 연속 점수**($$\beta$$)를 복원한다는 데 있다. 이 시리즈에서는 [#9 MT-Bench에서 Arena까지](/blog/2026/mt-bench-to-arena/)가 Chatbot Arena에서 Elo 점수를 BT MLE로 교체한 이유(순서 의존성 제거)를 다루고, [#19 judge를 통계로 다루기](/blog/2026/judge-statistics/)가 judge의 쌍대비교 신뢰도를 BT와 함께 더 깊이 다룬다. 여기서는 "순서척도 문제를 근본적으로 우회하는 한 갈래가 pairwise + BT"라는 것만 짚고 넘어간다.
+이 모델이 중요한 이유는, 순서만 있는 pairwise 승패 기록으로부터 **등간에 가까운 연속 점수**($$\beta$$)를 복원한다는 데 있다. 이 시리즈에서는 [#12 MT-Bench에서 Arena까지](/blog/2026/mt-bench-to-arena/)가 Chatbot Arena에서 Elo 점수를 BT MLE로 교체한 이유(순서 의존성 제거)를 다루고, [#23 judge를 통계로 다루기](/blog/2026/judge-statistics/)가 judge의 쌍대비교 신뢰도를 BT와 함께 더 깊이 다룬다. 여기서는 "순서척도 문제를 근본적으로 우회하는 한 갈래가 pairwise + BT"라는 것만 짚고 넘어간다.
 
 ## 척도 사용 편차와 구성개념 무관 분산
 
@@ -216,7 +216,7 @@ BWS와 pairwise 비교가 매력적인 진짜 이유는 신뢰도 수치가 아�
 - **평가자별 z-정규화**: 각 평가자의 점수를 그 평가자 자신의 평균과 표준편차로 표준화한다. "이 평가자 기준으로 평균보다 얼마나 높은가"로 바꾸면, 평가자마다 다른 척도 사용 폭이 어느 정도 상쇄된다.
 - **순위 변환**: 각 평가자가 매긴 점수를 절대값 대신 그 평가자 안에서의 순위로 바꾼다. Spearman·Kendall 상관과 자연스럽게 맞물린다.
 
-LLM judge도 이 문제에서 자유롭지 않다. 여러 LLM 평가 연구에서 judge가 매기는 점수가 척도 상단(예: 5점 만점에 4\~5점)에 쏠리는 현상이 반복 보고된다 — judge는 사람 평가자와 달리 한 명(혹은 한 모델)이 전체를 채점하므로 개인차라는 잡음은 없지만, 그 대신 **모델 하나의 관대함(leniency) 편향**이 데이터셋 전체에 체계적으로 깔린다는 점이 다르다. 사람 평가자 집단의 이질적인 척도 사용 편차가 judge 한 명의 동질적인(그러나 여전히 구성개념과 무관한) 편향으로 형태만 바뀌는 셈이다. 이 주제는 [#19 judge를 통계로 다루기](/blog/2026/judge-statistics/)에서 위치·장황함·자기선호 편향과 함께 정식으로 다룬다.
+LLM judge도 이 문제에서 자유롭지 않다. 여러 LLM 평가 연구에서 judge가 매기는 점수가 척도 상단(예: 5점 만점에 4\~5점)에 쏠리는 현상이 반복 보고된다 — judge는 사람 평가자와 달리 한 명(혹은 한 모델)이 전체를 채점하므로 개인차라는 잡음은 없지만, 그 대신 **모델 하나의 관대함(leniency) 편향**이 데이터셋 전체에 체계적으로 깔린다는 점이 다르다. 사람 평가자 집단의 이질적인 척도 사용 편차가 judge 한 명의 동질적인(그러나 여전히 구성개념과 무관한) 편향으로 형태만 바뀌는 셈이다. 이 주제는 [#23 judge를 통계로 다루기](/blog/2026/judge-statistics/)에서 위치·장황함·자기선호 편향과 함께 정식으로 다룬다.
 
 ## Likert 척도 설계: 단계 수와 중립점
 
@@ -383,9 +383,9 @@ Stevens(1946)의 원칙과 Norman(2010)의 반론은 둘 다 옳다 — 다만 �
 
 이 글의 핵심 반례가 보여준 것은 더 근본적이다. 평균은 물론이고 **중앙값조차 두 극단적으로 다른 분포를 구별하지 못할 수 있다.** "전원 3점"과 "절반은 1점, 절반은 5점"은 평균도 중앙값도 3.0으로 동일하다. 이 둘을 가르는 것은 분산과 최빈값의 개수뿐이다. 안전 평가에서는 이 차이가 생사를 가른다 — 가끔 심각하게 실패하는 모델을 "평균적으로 괜찮은 모델"로 오분류하는 것이야말로 통계가 저지를 수 있는 가장 위험한 실수다.
 
-대안은 이미 갖춰져 있다. 중앙값·분위수로 분포를 요약하고, Spearman·Kendall로 단조 관계를 재고, 가능하다면 애초에 절대 점수 대신 Best-Worst Scaling이나 pairwise 비교로 척도 사용 편차 자체를 설계 단계에서 제거하는 것이다. 이 중 마지막 두 가지, 즉 상대 비교를 잠재 점수로 복원하는 방법(Bradley-Terry)과 그것을 실제 벤치마크·아레나에 적용한 사례는 [#9](/blog/2026/mt-bench-to-arena/)와 [#19](/blog/2026/judge-statistics/)에서 이어진다.
+대안은 이미 갖춰져 있다. 중앙값·분위수로 분포를 요약하고, Spearman·Kendall로 단조 관계를 재고, 가능하다면 애초에 절대 점수 대신 Best-Worst Scaling이나 pairwise 비교로 척도 사용 편차 자체를 설계 단계에서 제거하는 것이다. 이 중 마지막 두 가지, 즉 상대 비교를 잠재 점수로 복원하는 방법(Bradley-Terry)과 그것을 실제 벤치마크·아레나에 적용한 사례는 [#12](/blog/2026/mt-bench-to-arena/)와 [#23](/blog/2026/judge-statistics/)에서 이어진다.
 
-한계도 분명히 남는다. 이 글에서 다룬 대안들은 전부 "순위 정보를 안전하게 다루는 법"이지, 순서척도 데이터에서 잃어버린 등간 정보를 되살려주지는 못한다. 그리고 평균을 완전히 포기하는 것이 항상 옳은 것도 아니다 — 표본이 크고 효과가 뚜렷한 상황에서까지 중앙값만 고집하면 검정력을 불필요하게 낭비한다. 다음 편 [#4 분류 지표](/blog/2026/classification-metrics/)는 척도 문제에서 한 걸음 나아가, 이진·다중 분류 상황에서 accuracy 하나가 얼마나 쉽게 거짓말을 하는지를 다룬다.
+한계도 분명히 남는다. 이 글에서 다룬 대안들은 전부 "순위 정보를 안전하게 다루는 법"이지, 순서척도 데이터에서 잃어버린 등간 정보를 되살려주지는 못한다. 그리고 평균을 완전히 포기하는 것이 항상 옳은 것도 아니다 — 표본이 크고 효과가 뚜렷한 상황에서까지 중앙값만 고집하면 검정력을 불필요하게 낭비한다. 다음 편 [#7 분류 지표](/blog/2026/classification-metrics/)는 척도 문제에서 한 걸음 나아가, 이진·다중 분류 상황에서 accuracy 하나가 얼마나 쉽게 거짓말을 하는지를 다룬다.
 
 # 참고 문헌
 
@@ -400,18 +400,21 @@ Stevens(1946)의 원칙과 Norman(2010)의 반론은 둘 다 옳다 — 다만 �
 
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 세 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 여섯 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
+  <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
+  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
+  <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="3">
+<ol start="6">
   <li><strong>(현재 글)</strong> 척도와 허용 연산 — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -420,17 +423,18 @@ Stevens(1946)의 원칙과 Norman(2010)의 반론은 둘 다 옳다 — 다만 �
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="7">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH·HELM</li>
+<ol start="10">
+  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
   <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
   <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
+  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
 </ol>
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="12">
+<ol start="16">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -438,7 +442,7 @@ Stevens(1946)의 원칙과 Norman(2010)의 반론은 둘 다 옳다 — 다만 �
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="15">
+<ol start="19">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -447,10 +451,10 @@ Stevens(1946)의 원칙과 Norman(2010)의 반론은 둘 다 옳다 — 다만 �
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="19">
+<ol start="23">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 21편으로 구성된다.
+본 시리즈는 25편으로 구성된다.
