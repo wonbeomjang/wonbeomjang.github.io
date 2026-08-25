@@ -194,7 +194,7 @@ RLHF Reward 설계 시리즈 46편이 이미 **reward 4분류**를 세웠다. Ag
 
 순서에는 이유가 있다. 1부가 문제를 정의하면, 2부는 이 시리즈의 척추인 credit assignment를 정면으로 푼다. 3부는 그렇게 나눈 credit을 애초에 어디서 얻어올 것인가로 옮겨가고, 4부는 그 원칙을 실제 도메인에 적용한다. 5부는 그 적용 과정에서 생기는 새로운 실패를 다루고, 6부는 이 전부를 프론티어 모델의 실제 학습 레시피로 종합한다.
 
-**1부 — 왜 에이전트는 다른가.** 지금 이 글([#1](/blog/2026/agentic-rl-landscape/))이 단일 턴과 agentic을 가르는 축을 정의했다. [#2 공을 어디에 돌릴 것인가](/blog/2026/credit-assignment-survey/)는 credit assignment 방법론 69편의 지도를 그리고, [#3 멀티턴 RL 실무 가이드](/blog/2026/multi-turn-rl-practice/)는 환경·보상·정책 세 축에서 실제로 뭐가 작동하는지 실험으로 확인한다.
+**1부 — 왜 에이전트는 다른가.** 지금 이 글(#1)이 단일 턴과 agentic을 가르는 축을 정의했다. [#2 공을 어디에 돌릴 것인가](/blog/2026/credit-assignment-survey/)는 credit assignment 방법론 69편의 지도를 그리고, [#3 멀티턴 RL 실무 가이드](/blog/2026/multi-turn-rl-practice/)는 환경·보상·정책 세 축에서 실제로 뭐가 작동하는지 실험으로 확인한다.
 
 **2부 — credit assignment, 공을 어디에 돌릴 것인가.** 이 시리즈의 척추다. [#4 결과만으로는 부족하다](/blog/2026/outcome-vs-process-agentic/)가 outcome reward의 한계를 다시 짚고, [#5 턴 단위로 공을 나눈다](/blog/2026/turn-level-reward/), [#6 스텝을 단위로 삼는다](/blog/2026/step-level-credit/), [#7 토큰과 세그먼트로 더 잘게](/blog/2026/token-segment-credit/)가 입도를 하나씩 낮춰가며 credit을 나누는 방법을 다룬다. [#8 shaping은 약인가 독인가](/blog/2026/reward-shaping-agentic/)는 이 과정에서 흔히 쓰는 reward shaping이 편향을 만드는 경우를 짚는다.
 
