@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "도구 호출을 어떻게 채점하나 — ToolRL·ToolRM"
-date: 2026-08-25 09:10:00 +0900
-description: "Agentic RL 설계 시리즈 #10 — 도구 호출의 형식·선택·파라미터를 규칙으로, 필요성·결과 활용을 judge로 채점하는 두 축을 ToolRL의 reward ablation과 ToolRM의 outcome reward model로 뜯어본다"
+date: 2026-08-11 09:53:00 +0900
+description: "RL Reward 설계 시리즈 #53 — 도구 호출의 형식·선택·파라미터를 규칙으로, 필요성·결과 활용을 judge로 채점하는 두 축을 ToolRL의 reward ablation과 ToolRM의 outcome reward model로 뜯어본다"
 categories: [paper]
 tags: [agentic-rl, tool-use, reward-design, grpo, reward-model, paper]
 giscus_comments: true
@@ -15,7 +15,7 @@ related_posts: true
 
 # Introduction
 
-[#9](/blog/2026/environment-as-reward/)에서는 "환경에게 묻는다"를 다뤘다. 코드를 실행하면 테스트가 통과하는지, 검색 결과가 정답을 담고 있는지 — 환경이 실제로 답을 알고 있을 때, reward는 그 답과 대조해서 나온다. 그런데 도구 호출은 실행되기 _전에도_ 채점할 거리가 있다. `search(query="")` 처럼 파라미터가 비어 있는 호출, 계산기가 필요한데 검색을 부르는 호출, 형식 자체가 깨져서 파서가 못 읽는 호출 — 이런 건 환경이 답을 주기도 전에 이미 "잘못된 호출"이다.
+[#52](/blog/2026/environment-as-reward/)에서는 "환경에게 묻는다"를 다뤘다. 코드를 실행하면 테스트가 통과하는지, 검색 결과가 정답을 담고 있는지 — 환경이 실제로 답을 알고 있을 때, reward는 그 답과 대조해서 나온다. 그런데 도구 호출은 실행되기 _전에도_ 채점할 거리가 있다. `search(query="")` 처럼 파라미터가 비어 있는 호출, 계산기가 필요한데 검색을 부르는 호출, 형식 자체가 깨져서 파서가 못 읽는 호출 — 이런 건 환경이 답을 주기도 전에 이미 "잘못된 호출"이다.
 
 이 편은 그 지점을 다룬다. **도구 호출 그 자체를 어떻게 채점하는가.** 결론부터 정리하면 두 논문이 서로 다른 절반을 채운다.
 
@@ -38,7 +38,7 @@ related_posts: true
 
 표의 위 세 줄과 아래 두 줄 사이에 선을 하나 그을 수 있다. **형식·도구 선택·파라미터는 정답(ground truth)이 있으면 규칙만으로 채점된다** — 문자열이 일치하는지, 딕셔너리 키가 겹치는지 세면 끝난다. 반면 **필요성과 결과 활용은 정답 하나로 환원되지 않는다.** "이 호출이 꼭 필요했나"는 대화 맥락 전체를 봐야 판단할 수 있고, "결과를 제대로 썼나"는 최종 응답의 의미를 읽어야 한다. 둘 다 판정(judgment)이 필요하다.
 
-이건 이 블로그의 RLHF Reward 설계 시리즈에서 다룬 [reward 4분류](/blog/2026/reward-model-design/) — ①규칙 ②스칼라 RM ③reference judge ④생성형 RM(GRM) — 이 하나의 도구 호출 채점 안에서 그대로 재현되는 지점이다. 형식·선택·파라미터는 ①로 끝나지만, 필요성·결과 활용은 ③이나 ④로 넘어가야 한다. 이 글에서 볼 ToolRL은 ①에 해당하는 세 축(정확히는 형식+정확성)만 정교하게 다듬은 사례고, ToolRM은 정답이 없는 상황에서 ①을 대신할 ②(도메인 특화 scalar RM)를 학습시킨 사례다. 다섯 축을 다 커버하는 judge형 채점은 다음 편([#11](/blog/2026/agentic-judge-rubric/))에서 다룬다.
+이건 이 블로그의 RL Reward 설계 시리즈에서 다룬 [reward 4분류](/blog/2026/reward-model-design/) — ①규칙 ②스칼라 RM ③reference judge ④생성형 RM(GRM) — 이 하나의 도구 호출 채점 안에서 그대로 재현되는 지점이다. 형식·선택·파라미터는 ①로 끝나지만, 필요성·결과 활용은 ③이나 ④로 넘어가야 한다. 이 글에서 볼 ToolRL은 ①에 해당하는 세 축(정확히는 형식+정확성)만 정교하게 다듬은 사례고, ToolRM은 정답이 없는 상황에서 ①을 대신할 ②(도메인 특화 scalar RM)를 학습시킨 사례다. 다섯 축을 다 커버하는 judge형 채점은 다음 편([#54](/blog/2026/agentic-judge-rubric/))에서 다룬다.
 
 # Method
 
@@ -78,7 +78,7 @@ $$\mathcal{R}_{\text{correct}} = 6 \cdot \frac{R_{\max}}{S_{\max}} - 3 \in [-3, 
 
 왜 도구 이름 하나, 파라미터 하나까지 쪼갰을까. 수학 문제처럼 "정답 하나 맞았다/틀렸다"로 채점하면, 도구 이름은 맞았는데 파라미터 하나만 틀린 호출과 모든 걸 틀린 호출이 똑같이 0점을 받는다. 이러면 모델 입장에서 "거의 다 맞는 방향"과 "완전히 엉뚱한 방향"을 구분할 신호가 없다. 세 항으로 쪼개면 "이름은 맞았으니 그 방향은 유지하고 파라미터만 고치면 된다"는 부분 정보가 gradient에 실린다.
 
-이 reward는 GRPO로 학습에 쓰인다. 쿼리 하나당 4개 응답을 샘플링해 그룹을 만들고, 그룹 내 평균·표준편차로 advantage를 정규화하는 GRPO 알고리즘 자체는 RLHF Reward 설계 시리즈 [GRPO 글](/blog/2026/grpo-deepseekmath/)에서 이미 다뤘으니 여기서는 reward 쪽만 본다. ToolRL은 KL 정규화를 빼고 온도 1.0으로 탐색 폭을 넓힌 cold-start 학습(SFT 없이 바로 GRPO)이 SFT로 초기화한 GRPO보다 일반화가 낫다는 것도 보인다 — SFT 초기화는 학습 reward는 더 빨리 오르지만 벤치마크 성능은 더 낮다. 훈련 reward가 높다고 일반화가 되는 게 아니라는 뜻이다.
+이 reward는 GRPO로 학습에 쓰인다. 쿼리 하나당 4개 응답을 샘플링해 그룹을 만들고, 그룹 내 평균·표준편차로 advantage를 정규화하는 GRPO 알고리즘 자체는 RL Reward 설계 시리즈 [GRPO 글](/blog/2026/grpo-deepseekmath/)에서 이미 다뤘으니 여기서는 reward 쪽만 본다. ToolRL은 KL 정규화를 빼고 온도 1.0으로 탐색 폭을 넓힌 cold-start 학습(SFT 없이 바로 GRPO)이 SFT로 초기화한 GRPO보다 일반화가 낫다는 것도 보인다 — SFT 초기화는 학습 reward는 더 빨리 오르지만 벤치마크 성능은 더 낮다. 훈련 reward가 높다고 일반화가 되는 게 아니라는 뜻이다.
 
 ### 학습 데이터와 본 결과 — SFT보다 낫고, PPO보다 안정적이다
 
@@ -218,7 +218,7 @@ ToolRM 논문은 자신들의 scalar RM을 ToolRL과 같은 GRPO 파이프라인
 
 ## 토이 예제 — 3턴 궤적을 다섯 축으로 채점하기
 
-논문 두 편의 수치를 확인했으니, 이제 [#8](/blog/2026/reward-shaping-agentic/)에서 예고한 "도구 호출 성공에 +점을 주면 남발한다"는 문제를 직접 계산으로 확인해보자.
+논문 두 편의 수치를 확인했으니, 이제 [#51](/blog/2026/reward-shaping-agentic/)에서 예고한 "도구 호출 성공에 +점을 주면 남발한다"는 문제를 직접 계산으로 확인해보자.
 
 **과제**: 사용자가 "여의도 근처 3만원 이하 파스타 맛집 추천하고, 예약 가능한 시간도 알려줘"라고 묻는다. 사용 가능한 도구는 `search_restaurant(location, cuisine, price_max)`와 `get_reservation_slots(restaurant_id, date)`, 그리고 이 과제와 무관한 `calculator(expression)`이다.
 
@@ -288,7 +288,7 @@ $$\text{score} = 0.4 \cdot \frac{\text{호출별 합}/\text{호출수}}{3} + 0.3
 
 이 편의 핵심은 한 문장으로 줄일 수 있다. **도구 호출은 다섯 개의 서로 다른 질문으로 쪼개서 채점해야 하고, 그중 절반(형식·선택·파라미터)은 규칙으로 충분하지만 나머지 절반(필요성·결과 활용)은 판정이 필요하다.** ToolRL은 규칙으로 채점되는 절반을 극한까지 정교하게 다듬어 보였다 — 세분화는 득이 되고, 길이 reward는 독이 되고, 정확성에는 형식보다 큰 가중치를 매끄럽게 실어야 한다는 세 가지 결론이 방대한 ablation으로 뒷받침된다. ToolRM은 그 규칙이 통하지 않는 상황(정답이 없는 롤아웃)에 대응하는 학습된 대체재를 제시했고, 실제로 정답이 있어야 하는 규칙 기반 reward와 대등한 성능을 정답 없이 냈다.
 
-두 논문 모두 아직 다루지 않은 게 있다 — "필요성"과 "결과 활용"을 이 글에서는 토이 예제로만 계산해봤을 뿐, 실제로 그걸 judge에게 시켰을 때 얼마나 신뢰할 수 있는지는 검증하지 않았다. 그 judge 채점 자체의 신뢰도와 루브릭 설계는 다음 편([#11](/blog/2026/agentic-judge-rubric/))의 주제다.
+두 논문 모두 아직 다루지 않은 게 있다 — "필요성"과 "결과 활용"을 이 글에서는 토이 예제로만 계산해봤을 뿐, 실제로 그걸 judge에게 시켰을 때 얼마나 신뢰할 수 있는지는 검증하지 않았다. 그 judge 채점 자체의 신뢰도와 루브릭 설계는 다음 편([#54](/blog/2026/agentic-judge-rubric/))의 주제다.
 
 # 참고 문헌
 
@@ -300,21 +300,104 @@ $$\text{score} = 0.4 \cdot \frac{\text{호출별 합}/\text{호출수}}{3} + 0.3
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰세 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -322,32 +405,35 @@ $$\text{score} = 0.4 \cdot \frac{\text{호출별 합}/\text{호출수}}{3} + 0.3
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><strong>(현재 글)</strong> 도구 호출을 어떻게 채점하나 — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

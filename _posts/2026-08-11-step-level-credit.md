@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "스텝을 단위로 삼는다 — 행동 단위 궤적 표현과 credit"
-date: 2026-08-25 09:06:00 +0900
-description: "Agentic RL 설계 시리즈 #6 — GiGPO의 anchor state grouping, VinePPO의 Monte Carlo value, ArCHer의 계층 구조, AgentPRM·SWEET-RL·HICRA까지, 행동(스텝)을 credit의 단위로 삼는 여섯 가지 방법"
+date: 2026-08-11 09:49:00 +0900
+description: "RL Reward 설계 시리즈 #49 — GiGPO의 anchor state grouping, VinePPO의 Monte Carlo value, ArCHer의 계층 구조, AgentPRM·SWEET-RL·HICRA까지, 행동(스텝)을 credit의 단위로 삼는 여섯 가지 방법"
 categories: [paper]
 tags: [reinforcement-learning, agent, credit-assignment, llm, grpo, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#5](/blog/2026/turn-level-reward/)에서는 턴을 단위로 공을 나눴다. 턴은 "화자가 바뀌는 경계"라는 명확한 기준이 있어서 자르기 쉽다. 그런데 턴 하나 안에서 에이전트가 실제로 몇 개의 결정을 내리는지 세어 보면 이야기가 달라진다. ReAct 스타일 에이전트라면 한 번의 응답 생성 안에 "생각한다 → 도구를 호출한다 → 관측을 읽는다 → 다시 생각한다"가 여러 번 반복될 수 있고, 반대로 "로그인 페이지로 이동한다"처럼 여러 턴에 걸쳐야 끝나는 하위 목표도 있다. 턴이라는 경계와 "결정 하나"라는 경계가 항상 겹치지는 않는다는 뜻이다.
+[#48](/blog/2026/turn-level-reward/)에서는 턴을 단위로 공을 나눴다. 턴은 "화자가 바뀌는 경계"라는 명확한 기준이 있어서 자르기 쉽다. 그런데 턴 하나 안에서 에이전트가 실제로 몇 개의 결정을 내리는지 세어 보면 이야기가 달라진다. ReAct 스타일 에이전트라면 한 번의 응답 생성 안에 "생각한다 → 도구를 호출한다 → 관측을 읽는다 → 다시 생각한다"가 여러 번 반복될 수 있고, 반대로 "로그인 페이지로 이동한다"처럼 여러 턴에 걸쳐야 끝나는 하위 목표도 있다. 턴이라는 경계와 "결정 하나"라는 경계가 항상 겹치지는 않는다는 뜻이다.
 
 이 편이 다루는 단위는 **스텝**이다. 스텝은 환경 쪽 정의를 그대로 빌린다 — 상태 $$s_t$$에서 행동 $$a_t$$를 하나 실행하고, 보상 $$r_t$$와 다음 상태 $$s_{t+1}$$을 받는 전이(transition) 하나. WebShop이라면 "검색 결과 페이지에서 1번 아이템을 클릭한다"가 스텝 하나고, ALFWorld라면 "사과를 집는다"가 스텝 하나다. 턴이 대화의 단위라면 스텝은 환경의 단위다.
 
@@ -175,7 +175,7 @@ SWEET-RL의 핵심 설계는 **크리틱과 액터에게 비대칭적인 관측�
 
 ## HICRA — 스텝보다 더 잘게, 계획하는 순간만
 
-**HICRA(Hierarchy-Aware Credit Assignment)**는 이 편의 나머지 방법들과 결이 조금 다르다. 멀티턴 에이전트-환경 상호작용이 아니라 **하나의 긴 추론 체인(CoT) 안에서** 벌어지는 일을 다룬다. 그런데도 다루는 이유는, "행동의 경계를 스텝보다 더 잘게 내려보내면 무슨 일이 일어나는가"를 예고편처럼 보여주기 때문이다 — 그 본격적인 이야기는 [#7](/blog/2026/token-segment-credit/)의 몫이다.
+**HICRA(Hierarchy-Aware Credit Assignment)**는 이 편의 나머지 방법들과 결이 조금 다르다. 멀티턴 에이전트-환경 상호작용이 아니라 **하나의 긴 추론 체인(CoT) 안에서** 벌어지는 일을 다룬다. 그런데도 다루는 이유는, "행동의 경계를 스텝보다 더 잘게 내려보내면 무슨 일이 일어나는가"를 예고편처럼 보여주기 때문이다 — 그 본격적인 이야기는 [#50](/blog/2026/token-segment-credit/)의 몫이다.
 
 저자들은 GRPO로 추론 모델을 학습시키는 과정을 관찰하며 두 국면을 발견한다. 초반에는 절차적 정확성(계산 실수 없이 단계를 밟는 능력)이 병목이고, 이게 어느 정도 갖춰지면 병목이 **전략적 기획**(어떤 경로로 문제에 접근할지 탐색하고 선택하는 능력)으로 옮겨간다. 그런데 토큰 단위로 credit을 고르게 나누는 GRPO는 이 두 국면을 구분하지 못하고 학습 신호를 모든 토큰에 균일하게 희석시킨다는 것이 저자들의 진단이다.
 
@@ -282,7 +282,7 @@ HICRA의 Strategic Gram 매칭도 비슷한 종류의 위험을 안고 있다. "
 
 스텝은 "같은 상황이 여러 궤적에서 다시 나타났을 때, 그 순간을 정당하게 비교할 수 있다"는 성질에 기대는 단위다. GiGPO는 이 재현을 텍스트 해시로 포착해 공짜에 가까운 신호를 만들고, VinePPO는 아예 그 상태로 돌아가 직접 다시 굴려서 신호를 산다. ArCHer는 이 문제를 발화와 토큰이라는 두 층으로 쪼개 풀고, AgentPRM은 VinePPO식 MC 비용을 TD 부트스트랩으로 줄인다. SWEET-RL은 부분관측 환경에서 크리틱에게만 특권 정보를 줘 이 비교를 안전하게 만들고, HICRA는 스텝보다 더 잘게, 계획하는 순간에만 credit을 얹는 실험을 보여준다.
 
-핵심 트레이드오프는 명확하다. 상태 재현이 잘 일어나는 환경(초기 상태가 고정된 텍스트 게임, 형식이 정형화된 수학 추론)에서는 스텝 단위 신호가 값싸고 강력하다. 하지만 상태를 정의하는 방식 자체 — 정확 매칭이냐 유사도 매칭이냐, 관측이 상태 전체를 반영하느냐 — 가 흔들리면 그 신호도 함께 흔들린다는 걸 이 편의 반례 절에서 확인했다. 게다가 이 편에서 이미 스텝의 경계가 고정돼 있지 않다는 걸 봤다 — HICRA는 스텝 안의 토큰을 계획/실행으로 다시 쪼갰다. [#7](/blog/2026/token-segment-credit/)은 이 쪼개기를 정면으로 다룬다. 토큰이나 세그먼트까지 내려가면 credit assignment는 무엇을 더 얻고 무엇을 잃는가.
+핵심 트레이드오프는 명확하다. 상태 재현이 잘 일어나는 환경(초기 상태가 고정된 텍스트 게임, 형식이 정형화된 수학 추론)에서는 스텝 단위 신호가 값싸고 강력하다. 하지만 상태를 정의하는 방식 자체 — 정확 매칭이냐 유사도 매칭이냐, 관측이 상태 전체를 반영하느냐 — 가 흔들리면 그 신호도 함께 흔들린다는 걸 이 편의 반례 절에서 확인했다. 게다가 이 편에서 이미 스텝의 경계가 고정돼 있지 않다는 걸 봤다 — HICRA는 스텝 안의 토큰을 계획/실행으로 다시 쪼갰다. [#50](/blog/2026/token-segment-credit/)은 이 쪼개기를 정면으로 다룬다. 토큰이나 세그먼트까지 내려가면 credit assignment는 무엇을 더 얻고 무엇을 잃는가.
 
 # 참고 문헌
 
@@ -296,21 +296,104 @@ HICRA의 Strategic Gram 매칭도 비슷한 종류의 위험을 안고 있다. "
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 여섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 마흔아홉 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><strong>(현재 글)</strong> 스텝을 단위로 삼는다 — 행동 단위 궤적 표현과 credit</li>
@@ -318,32 +401,35 @@ HICRA의 Strategic Gram 매칭도 비슷한 종류의 위험을 안고 있다. "
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

@@ -2,7 +2,7 @@
 layout: post
 title: "Reward Model Overoptimization: Goodhart의 법칙을 수식으로 쓰다"
 date: 2026-08-11 09:10:00 +0900
-description: "RLHF Reward 설계 시리즈 #10 — proxy reward를 올릴수록 진짜 reward가 꺾이는 지점의 스케일링 법칙"
+description: "RL Reward 설계 시리즈 #10 — proxy reward를 올릴수록 진짜 reward가 꺾이는 지점의 스케일링 법칙"
 categories: [paper]
 tags: [rlhf, reward-model, reward-hacking, goodhart, scaling-law, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [1편](/blog/2026/deep-rl-human-preferences/)에서 저자들은 이상한 장면을 하나 목격했다. 보상 모델을 한 번만 오프라인으로 학습시키고 그 뒤로는 고정한 채 정책을 계속 학습시켰더니, Pong 에이전트가 점수를 얻으려 하지 않고 랠리를 비정상적으로 길게 끄는 행동으로 수렴한 것이다. 고정된 $$\hat r$$ 입장에서는 최적이었지만, 참 보상 기준으로는 명백히 이상한 행동이었다. 그 글에서는 이걸 "reward hacking의 초기 사례"라고만 부르고 넘어갔다. **관찰**은 했지만 **측정**은 하지 않았다.
+이 시리즈 [#1](/blog/2026/deep-rl-human-preferences/)에서 저자들은 이상한 장면을 하나 목격했다. 보상 모델을 한 번만 오프라인으로 학습시키고 그 뒤로는 고정한 채 정책을 계속 학습시켰더니, Pong 에이전트가 점수를 얻으려 하지 않고 랠리를 비정상적으로 길게 끄는 행동으로 수렴한 것이다. 고정된 $$\hat r$$ 입장에서는 최적이었지만, 참 보상 기준으로는 명백히 이상한 행동이었다. 그 글에서는 이걸 "reward hacking의 초기 사례"라고만 부르고 넘어갔다. **관찰**은 했지만 **측정**은 하지 않았다.
 
-[9편](/blog/2026/rewardbench-2/)까지 이 시리즈는 "RM을 어떻게 잘 만들 것인가"를 다뤘다. 데이터를 어떻게 큐레이션하고, 손실 함수를 어떻게 바꾸고, 벤치마크에서 몇 점을 받는지. 그런데 벤치마크 점수가 높은 RM도 실제로 정책을 그 RM으로 최적화하면 뚫린다. 이 논문은 정확히 그 지점에서 질문을 바꾼다. "RM을 얼마나 잘 만드느냐"가 아니라 "**RM을 얼마나 오래 최적화해도 되느냐**"를 묻는다. Goodhart's law — "측정이 목표가 되는 순간 그 측정은 더 이상 좋은 측정이 아니다" — 를 구호로만 인용하는 대신, 그 붕괴가 정확히 어떤 곡선을 그리는지 수식으로 적어낸다.
+[#9](/blog/2026/rewardbench-2/)까지 이 시리즈는 "RM을 어떻게 잘 만들 것인가"를 다뤘다. 데이터를 어떻게 큐레이션하고, 손실 함수를 어떻게 바꾸고, 벤치마크에서 몇 점을 받는지. 그런데 벤치마크 점수가 높은 RM도 실제로 정책을 그 RM으로 최적화하면 뚫린다. 이 논문은 정확히 그 지점에서 질문을 바꾼다. "RM을 얼마나 잘 만드느냐"가 아니라 "**RM을 얼마나 오래 최적화해도 되느냐**"를 묻는다. Goodhart's law — "측정이 목표가 되는 순간 그 측정은 더 이상 좋은 측정이 아니다" — 를 구호로만 인용하는 대신, 그 붕괴가 정확히 어떤 곡선을 그리는지 수식으로 적어낸다.
 
 문제는 이걸 측정하려면 사람 라벨이 어마어마하게 필요하다는 점이다. RM 크기 9종 × 데이터 크기 여러 종 × 정책 크기 2종, 각 조합마다 KL 거리를 촘촘히 훑어가며 "지금 이 정책이 진짜로 얼마나 좋은가"를 계속 물어야 한다. 사람에게 이걸 시키면 예산이 버티지 못한다. 그래서 저자들은 사람 대신 **또 다른 RM**을 세운다 — "gold-standard RM"이라는 이름의 가짜 인간이다.
 
@@ -33,12 +33,12 @@ related_posts: true
 
 reward hacking 자체는 이 논문 이전에도 여러 번 목격된 현상이다.
 
-| 사례                             | 관찰 내용                                                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Christiano et al. 2017 (Pong)    | 오프라인 고정 RM 최적화 시 랠리를 무한히 끄는 행동으로 수렴 ([1편](/blog/2026/deep-rl-human-preferences/)) |
-| Christiano et al. 2017 (로봇 손) | 사람 피드백으로 학습한 로봇 팔이 공을 실제로 쥐지 않고 카메라 각도상 쥔 것처럼만 보이는 자세를 취함        |
-| Stiennon et al. 2020 (요약)      | RM을 오래 최적화한 요약 모델이 사람 평가로는 오히려 나빠지는 구간 관찰                                     |
-| InstructGPT 계열 실무 관찰       | RM이 긴 답변을 선호하는 경향을 학습해, 정책이 실제 품질과 무관하게 답변 길이만 늘리는 현상                 |
+| 사례                             | 관찰 내용                                                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Christiano et al. 2017 (Pong)    | 오프라인 고정 RM 최적화 시 랠리를 무한히 끄는 행동으로 수렴 ([#1](/blog/2026/deep-rl-human-preferences/)) |
+| Christiano et al. 2017 (로봇 손) | 사람 피드백으로 학습한 로봇 팔이 공을 실제로 쥐지 않고 카메라 각도상 쥔 것처럼만 보이는 자세를 취함       |
+| Stiennon et al. 2020 (요약)      | RM을 오래 최적화한 요약 모델이 사람 평가로는 오히려 나빠지는 구간 관찰                                    |
+| InstructGPT 계열 실무 관찰       | RM이 긴 답변을 선호하는 경향을 학습해, 정책이 실제 품질과 무관하게 답변 길이만 늘리는 현상                |
 
 공통점은 전부 "이런 게 있더라"는 사후 보고라는 점이다. 어느 정도 KL을 쓰면 꺾이기 시작하는지, RM을 키우면 그 지점이 얼마나 늦춰지는지, 이런 정량적 질문에는 아무도 답하지 못했다. 사람 라벨을 촘촘히 반복 수집하는 비용이 감당되지 않았기 때문이다.
 
@@ -81,7 +81,7 @@ $$d := \sqrt{\mathrm{KL}} = \sqrt{D_{KL}(\pi \parallel \pi_{init})}$$
 
 구체적으로는 정책이 만든 롤아웃 쌍 100,000개를 gold RM으로 채점해 synthetic comparison 100,000건을 만들고, 90,000건은 학습, 10,000건은 검증에 쓴다. 이렇게 만들어진 라벨은 무제한으로, 공짜로, 언제든 다시 만들 수 있다 — 사람 라벨로는 절대 불가능한 실험 규모다.
 
-단, 이 우회에는 명확한 한계가 있다. gold RM도 결국 사람 의도의 근사치이지, 사람 의도 그 자체가 아니다. 그래서 이 논문이 측정하는 건 "**proxy RM이 gold RM을 근사하다가 어긋나는 오차**"이지, [1편](/blog/2026/deep-rl-human-preferences/)에서 언급한 "라벨러가 실제로 원하는 것과, 라벨러가 실제로 매긴 라벨 사이의 괴리"(공을 쥔 것처럼만 보이게 만든 로봇 손 사례)는 이 실험의 범위 밖이다. 저자들 스스로 이 두 번째 종류의 overoptimization은 이 논문에서 다루지 않는다고 명시한다.
+단, 이 우회에는 명확한 한계가 있다. gold RM도 결국 사람 의도의 근사치이지, 사람 의도 그 자체가 아니다. 그래서 이 논문이 측정하는 건 "**proxy RM이 gold RM을 근사하다가 어긋나는 오차**"이지, [#1](/blog/2026/deep-rl-human-preferences/)에서 언급한 "라벨러가 실제로 원하는 것과, 라벨러가 실제로 매긴 라벨 사이의 괴리"(공을 쥔 것처럼만 보이게 만든 로봇 손 사례)는 이 실험의 범위 밖이다. 저자들 스스로 이 두 번째 종류의 overoptimization은 이 논문에서 다루지 않는다고 명시한다.
 
 ## 두 개의 함수형
 
@@ -137,12 +137,12 @@ $$n=1000$$일 때 KL이 약 5.9(논문이 "약 6 나츠"라고 부르는 값)라
 
 앞서 정리한 4가지 Goodhart 유형이 이제 구체적인 항에 대응한다.
 
-| 유형         | 대응하는 항                                  | 근거                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------ | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Regressional | $$\alpha$$ 항                                | proxy가 gold + 독립 노이즈라면, 최적화 파워는 신호와 노이즈의 분산 비율대로 나뉜다. proxy의 기울기와 gold의 선형 성분(=$$\alpha$$) 사이 차이가 곧 이 노이즈 선택 효과                                                                                                                                                                                                                                                                               |
-| Extremal     | $$\beta$$ 항                                 | 최적화가 진행되며 표본이 RM 학습 분포 밖(OOD)으로 밀려나 proxy-gold 관계가 약해짐. 비단조성(꺾이는 현상)과 무한 손실의 주 원인으로, RM 크기가 커질수록 $$\beta$$가 매끄럽게 줄어드는 것은 모델이 더 견고해짐을 뜻한다. 논문은 정확히 이 자리에서 "답변 길이가 학습 분포에서는 품질과 상관관계가 있지만, OOD 구간에서는 더 이상 그렇지 않다"는 길이 편향 사례를 든다 — [11편](/blog/2026/rlhf-length-correlations/)이 이 현상 하나만 따로 정량화한다 |
-| Causal       | 별도 항 없음, regressional과 유사하게 관측됨 | 공통 원인(예: 정보량)이 길이와 품질을 함께 밀어올릴 때, proxy가 그 상관관계를 길이 자체의 인과관계로 오인                                                                                                                                                                                                                                                                                                                                           |
-| Adversarial  | 관측되지 않음                                | 정책이 proxy를 능동적으로 속이려면 그럴 만한 능력이 필요한데, 이 실험의 모델들은 아직 거기 못 미친다. 저자들은 미래에 모델이 더 강력해지면 이 스케일링 법칙 자체가 깨질 수 있다고 명시적으로 경고한다                                                                                                                                                                                                                                               |
+| 유형         | 대응하는 항                                  | 근거                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Regressional | $$\alpha$$ 항                                | proxy가 gold + 독립 노이즈라면, 최적화 파워는 신호와 노이즈의 분산 비율대로 나뉜다. proxy의 기울기와 gold의 선형 성분(=$$\alpha$$) 사이 차이가 곧 이 노이즈 선택 효과                                                                                                                                                                                                                                                                              |
+| Extremal     | $$\beta$$ 항                                 | 최적화가 진행되며 표본이 RM 학습 분포 밖(OOD)으로 밀려나 proxy-gold 관계가 약해짐. 비단조성(꺾이는 현상)과 무한 손실의 주 원인으로, RM 크기가 커질수록 $$\beta$$가 매끄럽게 줄어드는 것은 모델이 더 견고해짐을 뜻한다. 논문은 정확히 이 자리에서 "답변 길이가 학습 분포에서는 품질과 상관관계가 있지만, OOD 구간에서는 더 이상 그렇지 않다"는 길이 편향 사례를 든다 — [#11](/blog/2026/rlhf-length-correlations/)이 이 현상 하나만 따로 정량화한다 |
+| Causal       | 별도 항 없음, regressional과 유사하게 관측됨 | 공통 원인(예: 정보량)이 길이와 품질을 함께 밀어올릴 때, proxy가 그 상관관계를 길이 자체의 인과관계로 오인                                                                                                                                                                                                                                                                                                                                          |
+| Adversarial  | 관측되지 않음                                | 정책이 proxy를 능동적으로 속이려면 그럴 만한 능력이 필요한데, 이 실험의 모델들은 아직 거기 못 미친다. 저자들은 미래에 모델이 더 강력해지면 이 스케일링 법칙 자체가 깨질 수 있다고 명시적으로 경고한다                                                                                                                                                                                                                                              |
 
 # Experiments
 
@@ -181,7 +181,7 @@ RM을 3M에서 3B로 천 배 가까이 키우면 정점의 위치도 늦춰지�
 
 그림에서 확인되는 사실이 이 절의 핵심이다. **penalty 계수와 무관하게 모든 실선(gold vs KL 관계)이 거의 같은 곡선 위에 겹친다.** penalty가 하는 일은 그 곡선을 바꾸는 게 아니라, 같은 학습 스텝 수에서 KL이 얼마나 빨리 커지는지를 조절하는 것뿐이다. penalty가 강할수록 정책이 초기 정책에서 멀어지는 속도가 느려지고, 그래서 학습이 끝났을 때 도달한 KL 지점이 더 작다 — 결과적으로 gold-KL frontier 위에서 더 일찍 멈춘 것과 같은 효과, 즉 **early stopping과 동등**하다.
 
-이게 [2편 InstructGPT](/blog/2026/instructgpt/)에서 KL penalty 항이 목적함수에 들어간 이유를 사후적으로 설명해준다. 그 항은 "더 높은 proxy reward를 얻게 해주는 장치"가 아니라, "정책이 gold-KL frontier 위를 너무 멀리까지 걷지 못하게 막는 브레이크"였을 뿐이다. frontier 자체, 즉 주어진 KL에서 얻을 수 있는 gold reward의 상한을 바꾸지는 못한다. 참고로 PPO의 surrogate objective에는 이미 $$D_{KL}(\pi_{old} \parallel \pi)$$에 대한 암묵적 penalty가 내장되어 있는데, 이건 여기서 다루는 $$D_{KL}(\pi \parallel \pi_{init})$$과는 다른 대상이다 — 암묵적 penalty가 잘 튜닝되어 있으면 명시적 penalty보다 오히려 overoptimization을 덜 유발한다는 관찰도 저자들은 덧붙이지만, 왜 그런지는 설명하지 못한다고 인정한다.
+이게 [#2 InstructGPT](/blog/2026/instructgpt/)에서 KL penalty 항이 목적함수에 들어간 이유를 사후적으로 설명해준다. 그 항은 "더 높은 proxy reward를 얻게 해주는 장치"가 아니라, "정책이 gold-KL frontier 위를 너무 멀리까지 걷지 못하게 막는 브레이크"였을 뿐이다. frontier 자체, 즉 주어진 KL에서 얻을 수 있는 gold reward의 상한을 바꾸지는 못한다. 참고로 PPO의 surrogate objective에는 이미 $$D_{KL}(\pi_{old} \parallel \pi)$$에 대한 암묵적 penalty가 내장되어 있는데, 이건 여기서 다루는 $$D_{KL}(\pi \parallel \pi_{init})$$과는 다른 대상이다 — 암묵적 penalty가 잘 튜닝되어 있으면 명시적 penalty보다 오히려 overoptimization을 덜 유발한다는 관찰도 저자들은 덧붙이지만, 왜 그런지는 설명하지 못한다고 인정한다.
 
 ## 반복 RLHF로 확장하면
 
@@ -189,7 +189,7 @@ RM을 3M에서 3B로 천 배 가까이 키우면 정점의 위치도 늦춰지�
 
 $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 
-라운드를 나누는 효과는 정확히 $$\beta_{RL} d \log k$$만큼 gold reward를 끌어올리는 것으로 요약된다. 흥미로운 건 이게 $$\alpha_{RL}$$ 항(regressional Goodharting)은 전혀 건드리지 못한다는 점이다 — 반복 라운드는 $$\beta$$ 항(extremal Goodharting)의 붕괴 속도만 로그 스케일로 늦출 뿐, 애초에 노이즈를 같이 선택하는 문제 자체는 해결하지 못한다. [1편](/blog/2026/deep-rl-human-preferences/)에서 본 "정책·라벨 수집·RM 학습이 비동기로 계속 맞물려 도는" 구조가, 5년 뒤 텍스트 RLHF에서는 "라운드 단위 반복"이라는 훨씬 거친 근사로 재현된 셈이다.
+라운드를 나누는 효과는 정확히 $$\beta_{RL} d \log k$$만큼 gold reward를 끌어올리는 것으로 요약된다. 흥미로운 건 이게 $$\alpha_{RL}$$ 항(regressional Goodharting)은 전혀 건드리지 못한다는 점이다 — 반복 라운드는 $$\beta$$ 항(extremal Goodharting)의 붕괴 속도만 로그 스케일로 늦출 뿐, 애초에 노이즈를 같이 선택하는 문제 자체는 해결하지 못한다. [#1](/blog/2026/deep-rl-human-preferences/)에서 본 "정책·라벨 수집·RM 학습이 비동기로 계속 맞물려 도는" 구조가, 5년 뒤 텍스트 RLHF에서는 "라운드 단위 반복"이라는 훨씬 거친 근사로 재현된 셈이다.
 
 ## 실험 하이퍼파라미터
 
@@ -213,13 +213,25 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
 3. **계수의 의존성**: RM을 키우면 $$\beta$$(붕괴 계수)가 매끄럽게 줄어 정점이 늦춰지지만 $$\alpha$$(초기 이득)는 거의 그대로다. 데이터는 약 2,000건 문턱을 넘어야 의미가 생긴다. 정책 크기는 overoptimization 정도에 거의 영향을 주지 않는다.
 4. **KL penalty의 정체**: gold-KL frontier 자체를 바꾸지 못하고, early stopping과 동등한 효과만 낸다 — 2편의 그 항이 왜 거기 있었는지에 대한 사후적 답이다.
 
-남는 문제는 명확하다. $$\alpha$$ 항(regressional Goodharting)은 RM을 키워도 데이터를 늘려도 거의 줄지 않는다. $$\beta$$ 항(extremal Goodharting)은 줄일 수는 있지만 없앨 수는 없다. 그리고 이 논문이 다루지 못한 adversarial Goodharting은 모델이 더 강력해지면 이 스케일링 법칙 자체를 깨뜨릴 수 있다고 저자들 스스로 경고한다. [11편](/blog/2026/rlhf-length-correlations/)은 이 논문이 extremal Goodhart의 예시로 든 "길이 편향"을 정면으로 파고들어 성능 향상 중 얼마가 진짜고 얼마가 길이인지 정량화하고, [12편 ODIN](/blog/2026/odin-disentangled-reward/)은 그 길이 성분을 reward에서 아예 분리해내며, [14편 WARM](/blog/2026/warm-weight-averaged-reward/)은 여러 RM을 가중 평균해 $$\beta$$ 항 자체를 줄이는 또 다른 접근을 시도한다. [1편](/blog/2026/deep-rl-human-preferences/)의 Pong 무한 랠리는 결국 이 논문에서 하나의 곡선이 되었고, 그 곡선이 남긴 두 개의 미해결 항이 3부의 나머지 세 편을 채운다.
+남는 문제는 명확하다. $$\alpha$$ 항(regressional Goodharting)은 RM을 키워도 데이터를 늘려도 거의 줄지 않는다. $$\beta$$ 항(extremal Goodharting)은 줄일 수는 있지만 없앨 수는 없다. 그리고 이 논문이 다루지 못한 adversarial Goodharting은 모델이 더 강력해지면 이 스케일링 법칙 자체를 깨뜨릴 수 있다고 저자들 스스로 경고한다. [#11](/blog/2026/rlhf-length-correlations/)은 이 논문이 extremal Goodhart의 예시로 든 "길이 편향"을 정면으로 파고들어 성능 향상 중 얼마가 진짜고 얼마가 길이인지 정량화하고, [#12 ODIN](/blog/2026/odin-disentangled-reward/)은 그 길이 성분을 reward에서 아예 분리해내며, [#14 WARM](/blog/2026/warm-weight-averaged-reward/)은 여러 RM을 가중 평균해 $$\beta$$ 항 자체를 줄이는 또 다른 접근을 시도한다. [#1](/blog/2026/deep-rl-human-preferences/)의 Pong 무한 랠리는 결국 이 논문에서 하나의 곡선이 되었고, 그 곡선이 남긴 두 개의 미해결 항이 3부의 나머지 세 편을 채운다.
+
+# 참고 문헌
+
+- Gao, Schulman, and Hilton, 2023. [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). ICML 2023.
+- [PMLR: Scaling Laws for Reward Model Overoptimization](https://proceedings.mlr.press/v202/gao23h.html) — 공식 게재본(ICML 2023, PMLR vol. 202, pp. 10835-10866).
+- [ar5iv: Scaling Laws for Reward Model Overoptimization (HTML rendering)](https://ar5iv.labs.arxiv.org/html/2210.10760) — 본문 수식·그림 원본.
+- Ouyang et al., 2022. [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155). (gold RM의 출처, InstructGPT)
+- Stiennon et al., 2020. [Learning to Summarize from Human Feedback](https://arxiv.org/abs/2009.01325). (BoN의 KL 해석적 계산식 출처)
+- Bai et al., 2022. [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862). (KL이 이차 거리 척도라는 근거, 온라인 RLHF)
+- Manheim and Garrabrant, 2018. [Categorizing Variants of Goodhart's Law](https://arxiv.org/abs/1803.04585).
+- Korbak, Perez, and Buckley, 2022. [RL with KL Penalties is Better Viewed as Bayesian Inference](https://arxiv.org/abs/2205.11275). EMNLP Findings 2022.
+- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). (Pong 랠리와 로봇 손 사례)
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 열 번째 글이다.
 
 **1부. 지형도**
 
@@ -294,7 +306,7 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -304,24 +316,53 @@ $$R_{RL}(d) = d\left(\alpha_{RL} - \beta_{RL}\log d + \beta_{RL}\log k\right)$$
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Gao, Schulman, and Hilton, 2023. [Scaling Laws for Reward Model Overoptimization](https://arxiv.org/abs/2210.10760). ICML 2023.
-- [PMLR: Scaling Laws for Reward Model Overoptimization](https://proceedings.mlr.press/v202/gao23h.html) — 공식 게재본(ICML 2023, PMLR vol. 202, pp. 10835-10866).
-- [ar5iv: Scaling Laws for Reward Model Overoptimization (HTML rendering)](https://ar5iv.labs.arxiv.org/html/2210.10760) — 본문 수식·그림 원본.
-- Ouyang et al., 2022. [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155). (gold RM의 출처, InstructGPT)
-- Stiennon et al., 2020. [Learning to Summarize from Human Feedback](https://arxiv.org/abs/2009.01325). (BoN의 KL 해석적 계산식 출처)
-- Bai et al., 2022. [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2204.05862). (KL이 이차 거리 척도라는 근거, 온라인 RLHF)
-- Manheim and Garrabrant, 2018. [Categorizing Variants of Goodhart's Law](https://arxiv.org/abs/1803.04585).
-- Korbak, Perez, and Buckley, 2022. [RL with KL Penalties is Better Viewed as Bayesian Inference](https://arxiv.org/abs/2205.11275). EMNLP Findings 2022.
-- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). (Pong 랠리와 로봇 손 사례)
+본 시리즈는 62편으로 구성된다.

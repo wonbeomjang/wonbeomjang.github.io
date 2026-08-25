@@ -2,7 +2,7 @@
 layout: post
 title: "InstructGPT: RLHF 3단계 레시피의 표준을 세우다"
 date: 2026-08-11 09:02:00 +0900
-description: "RLHF Reward 설계 시리즈 #2 — SFT → Reward Model → PPO, 오늘날 모든 RLHF 파이프라인의 원형 (Ouyang et al., OpenAI, NeurIPS 2022)"
+description: "RL Reward 설계 시리즈 #2 — SFT → Reward Model → PPO, 오늘날 모든 RLHF 파이프라인의 원형 (Ouyang et al., OpenAI, NeurIPS 2022)"
 categories: [paper]
 tags: [rlhf, reward-model, llm, alignment, ppo, paper]
 giscus_comments: true
@@ -311,11 +311,21 @@ InstructGPT의 메시지를 한 줄로 요약하면 이렇다. **정렬은 스�
 - **길이·형식 편향의 가능성**: 이 논문은 응답 길이를 별도로 통제하거나 분석하지 않는다. RM이 "더 길고 상세한 답"을 "더 유용한 답"과 혼동했을 가능성은 열려 있는 채로 남았다 — 이 질문 역시 후속 연구(3부)에서 정량적으로 다뤄진다.
 - **"누구의 선호인가"라는 질문**: 정렬의 기준이 된 것은 인류 보편의 가치가 아니라 40명 계약직 라벨러(그중 다수가 필리핀·방글라데시 국적)와 OpenAI 연구진의 판단이다. 저자들 스스로 이 점을 한계로 명시했고, 이 질문은 helpful·harmless를 분리해 학습하는 다음 논문(HH-RLHF)에서 다시 등장한다.
 
+# 참고 문헌
+
+- Ouyang et al., 2022. [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). NeurIPS 2022.
+- [NeurIPS 2022 Proceedings: InstructGPT](https://proceedings.neurips.cc/paper_files/paper/2022/hash/b1efde53be364a73914f58805a001731-Abstract-Conference.html)
+- Stiennon et al., 2020. [Learning to summarize from human feedback](https://arxiv.org/abs/2009.01325). NeurIPS 2020. (InstructGPT 파이프라인의 직접적인 방법론적 원형)
+- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). (시리즈 1부)
+- Askell et al., 2021. [A General Language Assistant as a Laboratory for Alignment](https://arxiv.org/abs/2112.00861). (Helpful·Honest·Harmless 프레임의 출처)
+- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
+- Brown et al., 2020. [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165). (GPT-3 원 논문)
+
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 두 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 두 번째 글이다.
 
 **1부. 지형도**
 
@@ -390,7 +400,7 @@ InstructGPT의 메시지를 한 줄로 요약하면 이렇다. **정렬은 스�
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -400,22 +410,53 @@ InstructGPT의 메시지를 한 줄로 요약하면 이렇다. **정렬은 스�
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Ouyang et al., 2022. [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155). NeurIPS 2022.
-- [NeurIPS 2022 Proceedings: InstructGPT](https://proceedings.neurips.cc/paper_files/paper/2022/hash/b1efde53be364a73914f58805a001731-Abstract-Conference.html)
-- Stiennon et al., 2020. [Learning to summarize from human feedback](https://arxiv.org/abs/2009.01325). NeurIPS 2020. (InstructGPT 파이프라인의 직접적인 방법론적 원형)
-- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). (시리즈 1부)
-- Askell et al., 2021. [A General Language Assistant as a Laboratory for Alignment](https://arxiv.org/abs/2112.00861). (Helpful·Honest·Harmless 프레임의 출처)
-- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
-- Brown et al., 2020. [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165). (GPT-3 원 논문)
+본 시리즈는 62편으로 구성된다.

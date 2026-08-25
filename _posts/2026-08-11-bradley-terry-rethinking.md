@@ -2,7 +2,7 @@
 layout: post
 title: "Rethinking Bradley-Terry: 왜 이 식으로 reward를 만드는가"
 date: 2026-08-11 09:04:00 +0900
-description: "RLHF Reward 설계 시리즈 #4 — BT 모델의 이론적 근거와 order consistency, 그리고 대안 목적함수"
+description: "RL Reward 설계 시리즈 #4 — BT 모델의 이론적 근거와 order consistency, 그리고 대안 목적함수"
 categories: [paper]
 tags: [rlhf, reward-model, bradley-terry, theory, alignment, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[1편](/blog/2026/deep-rl-human-preferences/)과 [2편](/blog/2026/instructgpt/)은 둘 다 같은 식을 아무 의심 없이 썼다. 두 궤적(또는 두 응답)의 예측 보상을 지수함수에 태우고 소프트맥스를 취해 "사람이 어느 쪽을 고를 확률"을 만드는 식이다.
+[#1](/blog/2026/deep-rl-human-preferences/)과 [#2](/blog/2026/instructgpt/)은 둘 다 같은 식을 아무 의심 없이 썼다. 두 궤적(또는 두 응답)의 예측 보상을 지수함수에 태우고 소프트맥스를 취해 "사람이 어느 쪽을 고를 확률"을 만드는 식이다.
 
 $$\hat P[\sigma^1 \succ \sigma^2] = \frac{\exp \sum \hat r(\sigma^1)}{\exp \sum \hat r(\sigma^1) + \exp \sum \hat r(\sigma^2)}$$
 
@@ -414,13 +414,24 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
 2. **대안**: reward 모델링의 진짜 목표는 order consistency이며, BT의 anti-symmetry 제약은 그걸 만족하는 여러 방법 중 하나일 뿐이다. anti-symmetry를 느슨하게 풀면 기성 이진 분류기(MLP, LightGBM)를 그대로 쓰는 classification reward model을 얻는다 — 이 손실이 order consistency 손실의 upper bound라는 것도 증명됐다(Proposition 9, Eq. 22).
 3. **annotation 설계**: 같은 프롬프트끼리만 비교하는 관행에도 이론적 근거가 없다. cross-prompt 비교가 기대 보상 차이를 구조적으로 키워 annotation 품질을 높인다(Theorem 11)는 것이 이론과 실증 양쪽에서 확인됐다.
 
-이 논문의 결론 — **BT는 필연이 아니라 하나의 선택지이며, "필요한 건 order consistency뿐"** — 은 이 시리즈의 다음 두 흐름을 정당화하는 근거가 된다. [7편 ArmoRM](/blog/2026/armorm/)이 스칼라 하나 대신 다목적 reward로 분해하는 것도, [6부의 GenRM](/blog/2026/generative-verifiers/)이 아예 reward를 확률 스칼라가 아니라 텍스트 생성으로 바꾸는 것도, 결국 "reward 모델링이 반드시 BT-스타일 스칼라 확률 모델일 필요는 없다"는 이 글의 결론 위에서 성립한다. 다음 글([5편 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/))은 이 order-consistent 목적함수들이 실제 노이즈 섞인 선호 데이터 앞에서 어떻게 무너지고 일반화되는지를 다룬다.
+이 논문의 결론 — **BT는 필연이 아니라 하나의 선택지이며, "필요한 건 order consistency뿐"** — 은 이 시리즈의 다음 두 흐름을 정당화하는 근거가 된다. [#7 ArmoRM](/blog/2026/armorm/)이 스칼라 하나 대신 다목적 reward로 분해하는 것도, [6부의 GenRM](/blog/2026/generative-verifiers/)이 아예 reward를 확률 스칼라가 아니라 텍스트 생성으로 바꾸는 것도, 결국 "reward 모델링이 반드시 BT-스타일 스칼라 확률 모델일 필요는 없다"는 이 글의 결론 위에서 성립한다. 다음 글([#5 Secrets of RLHF II](/blog/2026/secrets-rlhf-reward-modeling/))은 이 order-consistent 목적함수들이 실제 노이즈 섞인 선호 데이터 앞에서 어떻게 무너지고 일반화되는지를 다룬다.
+
+# 참고 문헌
+
+- Sun, Shen, Ton, 2024/2025. [Rethinking Bradley-Terry Models in Preference-Based Reward Modeling: Foundations, Theory, and Alternatives](https://arxiv.org/abs/2411.04991). arXiv:2411.04991 (ICLR 2025, Oral).
+- [ar5iv/arXiv HTML: Rethinking Bradley-Terry Models...](https://arxiv.org/html/2411.04991v2) — 본문 수식·그림 원본.
+- [ICLR 2025 Proceedings: Rethinking Reward Modeling in Preference-based Large Language Model Alignment](https://proceedings.iclr.cc/paper_files/paper/2025/hash/7423902b5534e2b267438c85444a54b1-Abstract-Conference.html) — 카메라레디 버전(제목 변경).
+- [GitHub: holarissun/RewardModelingBeyondBradleyTerry](https://github.com/holarissun/RewardModelingBeyondBradleyTerry) — 공식 구현.
+- Bradley, R. A. and Terry, M. E., 1952. Rank Analysis of Incomplete Block Designs: I. The Method of Paired Comparisons. Biometrika. (BT 모델 원 논문)
+- Chiang et al., 2024. [Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference](https://arxiv.org/abs/2403.04132). (LLM Arena 비교 규모 인용원)
+- Bos, T. and Schmidt-Hieber, J., 2022. Convergence rates for non-parametric classification with generalized quadratic loss. (truncated KL risk 프레임워크)
+- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). NeurIPS 2017. (BT 손실을 RLHF에 처음 적용)
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 네 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 네 번째 글이다.
 
 **1부. 지형도**
 
@@ -495,7 +506,7 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -505,23 +516,53 @@ annotation 품질(노이즈 수준 $$\beta$$)을 바꾼 실험에서는 흥미�
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Sun, Shen, Ton, 2024/2025. [Rethinking Bradley-Terry Models in Preference-Based Reward Modeling: Foundations, Theory, and Alternatives](https://arxiv.org/abs/2411.04991). arXiv:2411.04991 (ICLR 2025, Oral).
-- [ar5iv/arXiv HTML: Rethinking Bradley-Terry Models...](https://arxiv.org/html/2411.04991v2) — 본문 수식·그림 원본.
-- [ICLR 2025 Proceedings: Rethinking Reward Modeling in Preference-based Large Language Model Alignment](https://proceedings.iclr.cc/paper_files/paper/2025/hash/7423902b5534e2b267438c85444a54b1-Abstract-Conference.html) — 카메라레디 버전(제목 변경).
-- [GitHub: holarissun/RewardModelingBeyondBradleyTerry](https://github.com/holarissun/RewardModelingBeyondBradleyTerry) — 공식 구현.
-- Bradley, R. A. and Terry, M. E., 1952. Rank Analysis of Incomplete Block Designs: I. The Method of Paired Comparisons. Biometrika. (BT 모델 원 논문)
-- Chiang et al., 2024. [Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference](https://arxiv.org/abs/2403.04132). (LLM Arena 비교 규모 인용원)
-- Bos, T. and Schmidt-Hieber, J., 2022. Convergence rates for non-parametric classification with generalized quadratic loss. (truncated KL risk 프레임워크)
-- Christiano et al., 2017. [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). NeurIPS 2017. (BT 손실을 RLHF에 처음 적용)
+본 시리즈는 62편으로 구성된다.

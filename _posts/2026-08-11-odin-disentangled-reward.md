@@ -2,7 +2,7 @@
 layout: post
 title: "ODIN: reward에서 길이 성분을 떼어내다"
 date: 2026-08-11 09:12:00 +0900
-description: "RLHF Reward 설계 시리즈 #12 — 두 개의 head로 품질과 길이를 분리 학습해 length hacking을 막는 법"
+description: "RL Reward 설계 시리즈 #12 — 두 개의 head로 품질과 길이를 분리 학습해 length hacking을 막는 법"
 categories: [paper]
 tags: [rlhf, reward-model, reward-hacking, length-bias, disentanglement, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[11편](/blog/2026/rlhf-length-correlations/)에서 확인한 것은 불편한 사실이었다. RLHF로 정책을 학습시키면 응답이 점점 길어지고, reward도 같이 올라간다. 문제는 그 reward 상승분 중 상당 부분이 실제 내용의 질 향상이 아니라 **그냥 길어졌기 때문에** 생긴다는 점이다. Singhal et al.(2023)은 심지어 "길이만 보고 주는 가짜 reward"로도 RLHF가 만들어내는 개선의 대부분을 재현할 수 있음을 보였다. reward model이 "장황함"과 "좋은 답변"을 구분하지 못하고 있다는 뜻이다.
+[#11](/blog/2026/rlhf-length-correlations/)에서 확인한 것은 불편한 사실이었다. RLHF로 정책을 학습시키면 응답이 점점 길어지고, reward도 같이 올라간다. 문제는 그 reward 상승분 중 상당 부분이 실제 내용의 질 향상이 아니라 **그냥 길어졌기 때문에** 생긴다는 점이다. Singhal et al.(2023)은 심지어 "길이만 보고 주는 가짜 reward"로도 RLHF가 만들어내는 개선의 대부분을 재현할 수 있음을 보였다. reward model이 "장황함"과 "좋은 답변"을 구분하지 못하고 있다는 뜻이다.
 
 11편은 이 현상을 **진단**했다. 이 글이 다루는 ODIN은 그 진단에 대한 **아키텍처 수준의 처방**이다. 아이디어는 단순하다. reward model의 head를 하나가 아니라 **둘**로 늘린다. 하나는 응답 길이를 예측하도록 학습시키는 length head, 다른 하나는 길이와 최대한 무관하도록 학습시키는 quality head다. RM을 학습시킬 때는 두 head를 같이 쓰지만, **정책을 강화학습으로 최적화할 때는 quality head만 reward로 넘긴다.** 길이를 흡수하는 쓰레기통을 하나 따로 만들어 두고, 정책에게는 그 쓰레기통이 안 보이게 하는 셈이다.
 
@@ -24,7 +24,7 @@ related_posts: true
 1. **왜 단순 길이 페널티가 실패하는가** — 11편에서 시도된 개입들과 ODIN이 비교하는 베이스라인들
 2. **두 head를 어떻게 분리시키는가** — 상관계수 손실과 직교성 손실, 그리고 이 둘이 트릭 없이는 붕괴(collapse)하는 이유
 3. **RM 학습부터 RL까지 숫자로 검증** — Pearson 상관 0.451 → -0.03이라는 실제 결과
-4. **한계** — 길이 축은 막았지만, ODIN은 "다른 hacking 축은 무방비"임을 스스로 인정한다. 이 부채가 [14편](/blog/2026/warm-weight-averaged-reward/)으로 이어진다.
+4. **한계** — 길이 축은 막았지만, ODIN은 "다른 hacking 축은 무방비"임을 스스로 인정한다. 이 부채가 [#14](/blog/2026/warm-weight-averaged-reward/)으로 이어진다.
 
 # Background
 
@@ -34,7 +34,7 @@ related_posts: true
 
 $$\mathcal{L}(\theta) = -\mathbb{E}\Big[\log \sigma\big(r_\theta(x, y_w) - r_\theta(x, y_l)\big)\Big]$$
 
-이 손실은 $$y_w$$가 $$y_l$$보다 높은 점수를 받도록만 강제할 뿐, **왜** 높아야 하는지는 전혀 지정하지 않는다. 그런데 선호 데이터 자체에 이미 "더 긴 답변을 사람이 더 선호하는" 편향이 섞여 있다면([11편에서 다룬 것처럼](/blog/2026/rlhf-length-correlations/)), 이 손실을 최소화하는 가장 쉬운 지름길 하나는 **길이와 상관된 방향으로 점수를 매기는 것**이다. RM은 진짜 내용을 이해하려 애쓰는 대신 "길다 → 높은 점수"라는 얕은 상관관계를 배워버린다. ODIN 논문은 실제로 학습된 vanilla RM의 점수와 응답 길이 사이 Pearson 상관계수가 **0.451**에 달한다고 보고한다 — 무시할 수 없는 수준의 얽힘이다.
+이 손실은 $$y_w$$가 $$y_l$$보다 높은 점수를 받도록만 강제할 뿐, **왜** 높아야 하는지는 전혀 지정하지 않는다. 그런데 선호 데이터 자체에 이미 "더 긴 답변을 사람이 더 선호하는" 편향이 섞여 있다면([#11에서 다룬 것처럼](/blog/2026/rlhf-length-correlations/)), 이 손실을 최소화하는 가장 쉬운 지름길 하나는 **길이와 상관된 방향으로 점수를 매기는 것**이다. RM은 진짜 내용을 이해하려 애쓰는 대신 "길다 → 높은 점수"라는 얕은 상관관계를 배워버린다. ODIN 논문은 실제로 학습된 vanilla RM의 점수와 응답 길이 사이 Pearson 상관계수가 **0.451**에 달한다고 보고한다 — 무시할 수 없는 수준의 얽힘이다.
 
 ## 왜 "그냥 길이 페널티를 빼자"로는 부족한가
 
@@ -208,9 +208,9 @@ $$n_{win}, n_{lose}$$는 비교 대상(SFT 초기화 모델) 대비 이기고 �
 
 ## ArmoRM과 비교하면: 축을 더할 것인가, 하나를 버릴 것인가
 
-[7편](/blog/2026/armorm/)에서 다룬 ArmoRM도 "reward를 여러 성분으로 나눈다"는 점에서 ODIN과 닮았다. 하지만 둘의 철학은 정반대 방향을 향한다.
+[#7](/blog/2026/armorm/)에서 다룬 ArmoRM도 "reward를 여러 성분으로 나눈다"는 점에서 ODIN과 닮았다. 하지만 둘의 철학은 정반대 방향을 향한다.
 
-| 항목                      | ArmoRM ([7편](/blog/2026/armorm/))                                                            | ODIN (본 편)                                                                             |
+| 항목                      | ArmoRM ([#7](/blog/2026/armorm/))                                                             | ODIN (본 편)                                                                             |
 | ------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | 분해하는 이유             | 정직성·장황함·안전성 등 **여러 해석 가능한 축을 모두 살려서** 상황별로 조합하기 위해          | 길이라는 **한 축을 골라내 RL에서 버리기** 위해                                           |
 | head/expert 구조          | 다차원 절대 평가(absolute rating)를 예측하는 다목적 head + Mixture-of-Experts 게이팅 네트워크 | quality/length 2개 head, 게이팅 없음                                                     |
@@ -230,13 +230,24 @@ $$n_{win}, n_{lose}$$는 비교 대상(SFT 초기화 모델) 대비 이기고 �
 3. **효과**: Pearson 상관이 0.451 → -0.03으로, Kendall·Spearman도 0 근처로 떨어진다. RM 정확도 손실은 1%p 남짓. 같은 응답 길이 기준으로 win score Pareto front가 vanilla RM보다 일관되게 위에 있고, TruthfulQA는 오히려 개선된다.
 4. **부채**: 논문 스스로 "다른 종류의 hacking으로 ODIN을 확장·평가하는 것은 흥미로운 향후 방향"이라 못 박는다. 길이라는 **미리 지정된 축 하나**만 제거했을 뿐, 형식적 표현 패턴이나 반복 같은 다른 hacking 축은 여전히 무방비다. 애초에 "무엇을 제거할지" 사람이 지정해야 한다는 전제 자체가 한계다.
 
-[14편](/blog/2026/warm-weight-averaged-reward/)이 다루는 WARM은 이 부채를 정반대 방향에서 공략한다. 특정 hacking 축을 미리 지정하고 head를 나누는 대신, **여러 개의 독립적으로 학습된 reward model 가중치를 평균**내어 어떤 축이 hacking에 취약한지 모르는 상태에서도 일반적으로 방어하려는 시도다. ODIN이 "이미 알고 있는 적(길이)을 정조준"했다면, WARM은 "누가 적인지 몰라도 버티는 방법"을 찾는다.
+[#14](/blog/2026/warm-weight-averaged-reward/)이 다루는 WARM은 이 부채를 정반대 방향에서 공략한다. 특정 hacking 축을 미리 지정하고 head를 나누는 대신, **여러 개의 독립적으로 학습된 reward model 가중치를 평균**내어 어떤 축이 hacking에 취약한지 모르는 상태에서도 일반적으로 방어하려는 시도다. ODIN이 "이미 알고 있는 적(길이)을 정조준"했다면, WARM은 "누가 적인지 몰라도 버티는 방법"을 찾는다.
+
+# 참고 문헌
+
+- Chen et al., 2024. [ODIN: Disentangled Reward Mitigates Hacking in RLHF](https://arxiv.org/abs/2402.07319). ICML 2024.
+- [PMLR: ODIN official proceedings page](https://proceedings.mlr.press/v235/chen24bn.html) — venue·저자 소속 확인.
+- [ar5iv: ODIN (HTML rendering)](https://ar5iv.labs.arxiv.org/html/2402.07319) — 본문 그림 원본.
+- [GitHub: lichang-chen/odin](https://github.com/lichang-chen/odin) — 공식 구현.
+- Singhal et al., 2023. [A Long Way to Go: Investigating Length Correlations in RLHF](https://arxiv.org/abs/2310.03716). COLM 2024. (11편 및 ODIN이 비교하는 길이 페널티 베이스라인의 출처)
+- Wang et al., 2024. [Interpretable Preferences via Multi-Objective Reward Modeling and Mixture-of-Experts](https://arxiv.org/abs/2406.12845). EMNLP Findings 2024. (7편 ArmoRM, 비교 대상)
+- Salimans, T. and Kingma, D. P., 2016. [Weight Normalization: A Simple Reparameterization to Accelerate Training of Deep Neural Networks](https://arxiv.org/abs/1602.07868). (ODIN이 head 붕괴를 막는 데 쓴 기법)
+- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347). (ODIN이 사용한 RL 알고리즘 중 하나)
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 열두 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 열두 번째 글이다.
 
 **1부. 지형도**
 
@@ -311,7 +322,7 @@ $$n_{win}, n_{lose}$$는 비교 대상(SFT 초기화 모델) 대비 이기고 �
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -321,23 +332,53 @@ $$n_{win}, n_{lose}$$는 비교 대상(SFT 초기화 모델) 대비 이기고 �
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Chen et al., 2024. [ODIN: Disentangled Reward Mitigates Hacking in RLHF](https://arxiv.org/abs/2402.07319). ICML 2024.
-- [PMLR: ODIN official proceedings page](https://proceedings.mlr.press/v235/chen24bn.html) — venue·저자 소속 확인.
-- [ar5iv: ODIN (HTML rendering)](https://ar5iv.labs.arxiv.org/html/2402.07319) — 본문 그림 원본.
-- [GitHub: lichang-chen/odin](https://github.com/lichang-chen/odin) — 공식 구현.
-- Singhal et al., 2023. [A Long Way to Go: Investigating Length Correlations in RLHF](https://arxiv.org/abs/2310.03716). COLM 2024. (11편 및 ODIN이 비교하는 길이 페널티 베이스라인의 출처)
-- Wang et al., 2024. [Interpretable Preferences via Multi-Objective Reward Modeling and Mixture-of-Experts](https://arxiv.org/abs/2406.12845). EMNLP Findings 2024. (7편 ArmoRM, 비교 대상)
-- Salimans, T. and Kingma, D. P., 2016. [Weight Normalization: A Simple Reparameterization to Accelerate Training of Deep Neural Networks](https://arxiv.org/abs/1602.07868). (ODIN이 head 붕괴를 막는 데 쓴 기법)
-- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347). (ODIN이 사용한 RL 알고리즘 중 하나)
+본 시리즈는 62편으로 구성된다.

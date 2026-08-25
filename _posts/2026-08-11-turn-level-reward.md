@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "턴 단위로 공을 나눈다 — turn-level reward 설계"
-date: 2026-08-25 09:05:00 +0900
-description: "Agentic RL 설계 시리즈 #5 — MT-GRPO와 MT-PPO로 보는 turn-level credit assignment, 그리고 그 대가로 따라오는 새로운 hacking"
+date: 2026-08-11 09:48:00 +0900
+description: "RL Reward 설계 시리즈 #48 — MT-GRPO와 MT-PPO로 보는 turn-level credit assignment, 그리고 그 대가로 따라오는 새로운 hacking"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, multi-turn, credit-assignment, grpo, ppo, reward-design, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-[#4](/blog/2026/outcome-vs-process-agentic/)에서 확인한 문제를 한 문장으로 요약하면 이렇다. 에피소드 끝에 보상 하나만 주면, 궤적 중간의 실수 한 번이 그 뒤에 이어진 수십 개의 옳은 행동과 똑같은 credit을 나눠 갖는다. 5턴짜리 검색 에이전트가 3턴째에 엉뚱한 쿼리를 던졌는데 나머지 네 턴은 다 훌륭했다고 하자. 결과만 보고 학습하는 알고리즘은 이 다섯 턴 전부에게 "이 궤적은 실패했다"는 동일한 페널티를 준다. 잘한 턴 네 개가 억울하게 벌을 받는 셈이다.
+[#47](/blog/2026/outcome-vs-process-agentic/)에서 확인한 문제를 한 문장으로 요약하면 이렇다. 에피소드 끝에 보상 하나만 주면, 궤적 중간의 실수 한 번이 그 뒤에 이어진 수십 개의 옳은 행동과 똑같은 credit을 나눠 갖는다. 5턴짜리 검색 에이전트가 3턴째에 엉뚱한 쿼리를 던졌는데 나머지 네 턴은 다 훌륭했다고 하자. 결과만 보고 학습하는 알고리즘은 이 다섯 턴 전부에게 "이 궤적은 실패했다"는 동일한 페널티를 준다. 잘한 턴 네 개가 억울하게 벌을 받는 셈이다.
 
-이 문제에 대한 가장 직관적인 첫 번째 처방은 "궤적을 더 잘게 쪼개자"이다. 그런데 얼마나 잘게? 이 시리즈는 그 답을 입도(granularity) 스펙트럼으로 다룬다 — 에피소드([#4](/blog/2026/outcome-vs-process-agentic/)) → 턴(이 글) → 스텝([#6](/blog/2026/step-level-credit/)) → 토큰·세그먼트([#7](/blog/2026/token-segment-credit/)). 이번 글이 다루는 단위는 **턴**이다. LLM이 한 번 말하고 환경이 한 번 반응하는 자연스러운 사이클을, 신용을 매기는 최소 단위로 승격시키면 무엇이 달라지는가.
+이 문제에 대한 가장 직관적인 첫 번째 처방은 "궤적을 더 잘게 쪼개자"이다. 그런데 얼마나 잘게? 이 시리즈는 그 답을 입도(granularity) 스펙트럼으로 다룬다 — 에피소드([#47](/blog/2026/outcome-vs-process-agentic/)) → 턴(이 글) → 스텝([#49](/blog/2026/step-level-credit/)) → 토큰·세그먼트([#50](/blog/2026/token-segment-credit/)). 이번 글이 다루는 단위는 **턴**이다. LLM이 한 번 말하고 환경이 한 번 반응하는 자연스러운 사이클을, 신용을 매기는 최소 단위로 승격시키면 무엇이 달라지는가.
 
 오늘 다루는 논문은 이 질문에 정면으로 답한다. Wei, Zeng 외(University of Minnesota, Texas A&M, Prime Intellect, Morgan Stanley) 저자들은 보상 구조를 입도에 따라 세 가지로 분류한다 — terminal(에피소드 끝에 하나), delayed(중간 신호를 합쳐놓았지만 여전히 끝에서만 지급), per-turn(각 턴에 명시적으로 지급). 그리고 GRPO와 PPO 각각을 이 세 MDP에 맞게 유도해 **MT-GRPO**와 **MT-PPO**라는 턴 단위 변형을 만든다. 검색 에이전트와 게임 에이전트 실험 모두에서, 결론은 한결같다: 촘촘한 턴 단위 보상이 성긴 terminal·delayed 보상을 학습 안정성과 최종 성능 양쪽에서 이긴다.
 
@@ -51,13 +51,13 @@ related_posts: true
 - **토큰보다 의미 있는 단위다.** 토큰 하나는 의사결정의 파편일 뿐이지만, 턴 하나는 "이 쿼리를 던졌다", "이 함수를 호출했다"처럼 그 자체로 하나의 결정이다.
 - **에피소드보다 촘촘하다.** 중간 신호가 존재하므로, 신용이 궤적 전체로 뭉개지지 않고 실제로 원인이 된 턴 근처에 쌓인다.
 
-그런데 이 이득에는 대가가 따른다. 턴을 credit의 단위로 승격시키는 순간, **"이 턴을 무엇으로 채점할 것인가"**라는 완전히 새로운 문제가 열린다. 도구 호출이 성공했다고 좋은 턴인가? 검색 결과가 정답을 포함하면 좋은 턴인가? 판정은 규칙으로 할 것인가, 별도 모델로 할 것인가? 이 질문은 이 글의 범위를 넘어서며, 이후 3부([#9](/blog/2026/environment-as-reward/) 환경이 곧 reward다, [#10](/blog/2026/tool-call-reward/) 도구 호출을 어떻게 채점하나, [#11](/blog/2026/agentic-judge-rubric/) 궤적을 judge가 채점한다)에서 본격적으로 다룬다. 이 글은 "궤적을 턴 단위로 자른다"는 구조적 선택 자체와, 그 선택이 GRPO·PPO의 수식을 어떻게 바꾸는지에 집중한다.
+그런데 이 이득에는 대가가 따른다. 턴을 credit의 단위로 승격시키는 순간, **"이 턴을 무엇으로 채점할 것인가"**라는 완전히 새로운 문제가 열린다. 도구 호출이 성공했다고 좋은 턴인가? 검색 결과가 정답을 포함하면 좋은 턴인가? 판정은 규칙으로 할 것인가, 별도 모델로 할 것인가? 이 질문은 이 글의 범위를 넘어서며, 이후 11부([#52](/blog/2026/environment-as-reward/) 환경이 곧 reward다, [#53](/blog/2026/tool-call-reward/) 도구 호출을 어떻게 채점하나, [#54](/blog/2026/agentic-judge-rubric/) 궤적을 judge가 채점한다)에서 본격적으로 다룬다. 이 글은 "궤적을 턴 단위로 자른다"는 구조적 선택 자체와, 그 선택이 GRPO·PPO의 수식을 어떻게 바꾸는지에 집중한다.
 
 ## 입도 스펙트럼에서 턴의 위치
 
-[#2](/blog/2026/credit-assignment-survey/)에서 다룬 입도 분류를 상기하자. 이 시리즈의 2부는 credit을 어디에 돌릴지를 성긴 것부터 촘촘한 것까지 늘어놓는다 — **에피소드([#4](/blog/2026/outcome-vs-process-agentic/), 가장 성김) → 턴(지금 글) → 스텝([#6](/blog/2026/step-level-credit/)) → 토큰·세그먼트([#7](/blog/2026/token-segment-credit/), 가장 촘촘)** 순이다.
+[#45](/blog/2026/credit-assignment-survey/)에서 다룬 입도 분류를 상기하자. 이 시리즈의 10부는 credit을 어디에 돌릴지를 성긴 것부터 촘촘한 것까지 늘어놓는다 — **에피소드([#47](/blog/2026/outcome-vs-process-agentic/), 가장 성김) → 턴(지금 글) → 스텝([#49](/blog/2026/step-level-credit/)) → 토큰·세그먼트([#50](/blog/2026/token-segment-credit/), 가장 촘촘)** 순이다.
 
-이 논문의 세 가지 MDP 분류를 이 스펙트럼에 맞춰보면 다음과 같다. terminal reward($$\mathcal{M}_1$$)는 [#4](/blog/2026/outcome-vs-process-agentic/)가 다룬 에피소드 단위 credit 그 자체다. per-turn reward($$\mathcal{M}_3$$)가 바로 이번 글의 턴 단위 credit이다. 그리고 delayed reward($$\mathcal{M}_2$$)는 흥미로운 중간 지점이다 — 보상 자체는 턴마다 정의되지만, 실제로 신호가 전달되는 시점은 에피소드 끝 하나뿐이다. 즉 $$\mathcal{M}_2$$는 "무엇을 보상으로 삼는가"는 턴 단위인데 "언제 그 신호가 도착하는가"는 여전히 에피소드 단위인, 절반만 촘촘해진 설계다.
+이 논문의 세 가지 MDP 분류를 이 스펙트럼에 맞춰보면 다음과 같다. terminal reward($$\mathcal{M}_1$$)는 [#47](/blog/2026/outcome-vs-process-agentic/)가 다룬 에피소드 단위 credit 그 자체다. per-turn reward($$\mathcal{M}_3$$)가 바로 이번 글의 턴 단위 credit이다. 그리고 delayed reward($$\mathcal{M}_2$$)는 흥미로운 중간 지점이다 — 보상 자체는 턴마다 정의되지만, 실제로 신호가 전달되는 시점은 에피소드 끝 하나뿐이다. 즉 $$\mathcal{M}_2$$는 "무엇을 보상으로 삼는가"는 턴 단위인데 "언제 그 신호가 도착하는가"는 여전히 에피소드 단위인, 절반만 촘촘해진 설계다.
 
 ## 세 가지 MDP 정식화
 
@@ -130,7 +130,7 @@ $$
 
 $$\alpha \in [0,1]$$은 현재 항과 미래 항의 상대적 가중치를 조절하는 할인 계수다. 이 값은 $$k$$번째 턴에서 생성된 모든 토큰에 균일하게 할당된다: $$A_{i,1} = \cdots = A_{i,t} = A^{MT\text{-}GRPO}_{i,(k)}$$, $$t$$는 턴 내부 토큰 인덱스다.
 
-이 식의 방향을 극단값으로 검증해보면 직관이 선명해진다. $$\alpha=0$$이면 $$k < K$$인 모든 미래 항이 사라지고, $$A^{MT\text{-}GRPO}_{i,(k)} = A^I_{i,(k)}$$만 남는다 — 완전히 지역적인 credit이다. $$\alpha=1$$이면 $$A^{MT\text{-}GRPO}_{i,(k)} = \sum_{l=k}^{K-1} A^I_{i,(l)} + A_i^O$$로, 미래의 모든 중간 advantage와 최종 outcome advantage가 감쇠 없이 그대로 더해진다 — 사실상 [#4](/blog/2026/outcome-vs-process-agentic/)식의 전체 합산에 가까워진다. $$\alpha$$는 그 사이 어딘가에서, "이 턴의 성적을 얼마나 지역적으로 볼 것인가, 얼마나 뒤에 벌어질 일까지 반영할 것인가"를 정한다.
+이 식의 방향을 극단값으로 검증해보면 직관이 선명해진다. $$\alpha=0$$이면 $$k < K$$인 모든 미래 항이 사라지고, $$A^{MT\text{-}GRPO}_{i,(k)} = A^I_{i,(k)}$$만 남는다 — 완전히 지역적인 credit이다. $$\alpha=1$$이면 $$A^{MT\text{-}GRPO}_{i,(k)} = \sum_{l=k}^{K-1} A^I_{i,(l)} + A_i^O$$로, 미래의 모든 중간 advantage와 최종 outcome advantage가 감쇠 없이 그대로 더해진다 — 사실상 [#47](/blog/2026/outcome-vs-process-agentic/)식의 전체 합산에 가까워진다. $$\alpha$$는 그 사이 어딘가에서, "이 턴의 성적을 얼마나 지역적으로 볼 것인가, 얼마나 뒤에 벌어질 일까지 반영할 것인가"를 정한다.
 
 **롤아웃 구조의 비용.** GRPO-OR와 GRPO-MR은 궤적 하나를 통째로 샘플링하는 chain 구조라 계산량이 턴 수에 선형으로 늘어난다. 반면 MT-GRPO는 각 상태 $$s_k$$에서 다시 $$G$$개를 가지치기하는 tree 구조라, $$K$$턴에 걸쳐 총 $$G^{K-1}$$개의 롤아웃 궤적이 필요하다. $$K=2$$(이 논문의 실제 실험 설정)면 $$G^{2-1}=G$$로 vanilla GRPO와 같지만, 예컨대 $$K=4$$, $$G=4$$라면 $$4^3=64$$개의 궤적이 필요해진다. 턴이 늘수록 이 비용은 감당하기 어려워진다.
 
@@ -201,7 +201,7 @@ $$\mathcal{M}_3$$에서는 $$r_j$$가 턴 경계 토큰에서만 $$R^I$$ 또는 
 | 선택           | 방식                                       | 장점                                                                                                                                  | 위험                                                                                                                                                                                                                                                                            |
 | -------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 턴 보상의 출처 | 규칙(도구 성공 여부)                       | 검증 가능, 저렴, 재현 가능                                                                                                            | 형식만 맞으면 만점 — 실제로 유용했는지는 못 봄 (예: 이 논문의 Tool Execution Reward는 도구 호출이 형식에 맞고 에러가 없으면 +0.2를 주는데, 검색 결과가 쓸모 있었는지는 별개 항목이다)                                                                                           |
-|                | 판정 모델(LLM judge)                       | 형식·정보 품질·효율성 같은 의미 수준 신호를 함께 볼 수 있음 (이 논문은 GPT-OSS-120B로 포맷 준수 +0.1/-0.2, 정보 품질 +0.3/0.0을 매김) | 추론 비용 발생, judge 자체가 편향되거나 게임당할 수 있음 (→ [#11](/blog/2026/agentic-judge-rubric/))                                                                                                                                                                            |
+|                | 판정 모델(LLM judge)                       | 형식·정보 품질·효율성 같은 의미 수준 신호를 함께 볼 수 있음 (이 논문은 GPT-OSS-120B로 포맷 준수 +0.1/-0.2, 정보 품질 +0.3/0.0을 매김) | 추론 비용 발생, judge 자체가 편향되거나 게임당할 수 있음 (→ [#54](/blog/2026/agentic-judge-rubric/))                                                                                                                                                                            |
 |                | 환경 신호                                  | 가장 근거가 확실함 — 과제 자체의 물리적 결과 (예: Sokoban의 박스-목표 배치는 규칙도 judge도 아닌 환경 상태 그 자체)                   | 모든 환경이 이런 촘촘한 신호를 주지는 않음                                                                                                                                                                                                                                      |
 | 결합 방식      | 단순 합                                    | 구현이 간단                                                                                                                           | $$\mathcal{M}_2$$처럼 궤적 끝으로 다시 뭉개짐 — 턴 국소성을 잃는다                                                                                                                                                                                                              |
 |                | 할인 가중합                                | 가까운 턴과 먼 턴의 기여를 구분 (MT-GRPO의 $$\alpha$$, Eq. 5)                                                                         | 새 하이퍼파라미터가 늘어남 — 이 논문도 $$\alpha$$의 실험값을 본문에 명시하지 않는다                                                                                                                                                                                             |
@@ -308,7 +308,7 @@ $$
 | 4   | 다시 관련 문서 검색 (만회 시도)       | -1.00                               | **0.000**                |
 | 5   | 최종 답 오답                          | -1.00                               | -1.000                   |
 
-에피소드 단위는 다섯 턴 모두에게 똑같이 $$-1.00$$을 준다 — 정작 문제를 일으킨 3턴과, 제 역할을 다한 1·2·4턴을 구분하지 못한다. 턴 단위는 3턴에만 뚜렷한 음수 신호($$-0.300$$)를 주고, 1턴은 여전히 크게 양수($$+0.675$$)로 남는다. 다만 여기서 짚어야 할 한계가 하나 있다. $$\alpha$$가 만드는 감쇠 때문에 실패라는 결과의 그림자가 뒤로 갈수록 약하게, 그러나 여전히 모든 턴에 조금씩 드리운다 — 1턴의 credit도 원래의 지역 보상 $$+0.50$$보다는 낮아진 $$+0.675$$가 아니라(오히려 미래 항이 더해져 커졌다), 4턴은 원래 $$+0.50$$이었던 지역 보상이 결과의 그림자에 완전히 상쇄되어 $$0.000$$이 된다. 즉 턴 단위 credit이 "누가 문제를 일으켰는가"는 훨씬 더 정확히 짚어내지만, "실패의 결과가 나타난 지점(5턴)"과 "실패의 원인이 발생한 지점(3턴)"을 완전히 분리해주는 것은 아니다 — 이 지연된 인과관계 문제는 더 촘촘한 단위([#6](/blog/2026/step-level-credit/), [#7](/blog/2026/token-segment-credit/))로 가도 완전히는 풀리지 않는, credit assignment의 근본적인 어려움이다.
+에피소드 단위는 다섯 턴 모두에게 똑같이 $$-1.00$$을 준다 — 정작 문제를 일으킨 3턴과, 제 역할을 다한 1·2·4턴을 구분하지 못한다. 턴 단위는 3턴에만 뚜렷한 음수 신호($$-0.300$$)를 주고, 1턴은 여전히 크게 양수($$+0.675$$)로 남는다. 다만 여기서 짚어야 할 한계가 하나 있다. $$\alpha$$가 만드는 감쇠 때문에 실패라는 결과의 그림자가 뒤로 갈수록 약하게, 그러나 여전히 모든 턴에 조금씩 드리운다 — 1턴의 credit도 원래의 지역 보상 $$+0.50$$보다는 낮아진 $$+0.675$$가 아니라(오히려 미래 항이 더해져 커졌다), 4턴은 원래 $$+0.50$$이었던 지역 보상이 결과의 그림자에 완전히 상쇄되어 $$0.000$$이 된다. 즉 턴 단위 credit이 "누가 문제를 일으켰는가"는 훨씬 더 정확히 짚어내지만, "실패의 결과가 나타난 지점(5턴)"과 "실패의 원인이 발생한 지점(3턴)"을 완전히 분리해주는 것은 아니다 — 이 지연된 인과관계 문제는 더 촘촘한 단위([#49](/blog/2026/step-level-credit/), [#50](/blog/2026/token-segment-credit/))로 가도 완전히는 풀리지 않는, credit assignment의 근본적인 어려움이다.
 
 ## 반례 — 턴 단위 보상이 만드는 새로운 hacking
 
@@ -329,7 +329,7 @@ $$
 
 논문은 이 현상을 정확히 짚는다 — turn-decomposed PPO는 종종 **높은 intermediate reward를 달성하면서도 낮은 outcome reward를 낸다.** 모델이 지역적인 턴 단위 신호에 과최적화되어, 그 신호를 최종 과제 성공과 충분히 정렬시키지 못한다는 뜻이다. 학습 단위 자체를 턴으로 쪼개면 모델은 "이 턴에서 좋은 점수를 받는 법"은 배우지만, 그 턴이 궤적 전체의 성공에 실제로 기여하는지는 놓친다.
 
-두 사례 모두 같은 구조를 공유한다. 턴 단위 보상은 credit을 정확한 위치에 심어주지만, 그 신호 자체가 최종 목표의 완벽한 대리(proxy)는 아니다. 신호와 목표 사이의 간극을 정책이 찾아내 파고들면, 그것이 곧 hacking이다. 이 문제는 [#8](/blog/2026/reward-shaping-agentic/)의 shaping 위험(중간 보상을 얼마나 세게 줄 것인가), 그리고 [#15](/blog/2026/agentic-reward-hacking/)의 에이전트 reward hacking 전반으로 이어진다.
+두 사례 모두 같은 구조를 공유한다. 턴 단위 보상은 credit을 정확한 위치에 심어주지만, 그 신호 자체가 최종 목표의 완벽한 대리(proxy)는 아니다. 신호와 목표 사이의 간극을 정책이 찾아내 파고들면, 그것이 곧 hacking이다. 이 문제는 [#51](/blog/2026/reward-shaping-agentic/)의 shaping 위험(중간 보상을 얼마나 세게 줄 것인가), 그리고 [#58](/blog/2026/agentic-reward-hacking/)의 에이전트 reward hacking 전반으로 이어진다.
 
 # 설계 선택 요약
 
@@ -350,7 +350,7 @@ $$
 
 그러나 이 이득은 공짜가 아니다. MT-GRPO는 $$G^{K-1}$$로 폭발하는 롤아웃 비용과 고정 턴수 제약을 대가로 치른다. MT-PPO는 GAE의 텔레스코핑 성질 덕분에 이 폭발을 피하지만, 턴 단위 보상 자체를 순진하게 다루면(turn-decomposed 학습처럼) 지역 신호에 과최적화되어 오히려 최종 성능이 떨어진다. 그리고 턴 단위 보상은 그 자체로 새로운 hacking의 표적이 된다 — 검색 효율 페널티가 없으면 에이전트는 도구를 남발한다.
 
-이 글이 다룬 것은 "궤적을 턴으로 자른다"는 구조적 선택과, 그 선택이 GRPO·PPO의 수식을 어떻게 바꾸는지였다. 정작 각 턴을 무엇으로 채점할 것인가 — 규칙인가, judge인가, 환경 신호인가 — 는 이 논문도 세 가지를 다 시도해봤을 뿐 완전히 정리하지는 않는다. 이 질문은 3부([#9](/blog/2026/environment-as-reward/), [#10](/blog/2026/tool-call-reward/), [#11](/blog/2026/agentic-judge-rubric/))에서 이어간다.
+이 글이 다룬 것은 "궤적을 턴으로 자른다"는 구조적 선택과, 그 선택이 GRPO·PPO의 수식을 어떻게 바꾸는지였다. 정작 각 턴을 무엇으로 채점할 것인가 — 규칙인가, judge인가, 환경 신호인가 — 는 이 논문도 세 가지를 다 시도해봤을 뿐 완전히 정리하지는 않는다. 이 질문은 11부([#52](/blog/2026/environment-as-reward/), [#53](/blog/2026/tool-call-reward/), [#54](/blog/2026/agentic-judge-rubric/))에서 이어간다.
 
 # 참고 문헌
 
@@ -366,21 +366,104 @@ $$
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 다섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 마흔여덟 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><strong>(현재 글)</strong> 턴 단위로 공을 나눈다 — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -388,32 +471,35 @@ $$
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

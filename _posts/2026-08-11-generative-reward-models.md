@@ -2,7 +2,7 @@
 layout: post
 title: "Generative Reward Models: GenRM과 선호 학습을 잇다"
 date: 2026-08-11 09:36:00 +0900
-description: "RLHF Reward 설계 시리즈 #36 — 판별 RM과 생성 judge 사이, 그리고 CLoud 하이브리드"
+description: "RL Reward 설계 시리즈 #36 — 판별 RM과 생성 judge 사이, 그리고 CLoud 하이브리드"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, dpo, llm-as-a-judge, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[35편](/blog/2026/generative-verifiers/)에서는 reward를 next-token prediction으로 다시 정의하는 **Generative Verifier**를 다뤘다. 모델이 "이 풀이가 맞는가"를 직접 next token으로 판정하게 만들면, 판별형 스칼라 RM보다 검증 성능이 좋아진다는 결과였다. 다만 그 글의 방법에는 조건이 하나 붙어 있었다. **정답이 있어야 한다**는 것이다. 수학 문제의 정답, 코드의 테스트케이스처럼 학습 시점에 참조할 수 있는 ground-truth solution이 있어야 "이 풀이가 정답과 일치하는가"를 판정할 수 있었다.
+[#35](/blog/2026/generative-verifiers/)에서는 reward를 next-token prediction으로 다시 정의하는 **Generative Verifier**를 다뤘다. 모델이 "이 풀이가 맞는가"를 직접 next token으로 판정하게 만들면, 판별형 스칼라 RM보다 검증 성능이 좋아진다는 결과였다. 다만 그 글의 방법에는 조건이 하나 붙어 있었다. **정답이 있어야 한다**는 것이다. 수학 문제의 정답, 코드의 테스트케이스처럼 학습 시점에 참조할 수 있는 ground-truth solution이 있어야 "이 풀이가 정답과 일치하는가"를 판정할 수 있었다.
 
 그런데 RLHF가 다루는 문제의 대부분은 정답이 없다. "이 이메일 요약이 저 이메일 요약보다 낫다"거나 "이 답변이 더 친절하다"는 판단에는 검증 가능한 정답이 없고, 오직 **사람의 선호(preference)**만 있다. 이 글에서 다루는 논문 [Generative Reward Models](https://arxiv.org/abs/2410.12832)(GenRM, Mahan et al., SynthLabs & Stanford, 2024)는 바로 이 지점에서 34편을 확장한다. 논문 자신도 관련 연구 절에서 이 차이를 명시한다 — 동시대 연구인 Generative Verifier는 "학습 시점에 전체 참조 풀이(reference solution)에 접근할 수 있어야 한다"는 조건이 있지만, GenRM은 그런 조건 없이 **쌍대 선호 데이터만으로** 생성형 judge를 학습시킨다.
 
@@ -22,13 +22,13 @@ related_posts: true
 - **판별형 스칼라 RM** (2부, 4~9편): 사람이 매긴 선호 쌍으로 Bradley-Terry loss를 학습해 응답 하나에 실수 하나를 매긴다. In-distribution에서는 정확하지만, 분포가 바뀌면(OOD) 쉽게 무너진다.
 - **RLAIF / LLM-as-judge**: 강력한 LLM에게 "어느 쪽이 나은가"를 직접 물어본다. 별도 학습 없이 유연하지만, 논문의 표현을 빌리면 **zero-shot judge는 in-distribution 과제에서 Bradley-Terry RM보다 9~36% 낮은 정확도**를 보인다 — 즉 사람의 실제 선호와 정렬이 덜 되어 있다.
 
-GenRM의 제안은 단순하다. **이 둘을 섞는다.** 사람 선호 데이터(RLHF의 재료)로 생성형 judge(RLAIF의 형태)를 학습시키면, 판별형 RM의 정확도와 생성형 judge의 견고함을 동시에 가질 수 있다는 것이다. 실제로 논문은 GenRM이 in-distribution에서는 Bradley-Terry RM과 대등하면서 **out-of-distribution에서는 10~45% 더 높은 정확도**를 낸다고 보고한다. 이 글은 그 방법(GenRM, CoT-GenRM)과, 비슷한 시기에 나온 하이브리드 접근인 **CLoud**(Critique-out-Loud Reward Models, Ankner et al., Databricks, 2024)를 함께 들여다본다. 그리고 이 논문이 남긴 두 개의 빚 — 추론 시점 계산을 어떻게 더 적극적으로 쓸 것인가는 [38편](/blog/2026/deepseek-grm-spct/)으로, 생성형 judge가 여전히 속아 넘어가는 문제는 [43편](/blog/2026/one-token-to-fool-judge/)으로 넘어간다.
+GenRM의 제안은 단순하다. **이 둘을 섞는다.** 사람 선호 데이터(RLHF의 재료)로 생성형 judge(RLAIF의 형태)를 학습시키면, 판별형 RM의 정확도와 생성형 judge의 견고함을 동시에 가질 수 있다는 것이다. 실제로 논문은 GenRM이 in-distribution에서는 Bradley-Terry RM과 대등하면서 **out-of-distribution에서는 10~45% 더 높은 정확도**를 낸다고 보고한다. 이 글은 그 방법(GenRM, CoT-GenRM)과, 비슷한 시기에 나온 하이브리드 접근인 **CLoud**(Critique-out-Loud Reward Models, Ankner et al., Databricks, 2024)를 함께 들여다본다. 그리고 이 논문이 남긴 두 개의 빚 — 추론 시점 계산을 어떻게 더 적극적으로 쓸 것인가는 [#38](/blog/2026/deepseek-grm-spct/)으로, 생성형 judge가 여전히 속아 넘어가는 문제는 [#43](/blog/2026/one-token-to-fool-judge/)으로 넘어간다.
 
 # Background
 
 ## Bradley-Terry와 RLHF 파이프라인 (복습)
 
-[4편](/blog/2026/bradley-terry-rethinking/)에서 다룬 대로, 표준 RLHF는 사람이 매긴 선호 쌍 $$(x, y_w, y_l)$$ — $$x$$는 프롬프트, $$y_w$$는 선호된 응답, $$y_l$$은 비선호 응답 — 을 Bradley-Terry 모델로 설명한다.
+[#4](/blog/2026/bradley-terry-rethinking/)에서 다룬 대로, 표준 RLHF는 사람이 매긴 선호 쌍 $$(x, y_w, y_l)$$ — $$x$$는 프롬프트, $$y_w$$는 선호된 응답, $$y_l$$은 비선호 응답 — 을 Bradley-Terry 모델로 설명한다.
 
 $$p_{BT}(y_1 \succ y_2 \mid x) = \frac{\exp(r(x,y_1))}{\exp(r(x,y_1)) + \exp(r(x,y_2))} = \sigma(r(x,y_1) - r(x,y_2))$$
 
@@ -36,7 +36,7 @@ $$p_{BT}(y_1 \succ y_2 \mid x) = \frac{\exp(r(x,y_1))}{\exp(r(x,y_1)) + \exp(r(x
 
 $$\mathcal{L}_{rew}(r_\phi) = -\mathbb{E}_{(x,y_w,y_l)\sim D}\big[\log \sigma(r_\phi(x,y_w) - r_\phi(x,y_l))\big]$$
 
-이 되고, 이렇게 학습된 $$r_\phi$$를 PPO([20편](/blog/2026/ppo/))로 최적화하는 것이 표준 3단계 RLHF다. 핵심은 여기서 $$r_\phi$$가 **SFT 모델의 최종 임베딩 위에 얹은 선형 예측 헤드 하나**일 뿐이라는 점이다. 모델의 언어 생성 능력(LM head)은 이 헤드를 학습하는 동안 버려진다.
+이 되고, 이렇게 학습된 $$r_\phi$$를 PPO([#20](/blog/2026/ppo/))로 최적화하는 것이 표준 3단계 RLHF다. 핵심은 여기서 $$r_\phi$$가 **SFT 모델의 최종 임베딩 위에 얹은 선형 예측 헤드 하나**일 뿐이라는 점이다. 모델의 언어 생성 능력(LM head)은 이 헤드를 학습하는 동안 버려진다.
 
 ## STaR: 스스로 추론을 만들어 학습하기
 
@@ -90,7 +90,7 @@ $$\mathcal{L}_{GenRM\text{-}Rationalization}(\pi_\phi) = \mathbb{E}_{(x,y_1,y_2,
 
 ## STaR-DPO: 판정 자체를 DPO로 최적화한다
 
-여기서부터가 이 논문이 [24편 DPO](/blog/2026/dpo/)와 정확히 만나는 지점이다. 정답 판정 $$I_w$$로 이어진 추론 $$r_w$$와, 오답 판정 $$I_l$$로 이어진 추론 $$r_l$$을 한 쌍으로 묶으면, "옳게 판정한 추론"과 "틀리게 판정한 추론" 사이의 선호 쌍이 생긴다. 이걸 그대로 DPO 목적함수에 넣은 것이 STaR-DPO다.
+여기서부터가 이 논문이 [#24 DPO](/blog/2026/dpo/)와 정확히 만나는 지점이다. 정답 판정 $$I_w$$로 이어진 추론 $$r_w$$와, 오답 판정 $$I_l$$로 이어진 추론 $$r_l$$을 한 쌍으로 묶으면, "옳게 판정한 추론"과 "틀리게 판정한 추론" 사이의 선호 쌍이 생긴다. 이걸 그대로 DPO 목적함수에 넣은 것이 STaR-DPO다.
 
 $$\mathcal{L}_{GenRM\text{-}DPO}(\pi_\phi) = \mathbb{E}_D\left[\log \sigma\left(\beta \log\frac{\pi_\phi(I_w,r_w\mid x,y_1,y_2)}{\pi_{ref}(I_w,r_w\mid x,y_1,y_2)} - \beta \log\frac{\pi_\phi(I_l,r_l\mid x,y_1,y_2)}{\pi_{ref}(I_l,r_l\mid x,y_1,y_2)}\right)\right]$$
 
@@ -114,7 +114,7 @@ STaR 반복 절차는 다음 네 단계를 여러 iteration 반복한다.
 - Assistant A: "Dolphin and shark." (돌고래와 상어)
 - Assistant B: "Common ocean animals include sharks, whales, and dolphins." (흔한 바다 동물로는 상어, 고래, 돌고래가 있다)
 
-**(a) 스칼라 RM (가상 예시).** 스칼라 RM은 근거를 보여주지 않고 숫자만 낸다고 해보자. $$r(x,\text{A})=0.61$$, $$r(x,\text{B})=0.74$$처럼 B에 더 높은 점수를 줬다고 치면, 우리는 **왜** 그런지 알 방법이 없다. [11편](/blog/2026/rlhf-length-correlations/)에서 다룬 길이-보상 상관관계를 생각하면 "더 길고 항목이 많은 응답을 선호하는" 표면적 휴리스틱일 가능성이 있지만, 스칼라 헤드 안에서 무슨 일이 일어났는지는 근본적으로 검증할 수 없다. 이게 스칼라 RM의 해석 불가능성이다.
+**(a) 스칼라 RM (가상 예시).** 스칼라 RM은 근거를 보여주지 않고 숫자만 낸다고 해보자. $$r(x,\text{A})=0.61$$, $$r(x,\text{B})=0.74$$처럼 B에 더 높은 점수를 줬다고 치면, 우리는 **왜** 그런지 알 방법이 없다. [#11](/blog/2026/rlhf-length-correlations/)에서 다룬 길이-보상 상관관계를 생각하면 "더 길고 항목이 많은 응답을 선호하는" 표면적 휴리스틱일 가능성이 있지만, 스칼라 헤드 안에서 무슨 일이 일어났는지는 근본적으로 검증할 수 없다. 이게 스칼라 RM의 해석 불가능성이다.
 
 **(b) CoT 없는 생성 judge (GenRM, no CoT).** next-token 확률만으로 판정하면 역시 근거는 없다. 다만 이 경우엔 확률값 자체는 볼 수 있다 — 예컨대 $$\pi_\phi(I_B \mid x,y_A,y_B) = 0.71$$처럼. 근거는 없지만 최소한 "판정의 확신도(confidence)"는 얻는다.
 
@@ -170,9 +170,9 @@ GenRM 논문은 자신의 Related Work에서 CLoud(Ankner et al., 2024)를 동�
 
 ## 해석 가능성: 고정된 축 vs 자유 텍스트
 
-[7편 ArmoRM](/blog/2026/armorm/)이 택한 해석 가능성 전략과 GenRM의 전략은 방향이 정반대다. ArmoRM은 정직성·장황함·안전성 등 **19개의 고정된 목적함수**를 사람이 미리 설계하고, MoE 게이팅 네트워크가 BT loss로 학습되어 이 19개 점수를 상황별로 가중합한다. GenRM은 반대로 아무 축도 미리 정하지 않는다. 판정마다 모델이 그때그때 자유 텍스트로 근거를 구성한다.
+[#7 ArmoRM](/blog/2026/armorm/)이 택한 해석 가능성 전략과 GenRM의 전략은 방향이 정반대다. ArmoRM은 정직성·장황함·안전성 등 **19개의 고정된 목적함수**를 사람이 미리 설계하고, MoE 게이팅 네트워크가 BT loss로 학습되어 이 19개 점수를 상황별로 가중합한다. GenRM은 반대로 아무 축도 미리 정하지 않는다. 판정마다 모델이 그때그때 자유 텍스트로 근거를 구성한다.
 
-| 항목           | ArmoRM ([7편](/blog/2026/armorm/))               | GenRM (이 글)                                                                     |
+| 항목           | ArmoRM ([#7](/blog/2026/armorm/))                | GenRM (이 글)                                                                     |
 | -------------- | ------------------------------------------------ | --------------------------------------------------------------------------------- |
 | 해석 채널      | 19개의 고정된 목적함수 점수                      | 자유 형식 자연어 근거 $$r$$                                                       |
 | 축의 정의 시점 | 학습 이전, 사람이 설계                           | 없음 — 그때그때 생성                                                              |
@@ -186,7 +186,7 @@ GenRM 논문은 자신의 Related Work에서 CLoud(Ankner et al., 2024)를 동�
 
 ## Zero-shot: CoT 프롬프팅만으로도 큰 격차가 생긴다
 
-모든 실험은 LLaMA-3.1-8B-Instruct를 기반으로, UltraFeedback(6.1만 쌍, 일반 instruction-following)과 UltraInteract(수학/코드/논리 추론 트리)를 학습 데이터로, RewardBench(Chat / Chat Hard / Safety / Reasoning 네 범주, [9편](/blog/2026/rewardbench-2/)에서 다룬 평가 방법론의 전신)를 OOD 평가로 쓴다.
+모든 실험은 LLaMA-3.1-8B-Instruct를 기반으로, UltraFeedback(6.1만 쌍, 일반 instruction-following)과 UltraInteract(수학/코드/논리 추론 트리)를 학습 데이터로, RewardBench(Chat / Chat Hard / Safety / Reasoning 네 범주, [#9](/blog/2026/rewardbench-2/)에서 다룬 평가 방법론의 전신)를 OOD 평가로 쓴다.
 
 학습 없이 프롬프팅만 바꿔도 격차가 크다. **CoT 없이 직접 토큰 확률만 뽑으면** UltraFeedback 52.25%, RewardBench 60.60%에 그치지만, **같은 모델에 CoT로 추론을 시키면(zero-shot LLM-as-judge)** UltraFeedback 67.75%, RewardBench 75.18%로 뛴다. 추론을 강제하는 것만으로 15%p 안팎의 정확도가 그냥 생긴다.
 
@@ -217,7 +217,7 @@ UltraInteract(추론 위주)로 학습했을 때, in-distribution 정확도는 S
 
 ## 추론 시점 계산: 다수결의 효과
 
-CoT-GenRM은 여러 개의 추론을 샘플링해 다수결로 최종 판정을 낼 수 있다. 32개 샘플로 다수결을 하면 UltraFeedback에서 +1.6%p, RewardBench에서 +3.8%p, UltraInteract 학습 모델 기준으로는 UltraInteract에서 +4.6%p, RewardBench에서 +4.9%p 개선된다. CLoud도 비슷한 실험(self-consistency decoding, N개 critique를 샘플링해 보상을 평균)을 했는데, 결과가 흥미롭게 엇갈린다. CLoud는 **추론(Reasoning) 범주에서만** 이득을 봤고(8B +0.70%p, 70B +0.49%p), 그마저도 응답의 추론 단계가 1~2단계로 짧은 문제에서만 일관되게 좋아졌다. 두 논문 모두 "다수결이 추론 과제에서 특히 효과적"이라는 같은 신호를 보내지만, 이걸 어떻게 체계적으로 최대화할지는 아직 이 논문들의 범위 밖이다 — [38편](/blog/2026/deepseek-grm-spct/)이 이 지점을 정면으로 다룬다.
+CoT-GenRM은 여러 개의 추론을 샘플링해 다수결로 최종 판정을 낼 수 있다. 32개 샘플로 다수결을 하면 UltraFeedback에서 +1.6%p, RewardBench에서 +3.8%p, UltraInteract 학습 모델 기준으로는 UltraInteract에서 +4.6%p, RewardBench에서 +4.9%p 개선된다. CLoud도 비슷한 실험(self-consistency decoding, N개 critique를 샘플링해 보상을 평균)을 했는데, 결과가 흥미롭게 엇갈린다. CLoud는 **추론(Reasoning) 범주에서만** 이득을 봤고(8B +0.70%p, 70B +0.49%p), 그마저도 응답의 추론 단계가 1~2단계로 짧은 문제에서만 일관되게 좋아졌다. 두 논문 모두 "다수결이 추론 과제에서 특히 효과적"이라는 같은 신호를 보내지만, 이걸 어떻게 체계적으로 최대화할지는 아직 이 논문들의 범위 밖이다 — [#38](/blog/2026/deepseek-grm-spct/)이 이 지점을 정면으로 다룬다.
 
 # Conclusion
 
@@ -226,15 +226,25 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
 한계도 분명하다.
 
 - **추론 비용.** CoT-GenRM은 판정마다 수백 토큰의 추론을 생성해야 하고, 다수결까지 쓰면 N배로 늘어난다. 스칼라 RM의 순전파 1회와는 비교가 안 된다. CLoud도 critique 생성만큼의 추가 지연이 붙는다.
-- **생성형 judge 특유의 편향.** 토이 예제에서 본 verbosity bias(장황한 응답을 무조건 선호) 외에도, 논문은 프롬프트 설계 단계에서부터 position bias(응답 순서가 판정에 영향을 주는 것)를 피하려 명시적으로 지시문을 넣는다. self-enhancement bias(judge가 자기 자신과 비슷한 스타일의 응답을 선호하는 것) 같은 문제는 이 논문에서 직접 다루지 않는다. 이런 편향들이 실제로 얼마나 쉽게 판정을 뒤집을 수 있는지는 [43편](/blog/2026/one-token-to-fool-judge/)에서 훨씬 극단적인 형태로 확인하게 된다.
+- **생성형 judge 특유의 편향.** 토이 예제에서 본 verbosity bias(장황한 응답을 무조건 선호) 외에도, 논문은 프롬프트 설계 단계에서부터 position bias(응답 순서가 판정에 영향을 주는 것)를 피하려 명시적으로 지시문을 넣는다. self-enhancement bias(judge가 자기 자신과 비슷한 스타일의 응답을 선호하는 것) 같은 문제는 이 논문에서 직접 다루지 않는다. 이런 편향들이 실제로 얼마나 쉽게 판정을 뒤집을 수 있는지는 [#43](/blog/2026/one-token-to-fool-judge/)에서 훨씬 극단적인 형태로 확인하게 된다.
 
 정확한 판정 근거를 보여주는 judge라 해도, 그 근거가 사람을 설득하기 위한 그럴듯한 텍스트일 뿐일 위험은 여전히 남는다.
 
+# 참고 문헌
+
+- Mahan et al., 2024. [Generative Reward Models](https://arxiv.org/abs/2410.12832).
+- Ankner et al., 2024. [Critique-out-Loud Reward Models](https://arxiv.org/abs/2408.11791). [코드](https://github.com/zankner/CLoud)
+- Zelikman et al., 2022. [STaR: Bootstrapping Reasoning With Reasoning](https://arxiv.org/abs/2203.14465).
+- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290).
+- Bradley & Terry, 1952. Rank Analysis of Incomplete Block Designs.
+- Wang et al., 2024. [Interpretable Preferences via Multi-Objective Reward Modeling and Mixture-of-Experts (ArmoRM)](https://arxiv.org/abs/2406.12845).
+- Lambert et al., 2024. [RewardBench](https://arxiv.org/abs/2403.13787).
+
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른여섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 서른여섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -309,7 +319,7 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -319,22 +329,53 @@ GenRM의 메시지를 한 줄로 요약하면: **RLHF의 정확함과 RLAIF의 �
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Mahan et al., 2024. [Generative Reward Models](https://arxiv.org/abs/2410.12832).
-- Ankner et al., 2024. [Critique-out-Loud Reward Models](https://arxiv.org/abs/2408.11791). [코드](https://github.com/zankner/CLoud)
-- Zelikman et al., 2022. [STaR: Bootstrapping Reasoning With Reasoning](https://arxiv.org/abs/2203.14465).
-- Rafailov et al., 2023. [Direct Preference Optimization](https://arxiv.org/abs/2305.18290).
-- Bradley & Terry, 1952. Rank Analysis of Incomplete Block Designs.
-- Wang et al., 2024. [Interpretable Preferences via Multi-Objective Reward Modeling and Mixture-of-Experts (ArmoRM)](https://arxiv.org/abs/2406.12845).
-- Lambert et al., 2024. [RewardBench](https://arxiv.org/abs/2403.13787).
+본 시리즈는 62편으로 구성된다.

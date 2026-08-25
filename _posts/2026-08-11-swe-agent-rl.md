@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "코드 에이전트 — SWE-RL과 테스트라는 reward"
-date: 2026-08-25 09:13:00 +0900
-description: "Agentic RL 설계 시리즈 #13 — SWE-RL·SWE-Gym·R2E-Gym이 테스트라는 축복받은 reward를 실제로 어떻게(안) 쓰는가"
+date: 2026-08-11 09:56:00 +0900
+description: "RL Reward 설계 시리즈 #56 — SWE-RL·SWE-Gym·R2E-Gym이 테스트라는 축복받은 reward를 실제로 어떻게(안) 쓰는가"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, code-agent, swe-bench, reward-hacking, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [#9](/blog/2026/environment-as-reward/)에서 "환경이 곧 reward"라는 명제를 다뤘다. 게임처럼 승패가 명확한 환경, 컴파일러처럼 통과/실패가 분명한 환경일수록 reward hacking의 여지가 줄어든다는 이야기였다. 코드 에이전트는 이 명제가 가장 강력하게 적용될 것 같은 도메인이다. 소프트웨어 이슈를 고치는 문제에는 **테스트**라는, 사람이 이미 만들어둔 자동화된 판정자가 딸려 있기 때문이다. 사람의 취향을 학습해야 하는 judge도, 애매한 rubric도 필요 없다. 코드를 고치고, 테스트를 돌리고, 초록 불이 켜지면 끝이다.
+이 시리즈 [#52](/blog/2026/environment-as-reward/)에서 "환경이 곧 reward"라는 명제를 다뤘다. 게임처럼 승패가 명확한 환경, 컴파일러처럼 통과/실패가 분명한 환경일수록 reward hacking의 여지가 줄어든다는 이야기였다. 코드 에이전트는 이 명제가 가장 강력하게 적용될 것 같은 도메인이다. 소프트웨어 이슈를 고치는 문제에는 **테스트**라는, 사람이 이미 만들어둔 자동화된 판정자가 딸려 있기 때문이다. 사람의 취향을 학습해야 하는 judge도, 애매한 rubric도 필요 없다. 코드를 고치고, 테스트를 돌리고, 초록 불이 켜지면 끝이다.
 
 그런데 실제로 이 편을 조사하면서 나온 논문 네 편을 읽다 보면 이상한 패턴이 반복된다. **테스트가 있는데도 그 논문들 중 어느 것도 "테스트 통과를 reward로 삼아 policy gradient를 직접 돌린다"는 가장 단순한 방식을 쓰지 않는다.**
 
@@ -28,7 +28,7 @@ related_posts: true
 
 ## 이 도메인에서 세 조달처가 섞이는 방식
 
-RLHF Reward 설계 시리즈와 이 시리즈([#9](/blog/2026/environment-as-reward/), [#10](/blog/2026/tool-call-reward/), [#11](/blog/2026/agentic-judge-rubric/))에서 reward의 조달처를 셋으로 나눴다 — 환경 검증, 도구 신호, judge 채점. 코드 에이전트는 이 셋이 특히 뚜렷하게 분리되어 나타나는 도메인이다.
+RL Reward 설계 시리즈와 이 시리즈([#52](/blog/2026/environment-as-reward/), [#53](/blog/2026/tool-call-reward/), [#54](/blog/2026/agentic-judge-rubric/))에서 reward의 조달처를 셋으로 나눴다 — 환경 검증, 도구 신호, judge 채점. 코드 에이전트는 이 셋이 특히 뚜렷하게 분리되어 나타나는 도메인이다.
 
 1. **환경**: 코드를 실제로 실행해서 테스트가 통과하는지 보는 것. 가장 신뢰도가 높지만 비용이 크고(Docker 컨테이너를 띄우고, 의존성을 설치하고, 테스트 스위트를 돌려야 한다) 판정의 질이 테스트 자체의 질에 종속된다.
 2. **도구**: 파일 편집, bash 명령 실행, 검색 같은 개별 행동이 형식적으로 성공했는지. "diff가 문법적으로 유효한 patch인가", "명령어가 에러 없이 끝났는가" 같은 낮은 수준의 신호다.
@@ -48,17 +48,17 @@ SWE-bench 자체 — 12개 레포지토리에서 뽑은 2,294개의 실제 GitHu
 
 ## 왜 테스트 통과는 희소한 신호인가
 
-[#4](/blog/2026/outcome-vs-process-agentic/)에서 결과 reward의 근본 문제를 다뤘다. 코드 에이전트에 대입하면 이렇다. 궤적 하나가 파일 탐색, 버그 위치 특정, 코드 편집, (있다면) 재현 테스트 작성과 실행까지 수십 턴을 거친다. 그런데 "진짜" 판정 — SWE-bench의 FAIL_TO_PASS/PASS_TO_PASS 테스트 — 은 이 모든 턴이 끝나고 최종 patch가 나온 뒤에야 실행된다. 궤적 전체가 하나의 이진값 하나로 붕괴한다는 뜻이다.
+[#47](/blog/2026/outcome-vs-process-agentic/)에서 결과 reward의 근본 문제를 다뤘다. 코드 에이전트에 대입하면 이렇다. 궤적 하나가 파일 탐색, 버그 위치 특정, 코드 편집, (있다면) 재현 테스트 작성과 실행까지 수십 턴을 거친다. 그런데 "진짜" 판정 — SWE-bench의 FAIL_TO_PASS/PASS_TO_PASS 테스트 — 은 이 모든 턴이 끝나고 최종 patch가 나온 뒤에야 실행된다. 궤적 전체가 하나의 이진값 하나로 붕괴한다는 뜻이다.
 
 $$R(\tau) = \mathbb{1}[\text{모든 FAIL\_TO\_PASS 테스트 통과} \wedge \text{모든 PASS\_TO\_PASS 테스트 유지}]$$
 
-$$\tau$$는 궤적, $$\mathbb{1}[\cdot]$$은 지시함수다. 30번째 턴에서 엉뚱한 파일을 열어본 실수도, 55번째 턴의 결정적인 버그 발견도 이 하나의 스칼라 안에서 구별되지 않는다. 이 문제를 여러 입도(턴·스텝·토큰)로 쪼개 credit을 나누는 것이 이 시리즈 2부([#5](/blog/2026/turn-level-reward/)\~[#8](/blog/2026/reward-shaping-agentic/))의 주제였다. 이 편의 네 논문은 사실 이 문제를 정면으로 풀기보다, **애초에 이 이진 신호를 얼마나 자주, 어떻게 우회하는가**로 답한다는 점이 흥미롭다.
+$$\tau$$는 궤적, $$\mathbb{1}[\cdot]$$은 지시함수다. 30번째 턴에서 엉뚱한 파일을 열어본 실수도, 55번째 턴의 결정적인 버그 발견도 이 하나의 스칼라 안에서 구별되지 않는다. 이 문제를 여러 입도(턴·스텝·토큰)로 쪼개 credit을 나누는 것이 이 시리즈 10부([#48](/blog/2026/turn-level-reward/)\~[#51](/blog/2026/reward-shaping-agentic/))의 주제였다. 이 편의 네 논문은 사실 이 문제를 정면으로 풀기보다, **애초에 이 이진 신호를 얼마나 자주, 어떻게 우회하는가**로 답한다는 점이 흥미롭다.
 
 ## 긴 궤적이 credit에 미치는 영향 — 수십 턴, 2만 토큰
 
 코드 에이전트 궤적이 실제로 얼마나 긴지 감을 잡아보자. SWE-Gym이 rejection sampling으로 모은 성공 궤적 491건은 평균 **약 19턴, 약 19,000토큰**이었다. 파일을 열어보고, grep으로 관련 코드를 찾고, 수정하고, 다시 확인하는 과정을 19번 반복한 끝에야 patch 하나가 나온다는 뜻이다. 책 한 권을 처음부터 끝까지 다 읽게 시켜놓고 마지막 페이지 한 줄만 보고 "이 책 재미있었는지"를 채점하는 것과 비슷하다 — 중간에 어디서 흥미를 잃었는지, 어디서 결정적인 복선을 놓쳤는지는 그 한 줄에 전혀 드러나지 않는다.
 
-이 길이는 학습 설계에 직접 영향을 준다. SWE-RL은 정책을 16k 컨텍스트로 학습시켰는데, 굳이 파일 전체 내용을 프롬프트에 통째로 넣는 방식을 택한 이유도 여기 있다 — Agentless의 원래 방식대로 위치 특정을 여러 단계로 나누면 그 자체가 또 하나의 긴 궤적이 되어 credit이 흩어진다. 파일 전체를 한 번에 주고 "이 안에서 어디를 고칠지 스스로 추론하라"고 맡기면, 최소한 위치 특정과 수정을 하나의 reasoning 블록 안에 욱여넣어 궤적 길이 자체를 줄일 수 있다. 컨텍스트 관리가 credit assignment 문제를 우회하는 한 가지 실전적인 수단인 셈이다 — 이 트레이드오프는 [#3](/blog/2026/multi-turn-rl-practice/)에서 다룬 멀티턴 RL 실무의 핵심 고민과 정확히 같은 결이다.
+이 길이는 학습 설계에 직접 영향을 준다. SWE-RL은 정책을 16k 컨텍스트로 학습시켰는데, 굳이 파일 전체 내용을 프롬프트에 통째로 넣는 방식을 택한 이유도 여기 있다 — Agentless의 원래 방식대로 위치 특정을 여러 단계로 나누면 그 자체가 또 하나의 긴 궤적이 되어 credit이 흩어진다. 파일 전체를 한 번에 주고 "이 안에서 어디를 고칠지 스스로 추론하라"고 맡기면, 최소한 위치 특정과 수정을 하나의 reasoning 블록 안에 욱여넣어 궤적 길이 자체를 줄일 수 있다. 컨텍스트 관리가 credit assignment 문제를 우회하는 한 가지 실전적인 수단인 셈이다 — 이 트레이드오프는 [#46](/blog/2026/multi-turn-rl-practice/)에서 다룬 멀티턴 RL 실무의 핵심 고민과 정확히 같은 결이다.
 
 반대로 궤적을 줄이지 않고 그대로 감당하려는 방향도 있다. 최근 나온 SkyRL-Agent(Cao et al., 2025)는 비동기 롤아웃 디스패처로 긴 궤적을 병렬로 굴리는 인프라를 만들어, 순수 RL만으로 학습한 32B 모델(SA-SWE-32B)이 SWE-bench Verified pass@1 39.4%를 내면서도 비슷한 성능의 기존 모델보다 학습 비용을 2배 넘게 줄였다고 보고한다. 궤적을 짧게 자르는 대신 "긴 궤적을 저렴하게 많이 굴리는" 쪽으로 문제를 우회한 사례다. 두 접근(컨텍스트를 압축해 궤적을 줄이는 SWE-RL과, 인프라를 최적화해 긴 궤적의 비용을 낮추는 SkyRL-Agent) 모두 "궤적 끝의 이진 신호 하나로는 부족하다"는 같은 진단에서 출발한 서로 다른 처방이다.
 
@@ -93,7 +93,7 @@ Policy는 Llama-3.3-70B-Instruct에서 시작해 GRPO로 1,600 스텝, 16k 컨�
 
 오라클 위치(정답 파일이 어딘지 이미 알려준 상태)에서 순수 수정 능력만 비교한 실험(Table 2)이 더 흥미롭다. 베이스 Llama-3.3은 greedy decoding에서 포맷을 12.2%만 맞추고 수정 점수(0\~100 스케일 서술형)는 5.4에 불과했다. SFT는 포맷 정확도를 96.2%까지 끌어올리고 점수도 29.6까지 올렸다. 그런데 SWE-RL은 포맷 정확도가 95.6%로 SFT보다 살짝 낮은데도 점수는 34.8로 더 높다. **형식을 더 잘 지키는 것과 실제로 더 잘 고치는 것이 다르다**는 걸 보여주는 대목이다.
 
-**reward를 이진으로 바꾸면 어떻게 되나 — 논문 자체의 ablation.** SWE-RL 저자들은 §3.6에서 정확히 이 편의 질문을 스스로 실험했다. 연속값 유사도 대신 "정답과 완전히 일치하면 1, 아니면 0"인 이산(discrete) reward로 똑같은 GRPO를 돌린 것이다. 결과는 이산 reward 쪽이 전반적으로 더 나빴다(포맷 94.2% vs 95.6%, 수정 점수 29.0 vs 34.8). 더 결정적인 관찰은 학습이 끝날 때까지 **이산 reward의 평균값이 거의 0에 머문다**는 것이다 — 실제 patch는 워낙 다양해서 정답과 완전히 같은 문자열을 만드는 rollout이 거의 없기 때문이다. 이건 이 시리즈가 반복해서 말하는 "결과 reward의 스파스함"([#4](/blog/2026/outcome-vs-process-agentic/))이 코드 도메인 안에서, 심지어 테스트 실행조차 없는 순수 텍스트 비교에서도 그대로 재현된다는 뜻이다. 이진 판정이 문제의 본질이지, 실행 여부가 문제의 본질이 아니라는 얘기다.
+**reward를 이진으로 바꾸면 어떻게 되나 — 논문 자체의 ablation.** SWE-RL 저자들은 §3.6에서 정확히 이 편의 질문을 스스로 실험했다. 연속값 유사도 대신 "정답과 완전히 일치하면 1, 아니면 0"인 이산(discrete) reward로 똑같은 GRPO를 돌린 것이다. 결과는 이산 reward 쪽이 전반적으로 더 나빴다(포맷 94.2% vs 95.6%, 수정 점수 29.0 vs 34.8). 더 결정적인 관찰은 학습이 끝날 때까지 **이산 reward의 평균값이 거의 0에 머문다**는 것이다 — 실제 patch는 워낙 다양해서 정답과 완전히 같은 문자열을 만드는 rollout이 거의 없기 때문이다. 이건 이 시리즈가 반복해서 말하는 "결과 reward의 스파스함"([#47](/blog/2026/outcome-vs-process-agentic/))이 코드 도메인 안에서, 심지어 테스트 실행조차 없는 순수 텍스트 비교에서도 그대로 재현된다는 뜻이다. 이진 판정이 문제의 본질이지, 실행 여부가 문제의 본질이 아니라는 얘기다.
 
 **샘플 수를 늘리면 어디까지 오르나.** Agentless Mini는 여러 patch 후보와 재현 테스트를 함께 늘려 재순위화할 수 있게 설계됐다. Repair 샘플을 20개에서 160개로 늘리면 33.6%에서 40.0%로 크게 뛰지만, 그 이상(320\~500개)은 41.0%까지 완만하게만 오른다. 재현 테스트도 1개에서 20개까지 늘리면 38.8%에서 41.0%로 오르고 20\~30개 구간에서는 차이가 없다 — 두 축 모두 이른 구간에서 이득이 크고 이후 saturate하는, RL 분야에서 익숙한 수확체감 곡선이다.
 
@@ -171,9 +171,9 @@ _Execution-free(EF) verifier._ SWE-Gym의 ORM과 같은 방식으로 궤적 전�
 
 - **실행 기반 verifier의 변별력 한계.** 생성된 재현 테스트 중 정답과 오답 patch를 실제로 구별해내는 테스트는 대부분의 문제에서 **20% 미만**이다. 즉 재현 테스트 10개를 만들어도 8개 이상은 정답이든 오답이든 똑같이 통과하거나 똑같이 실패해서 순위를 가르는 데 아무 도움이 안 된다.
 - **독성 테스트(toxic test).** 일부 문제(소수지만 무시할 수 없는 비율)에서는 생성된 테스트가 오히려 오답 patch는 통과시키고 정답 patch는 실패시킨다 — 최대 전체 테스트의 10%까지. 이런 테스트가 하나만 섞여도 verifier의 순위가 뒤집힐 수 있다.
-- **execution-free verifier는 patch가 아니라 "자신감"을 본다.** 궤적에서 patch만 남기고 나머지(에이전트의 사고 과정)를 지우면 Best@26이 42.8%에서 37.6%로 떨어진다. Attention을 시각화해보면 verifier가 YES를 예측할 때 가장 크게 주목하는 부분이 실제 코드 diff가 아니라 에이전트가 스스로 남긴 마무리 문장 — 예컨대 "좋아, 이 수정으로 해결됐다"류의 자평 — 이었다. 실제로 sympy 저장소의 한 오답 궤적에서, 에이전트가 스스로 확신에 찬 어조로 요약하자 verifier가 그 문체에 이끌려 틀린 patch를 YES로 잘못 예측한 사례가 보고된다. 텍스트만 보고 채점하는 judge가 논리적 정합성보다 어조의 자신감에 반응할 수 있다는 것은 [#11](/blog/2026/agentic-judge-rubric/)에서 다룬 judge 일반의 약점이 이 도메인에서도 그대로 나타난 것이다.
+- **execution-free verifier는 patch가 아니라 "자신감"을 본다.** 궤적에서 patch만 남기고 나머지(에이전트의 사고 과정)를 지우면 Best@26이 42.8%에서 37.6%로 떨어진다. Attention을 시각화해보면 verifier가 YES를 예측할 때 가장 크게 주목하는 부분이 실제 코드 diff가 아니라 에이전트가 스스로 남긴 마무리 문장 — 예컨대 "좋아, 이 수정으로 해결됐다"류의 자평 — 이었다. 실제로 sympy 저장소의 한 오답 궤적에서, 에이전트가 스스로 확신에 찬 어조로 요약하자 verifier가 그 문체에 이끌려 틀린 patch를 YES로 잘못 예측한 사례가 보고된다. 텍스트만 보고 채점하는 judge가 논리적 정합성보다 어조의 자신감에 반응할 수 있다는 것은 [#54](/blog/2026/agentic-judge-rubric/)에서 다룬 judge 일반의 약점이 이 도메인에서도 그대로 나타난 것이다.
 
-이 두 관찰은 이 편의 논점을 정확히 실증한다. **테스트 커버리지가 부실하면 판정 정의 자체에 구멍이 난다**는 [#9](/blog/2026/environment-as-reward/)의 명제가, 사람이 짠 SWE-bench 테스트가 아니라 **에이전트가 스스로 생성한 재현 테스트**에서 재현된 것이다.
+이 두 관찰은 이 편의 논점을 정확히 실증한다. **테스트 커버리지가 부실하면 판정 정의 자체에 구멍이 난다**는 [#52](/blog/2026/environment-as-reward/)의 명제가, 사람이 짠 SWE-bench 테스트가 아니라 **에이전트가 스스로 생성한 재현 테스트**에서 재현된 것이다.
 
 **그래서 나온 게 hybrid.** Execution-free 점수로 먼저 상위 $$n$$개만 추리고, 그 안에서 execution-based 점수로 최종 순위를 매긴다.
 
@@ -201,7 +201,7 @@ $$t$$는 과제, $$V(t)$$는 후보 patch들 사이에서 verifier가 정답과 
 
 **방어 절차.** 이 논문은 문제를 짚는 데서 그치지 않고 수선 절차도 제시한다. 생성한 보강 테스트를 실제 테스트 파일에 추가하되, 곧바로 신뢰하지 않고 **gold-sanity gate**를 먼저 통과시킨다 — 그 테스트를 정답 patch에 대해서도 돌려서, 정답조차 실패시키는 결함 있는 테스트인지 먼저 걸러내는 것이다. 게이트를 통과한 테스트만 LLM judge에게 넘겨 "이 테스트가 실제로 표적 exploit을 막아내는가"를 판정시키고, 실패하면 다양성을 준 재시도를 반복한다. 11개의 취약한 과제에 이 절차를 적용했더니, LLM judge가 "이 테스트로 결정하겠다"고 판단한 105개 테스트 중 **65개(61.9%)가 정작 정답 patch 자체에서도 실패**하는 결함 테스트였다 — gold-sanity gate가 없었다면 LLM judge 혼자로는 놓쳤을 결함이다. 최종적으로 11개 중 9개 과제가 이 반복 절차로 수선됐다.
 
-이 결과가 이 편에서 갖는 의미는 분명하다. **"테스트가 판정 정의다"라는 명제는 방향만 맞는 게 아니라, 그 정의 자체를 검증하는 별도의 검증 절차(정답에 대해 테스트를 먼저 돌려보는 것)가 필요할 만큼 깨지기 쉽다.** judge 하나만으로는 부족하고, judge와 gold 실행을 겹쳐야 한다는 점에서 이 도메인도 결국 [#11](/blog/2026/agentic-judge-rubric/)이 다룬 judge의 한계에서 자유롭지 않다.
+이 결과가 이 편에서 갖는 의미는 분명하다. **"테스트가 판정 정의다"라는 명제는 방향만 맞는 게 아니라, 그 정의 자체를 검증하는 별도의 검증 절차(정답에 대해 테스트를 먼저 돌려보는 것)가 필요할 만큼 깨지기 쉽다.** judge 하나만으로는 부족하고, judge와 gold 실행을 겹쳐야 한다는 점에서 이 도메인도 결국 [#54](/blog/2026/agentic-judge-rubric/)이 다룬 judge의 한계에서 자유롭지 않다.
 
 ## 해킹 패턴과 방어를 정리하면
 
@@ -308,14 +308,14 @@ SWE-bench Verified 기준으로 이 편에서 나온 수치를 한데 모으면 
 
 # Conclusion
 
-코드 에이전트는 테스트라는 자동화된 판정자를 갖고 있다는 점에서 이 시리즈 4부의 다른 도메인보다 유리한 출발선에 있다. 그런데 이 편에서 다룬 네 논문을 관통하는 결론은 역설적이다.
+코드 에이전트는 테스트라는 자동화된 판정자를 갖고 있다는 점에서 이 시리즈 12부의 다른 도메인보다 유리한 출발선에 있다. 그런데 이 편에서 다룬 네 논문을 관통하는 결론은 역설적이다.
 
 1. **테스트가 있어도 그것을 곧바로 online RL의 reward로 쓰는 논문이 없다.** SWE-RL은 실행 대신 패치 유사도를, SWE-Gym과 R2E-Gym은 policy gradient 대신 rejection sampling/SFT를 택했다. 이유는 실행 비용과, 앞서 계산한 대로 부분 통과 reward가 만드는 게이밍 유인이다.
-2. **테스트 커버리지가 판정 정의 자체다.** R2E-Gym은 자기 손으로 만든 재현 테스트조차 20% 미만만 변별력이 있다는 것을, Rajan의 감사는 SWE-bench Verified 과제의 28.5%가 오답도 통과시킨다는 것을 직접 쟀다. [#9](/blog/2026/environment-as-reward/)의 "함수가 아니라 판정 정의가 뚫린다"는 명제가 사람이 만든 벤치마크에서나 에이전트가 만든 테스트에서나 똑같이 성립하고, 이를 막는 유일하게 일관된 방어는 판정 경로를 하나가 아니라 둘 이상 겹치는 것이었다.
+2. **테스트 커버리지가 판정 정의 자체다.** R2E-Gym은 자기 손으로 만든 재현 테스트조차 20% 미만만 변별력이 있다는 것을, Rajan의 감사는 SWE-bench Verified 과제의 28.5%가 오답도 통과시킨다는 것을 직접 쟀다. [#52](/blog/2026/environment-as-reward/)의 "함수가 아니라 판정 정의가 뚫린다"는 명제가 사람이 만든 벤치마크에서나 에이전트가 만든 테스트에서나 똑같이 성립하고, 이를 막는 유일하게 일관된 방어는 판정 경로를 하나가 아니라 둘 이상 겹치는 것이었다.
 3. **부분 점수와 완전 이진 사이에 안전한 지대가 없다.** 부분 점수는 쉬운 표면 테스트만 노리는 전략을 기대 reward에서 이기게 만들고, 완전 이진은 학습 신호를 거의 0으로 만든다. SWE-RL의 연속 vs 이산 ablation이 이 트레이드오프를 숫자로 보여준다.
-4. **긴 궤적의 credit 문제는 컨텍스트 설계로 우회하거나 인프라로 감당하는 수밖에 없다.** 평균 19턴·19,000토큰짜리 궤적 끝에 이진 신호 하나만 두는 비효율은 [#3](/blog/2026/multi-turn-rl-practice/)의 문제 그대로다. SWE-RL은 파일 전체를 한 번에 주는 프롬프트 설계로 궤적 자체를 압축했고, SkyRL-Agent는 비동기 디스패치로 긴 궤적의 비용을 낮췄다 — 아직 이 문제를 정면으로 푼 논문은 없고, 두 우회로만 있다.
+4. **긴 궤적의 credit 문제는 컨텍스트 설계로 우회하거나 인프라로 감당하는 수밖에 없다.** 평균 19턴·19,000토큰짜리 궤적 끝에 이진 신호 하나만 두는 비효율은 [#46](/blog/2026/multi-turn-rl-practice/)의 문제 그대로다. SWE-RL은 파일 전체를 한 번에 주는 프롬프트 설계로 궤적 자체를 압축했고, SkyRL-Agent는 비동기 디스패치로 긴 궤적의 비용을 낮췄다 — 아직 이 문제를 정면으로 푼 논문은 없고, 두 우회로만 있다.
 
-다음 편([#14](/blog/2026/web-gui-agent-rl/))은 웹·GUI 에이전트다. 코드 에이전트와 달리 "정답 판정"이 텍스트 diff가 아니라 픽셀과 DOM 상태로 나온다 — 테스트라는 축복이 없는 도메인에서 reward를 어떻게 조달하는지가 이어지는 논점이다.
+다음 편([#57](/blog/2026/web-gui-agent-rl/))은 웹·GUI 에이전트다. 코드 에이전트와 달리 "정답 판정"이 텍스트 diff가 아니라 픽셀과 DOM 상태로 나온다 — 테스트라는 축복이 없는 도메인에서 reward를 어떻게 조달하는지가 이어지는 논점이다.
 
 # 참고 문헌
 
@@ -330,21 +330,104 @@ SWE-bench Verified 기준으로 이 편에서 나온 수치를 한데 모으면 
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열세 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰여섯 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -352,32 +435,35 @@ SWE-bench Verified 기준으로 이 편에서 나온 수치를 한데 모으면 
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><strong>(현재 글)</strong> 코드 에이전트 — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

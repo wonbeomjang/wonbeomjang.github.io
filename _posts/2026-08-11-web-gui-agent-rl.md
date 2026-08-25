@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "웹·GUI 에이전트 — end-to-end 멀티턴 RL"
-date: 2026-08-25 09:14:00 +0900
-description: "Agentic RL 설계 시리즈 #14 — 신호가 가장 척박한 도메인에서 end-to-end 멀티턴 RL이 웹·GUI 에이전트를 학습시키는 법 (WebAgent-R1, PAE, DigiRL)"
+date: 2026-08-11 09:57:00 +0900
+description: "RL Reward 설계 시리즈 #57 — 신호가 가장 척박한 도메인에서 end-to-end 멀티턴 RL이 웹·GUI 에이전트를 학습시키는 법 (WebAgent-R1, PAE, DigiRL)"
 categories: [paper]
 tags: [agentic-rl, reinforcement-learning, web-agent, gui-agent, credit-assignment, reward-hacking, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-[#12](/blog/2026/search-agent-rl/)의 검색 에이전트는 정답 문자열과 대조할 수 있었고, [#13](/blog/2026/swe-agent-rl/)의 코드 에이전트는 유닛 테스트라는 촘촘한 신호를 가졌다. 이번 편은 4부의 마지막 도메인이자, 신호 밀도 스펙트럼의 가장 척박한 끝이다. 웹·GUI 에이전트에게 주어지는 신호는 대개 딱 하나뿐이다 — "완료했는가(0 또는 1)."
+[#55](/blog/2026/search-agent-rl/)의 검색 에이전트는 정답 문자열과 대조할 수 있었고, [#56](/blog/2026/swe-agent-rl/)의 코드 에이전트는 유닛 테스트라는 촘촘한 신호를 가졌다. 이번 편은 12부의 마지막 도메인이자, 신호 밀도 스펙트럼의 가장 척박한 끝이다. 웹·GUI 에이전트에게 주어지는 신호는 대개 딱 하나뿐이다 — "완료했는가(0 또는 1)."
 
-문제는 이것만이 아니다. 웹 페이지는 계속 바뀌고, 팝업이 뜨고, 네트워크가 흔들리고, 똑같은 행동을 두 번 반복해도 결과가 달라진다. [#9](/blog/2026/environment-as-reward/)에서 짚은 "환경이 결정적이지 않으면 credit이 오염된다"는 문제가 이 도메인에서는 이론이 아니라 매일의 실무다. 게다가 시작점부터 나쁘다 — 파인튜닝 없이 프롬프팅만으로 웹 태스크를 시키면 최신 모델도 한 자릿수\~십몇 퍼센트 성공률에 머문다. [#4](/blog/2026/outcome-vs-process-agentic/)가 경고한 "성공률이 낮으면 GRPO 그룹이 통째로 붕괴한다"는 문제가 가장 먼저, 가장 세게 터지는 도메인이 바로 여기다.
+문제는 이것만이 아니다. 웹 페이지는 계속 바뀌고, 팝업이 뜨고, 네트워크가 흔들리고, 똑같은 행동을 두 번 반복해도 결과가 달라진다. [#52](/blog/2026/environment-as-reward/)에서 짚은 "환경이 결정적이지 않으면 credit이 오염된다"는 문제가 이 도메인에서는 이론이 아니라 매일의 실무다. 게다가 시작점부터 나쁘다 — 파인튜닝 없이 프롬프팅만으로 웹 태스크를 시키면 최신 모델도 한 자릿수\~십몇 퍼센트 성공률에 머문다. [#47](/blog/2026/outcome-vs-process-agentic/)가 경고한 "성공률이 낮으면 GRPO 그룹이 통째로 붕괴한다"는 문제가 가장 먼저, 가장 세게 터지는 도메인이 바로 여기다.
 
 이 글은 이 척박한 조건에서 실제로 작동한 세 가지 접근을 다룬다.
 
@@ -29,17 +29,17 @@ related_posts: true
 
 ## 신호 밀도 스펙트럼에서 가장 척박한 자리
 
-4부의 세 도메인을 신호 밀도 하나의 축 위에 놓으면 이렇다.
+12부의 세 도메인을 신호 밀도 하나의 축 위에 놓으면 이렇다.
 
-- **코드 ([#13](/blog/2026/swe-agent-rl/))**: 유닛 테스트가 파일 단위, 함수 단위로 통과/실패를 알려준다. 보상이 조밀하고, 대부분 프로그램적으로 검증 가능하다.
-- **검색 ([#12](/blog/2026/search-agent-rl/))**: 최종 답과 정답 문자열을 비교하는 정도의 중간 밀도. 검색-답변 사이클마다 판정이 가능하지만 "왜 그 문서를 골랐는가"까지는 잘 안 보인다.
+- **코드 ([#56](/blog/2026/swe-agent-rl/))**: 유닛 테스트가 파일 단위, 함수 단위로 통과/실패를 알려준다. 보상이 조밀하고, 대부분 프로그램적으로 검증 가능하다.
+- **검색 ([#55](/blog/2026/search-agent-rl/))**: 최종 답과 정답 문자열을 비교하는 정도의 중간 밀도. 검색-답변 사이클마다 판정이 가능하지만 "왜 그 문서를 골랐는가"까지는 잘 안 보인다.
 - **웹·GUI (이 글)**: 대개 에피소드가 끝나야만, 그것도 최종 상태 하나만 보고 성공/실패가 갈린다. 10\~30턴짜리 궤적에서 중간 스텝에 대한 직접적인 신호가 거의 없다.
 
 WebAgent-R1은 이 점을 문제 정식화 단계에서부터 명시한다. 웹 태스크를 부분관측 마르코프 결정 과정(POMDP) $$(\mathcal{S}, \mathcal{A}, \mathcal{T}, \mathcal{R})$$으로 정의하고, 에이전트는 매 스텝 $$t$$마다 현재 웹페이지의 HTML을 상태 $$s_t$$로 관측해 행동 $$a_t$$를 생성한다. 에피소드가 끝나면(성공하거나 최대 스텝에 도달하면) 딱 한 번, 이진 보상 $$r_t \in \{0, 1\}$$을 받는다. 중간 스텝에는 보상이 없다.
 
 ## 환경 비결정성 — 같은 행동, 다른 결과
 
-[#9](/blog/2026/environment-as-reward/)가 짚은 결정성 문제를 DigiRL은 세 가지로 구체화한다.
+[#52](/blog/2026/environment-as-reward/)가 짚은 결정성 문제를 DigiRL은 세 가지로 구체화한다.
 
 1. **비정상성(non-stationarity)**: 웹사이트와 앱이 계속 업데이트된다. 어제 학습한 UI 레이아웃이 오늘은 다를 수 있다.
 2. **예측 불가능한 방해 요소**: 팝업 광고, 로그인 요청, 검색 결과의 무작위한 순서.
@@ -57,7 +57,7 @@ WebArena류 벤치마크는 태스크마다 세 가지 규칙 기반 판정 중 
 | URL Match         | 최종적으로 도달한 URL이 기준 URL과 일치하는가      | "설정 페이지로 이동하라"              |
 | Program Execution | 웹페이지의 실제 상태(DB, 설정값)를 스크립트로 검증 | "이 상품을 장바구니에 추가하라"       |
 
-"장바구니에 넣었는가"는 Program Execution으로 프로그램적으로 확인된다. 하지만 "사용자 의도대로 했는가"는 대부분 이 세 규칙 중 어느 것으로도 잡히지 않는다. 예컨대 "이 항공권 중 가장 저렴하면서도 경유가 없는 것을 찾아라" 같은 태스크는 규칙 기반 검증기를 짜기 어렵다. 그래서 PAE와 DigiRL은 규칙 대신 VLM/LLM을 판정자로 쓴다 — [#11](/blog/2026/agentic-judge-rubric/)에서 다룬 judge 채점의 웹 버전이다.
+"장바구니에 넣었는가"는 Program Execution으로 프로그램적으로 확인된다. 하지만 "사용자 의도대로 했는가"는 대부분 이 세 규칙 중 어느 것으로도 잡히지 않는다. 예컨대 "이 항공권 중 가장 저렴하면서도 경유가 없는 것을 찾아라" 같은 태스크는 규칙 기반 검증기를 짜기 어렵다. 그래서 PAE와 DigiRL은 규칙 대신 VLM/LLM을 판정자로 쓴다 — [#54](/blog/2026/agentic-judge-rubric/)에서 다룬 judge 채점의 웹 버전이다.
 
 # Method
 
@@ -177,7 +177,7 @@ DigiRL의 AitW(Android in the Wild) 결과는 이렇다.
 
 ## 토이 계산 — 성공률이 낮으면 그룹은 얼마나 붕괴하는가
 
-[#4](/blog/2026/outcome-vs-process-agentic/)에서 유도한 그룹 붕괴 확률을 그대로 가져온다. GRPO 그룹 크기 $$G$$개의 롤아웃이 모두 같은 이진 보상(전부 성공 또는 전부 실패)을 받으면, 그룹 내 표준편차가 0이 되어 advantage $$A_{i,j} = (r_i - \text{mean}(\boldsymbol{r}))/\text{std}(\boldsymbol{r})$$가 정의되지 않거나(구현상 0으로 처리) 그래디언트를 전혀 만들지 못한다. 태스크의 실제 성공 확률을 $$p$$라 하면, 그룹 하나가 붕괴할 확률은
+[#47](/blog/2026/outcome-vs-process-agentic/)에서 유도한 그룹 붕괴 확률을 그대로 가져온다. GRPO 그룹 크기 $$G$$개의 롤아웃이 모두 같은 이진 보상(전부 성공 또는 전부 실패)을 받으면, 그룹 내 표준편차가 0이 되어 advantage $$A_{i,j} = (r_i - \text{mean}(\boldsymbol{r}))/\text{std}(\boldsymbol{r})$$가 정의되지 않거나(구현상 0으로 처리) 그래디언트를 전혀 만들지 못한다. 태스크의 실제 성공 확률을 $$p$$라 하면, 그룹 하나가 붕괴할 확률은
 
 $$P(\text{collapse}) = p^G + (1-p)^G$$
 
@@ -215,11 +215,11 @@ BC가 성공률을 20% 안팎으로 끌어올리는 순간 붕괴율은 60%대�
 - **doubly-robust advantage로 비결정성 흡수**: DigiRL은 환경이 만드는 노이즈를 무시하지 않고, MC항과 TD항을 섞어 정책 탓이 아닌 우연에 의한 보상 변동을 완화한다.
 - **BC 웜업 + 자동 커리큘럼으로 그룹 붕괴 회피**: 위 토이 계산이 보여주듯, 애초에 성공률을 학습 가능한 영역으로 끌어올리는 것 자체가 hacking과 무관하게 학습을 가능하게 만드는 가장 기초적인 방어다.
 
-# 4부 종합 — 신호 밀도 스펙트럼의 세 지점
+# 12부 종합 — 신호 밀도 스펙트럼의 세 지점
 
-4부에서 다룬 세 도메인을 하나의 표로 닫는다. 검색과 코드 도메인의 상세 논의는 각각 [#12](/blog/2026/search-agent-rl/), [#13](/blog/2026/swe-agent-rl/)을 참고하고, 여기서는 이 글에서 확인한 웹·GUI 도메인의 사실들을 축으로 세 도메인을 나란히 놓는다.
+12부에서 다룬 세 도메인을 하나의 표로 닫는다. 검색과 코드 도메인의 상세 논의는 각각 [#55](/blog/2026/search-agent-rl/), [#56](/blog/2026/swe-agent-rl/)을 참고하고, 여기서는 이 글에서 확인한 웹·GUI 도메인의 사실들을 축으로 세 도메인을 나란히 놓는다.
 
-| 축           | 검색 에이전트 ([#12](/blog/2026/search-agent-rl/))     | 코드 에이전트 ([#13](/blog/2026/swe-agent-rl/))  | 웹·GUI 에이전트 (이 글)                                                                               |
+| 축           | 검색 에이전트 ([#55](/blog/2026/search-agent-rl/))     | 코드 에이전트 ([#56](/blog/2026/swe-agent-rl/))  | 웹·GUI 에이전트 (이 글)                                                                               |
 | ------------ | ------------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | 신호 밀도    | 중간 — 최종 답 매칭                                    | 조밀 — 유닛 테스트 통과/실패                     | 척박 — 에피소드 끝 이진 신호 하나                                                                     |
 | 주된 조달처  | 규칙 기반 정답 대조                                    | 테스트 스위트 실행 결과                          | 규칙 기반 상태 검증(String/URL/Program) + VLM/LLM 아웃컴 판정                                         |
@@ -227,7 +227,7 @@ BC가 성공률을 20% 안팎으로 끌어올리는 순간 붕괴율은 60%대�
 | 대표 hacking | 실제 검색 없이 정답을 바로 출력(도구 호출 형식만 흉내) | 테스트 코드 자체를 수정·삭제해 강제로 통과시키기 | URL 직접 입력 등 최종 상태 지름길, 판정자의 느슨한 기준·환각 악용                                     |
 | 방어         | 도구 호출의 실제 수행 여부를 형식 검증에 포함          | 테스트 파일 격리, held-out 테스트로 재검증       | 다중 판정 기준 결합, 판정자-사람 정합성 검증, doubly-robust advantage, BC/커리큘럼으로 그룹 붕괴 회피 |
 
-이 표에서 가장 뚜렷한 대비는 credit 입도다. 코드 도메인은 테스트가 파일·함수 단위로 걸려 있어 [#6](/blog/2026/step-level-credit/)이 다룬 스텝 단위 credit을 비교적 자연스럽게 얻는다. 반면 웹·GUI 도메인은 세 논문 모두 명시적인 턴/스텝 단위 shaping 없이, 트래젝토리 전체가 이진 보상 하나를 공유하는 구조를 그대로 쓴다. DigiRL의 doubly-robust 추정기가 예외적으로 스텝 단위 credit을 만들어내지만, 이는 별도의 보상 신호가 아니라 하나의 트래젝토리 보상을 사후에 가치함수로 분해한 결과다. 즉 웹·GUI 도메인의 credit assignment는 "보상을 더 촘촘하게 설계"하는 방향이 아니라 "희소한 보상 하나에서 얼마나 많은 정보를 짜낼 것인가"라는 다른 문제로 수렴한다.
+이 표에서 가장 뚜렷한 대비는 credit 입도다. 코드 도메인은 테스트가 파일·함수 단위로 걸려 있어 [#49](/blog/2026/step-level-credit/)이 다룬 스텝 단위 credit을 비교적 자연스럽게 얻는다. 반면 웹·GUI 도메인은 세 논문 모두 명시적인 턴/스텝 단위 shaping 없이, 트래젝토리 전체가 이진 보상 하나를 공유하는 구조를 그대로 쓴다. DigiRL의 doubly-robust 추정기가 예외적으로 스텝 단위 credit을 만들어내지만, 이는 별도의 보상 신호가 아니라 하나의 트래젝토리 보상을 사후에 가치함수로 분해한 결과다. 즉 웹·GUI 도메인의 credit assignment는 "보상을 더 촘촘하게 설계"하는 방향이 아니라 "희소한 보상 하나에서 얼마나 많은 정보를 짜낼 것인가"라는 다른 문제로 수렴한다.
 
 # Conclusion
 
@@ -237,7 +237,7 @@ BC가 성공률을 20% 안팎으로 끌어올리는 순간 붕괴율은 60%대�
 2. **PAE**는 태스크 생성 자체를 자율화해, 사람이 만든 시연 데이터로 학습한 모델보다 최대 30% 상대 개선을 이끌어냈고, 아웃컴 전용 판정자가 스텝·함수 기반 판정자보다 나은 이유를 어블레이션으로 검증했다.
 3. **DigiRL**은 환경 비결정성을 doubly-robust advantage 추정기와 자동 커리큘럼으로 정면 대응해, Android 기기 제어에서 17.7%→67.2%(Web Shopping)의 개선을 만들었다.
 
-이 도메인의 근본적인 어려움은 바뀌지 않는다 — 보상은 여전히 희소하고, 환경은 여전히 비결정적이다. 세 논문이 보여준 것은 이 조건을 "받아들이되 관리하는" 구체적인 방법이다: 성공률을 학습 가능한 영역까지 끌어올리고(BC, Filtered BC), 판정을 가장 쉬운 질문(최종 성공/실패)으로 좁히고, 비결정성을 노이즈가 아니라 추정 수식의 파라미터로 다룬다. 4부 세 편을 관통하는 결론은, 도메인마다 신호의 밀도는 다르지만 credit assignment 문제 자체는 사라지지 않고 형태만 바뀐다는 것이다 — 코드에서는 "어느 파일이 실패를 유발했는가"였던 질문이, 웹에서는 "이진 결과 하나에서 어느 스텝을 탓할 것인가"로 바뀔 뿐이다.
+이 도메인의 근본적인 어려움은 바뀌지 않는다 — 보상은 여전히 희소하고, 환경은 여전히 비결정적이다. 세 논문이 보여준 것은 이 조건을 "받아들이되 관리하는" 구체적인 방법이다: 성공률을 학습 가능한 영역까지 끌어올리고(BC, Filtered BC), 판정을 가장 쉬운 질문(최종 성공/실패)으로 좁히고, 비결정성을 노이즈가 아니라 추정 수식의 파라미터로 다룬다. 12부 세 편을 관통하는 결론은, 도메인마다 신호의 밀도는 다르지만 credit assignment 문제 자체는 사라지지 않고 형태만 바뀐다는 것이다 — 코드에서는 "어느 파일이 실패를 유발했는가"였던 질문이, 웹에서는 "이진 결과 하나에서 어느 스텝을 탓할 것인가"로 바뀔 뿐이다.
 
 # 참고 문헌
 
@@ -250,21 +250,104 @@ BC가 성공률을 20% 안팎으로 끌어올리는 순간 붕괴율은 60%대�
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열네 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰일곱 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -272,32 +355,35 @@ BC가 성공률을 20% 안팎으로 끌어올리는 순간 붕괴율은 60%대�
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><strong>(현재 글)</strong> 웹·GUI 에이전트 — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "검색 에이전트 — Search-R1에서 DeepDive까지"
-date: 2026-08-25 09:12:00 +0900
-description: "Agentic RL 설계 시리즈 #12 — 검색 에이전트의 reward는 EM/F1로 손쉽게 나오는데, 왜 중간 신호는 여전히 성긴가"
+date: 2026-08-11 09:55:00 +0900
+description: "RL Reward 설계 시리즈 #55 — 검색 에이전트의 reward는 EM/F1로 손쉽게 나오는데, 왜 중간 신호는 여전히 성긴가"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, search-agent, credit-assignment, reward-design, paper]
 giscus_comments: true
@@ -13,9 +13,9 @@ related_posts: true
 
 # Introduction
 
-지금까지 3부([#9](/blog/2026/environment-as-reward/)\~[#11](/blog/2026/agentic-judge-rubric/))에서 reward가 어디서 조달되는지 세 갈래로 나눠봤다. 환경이 채점하거나(실행 결과, 통과/실패), 도구 호출 자체를 규칙으로 채점하거나, judge가 궤적을 보고 점수를 매기거나. 이제 4부에서는 이 세 조달처가 실제 도메인에서 어떻게 섞여 쓰이는지를 본다. 첫 번째 도메인은 **검색 에이전트**다.
+지금까지 11부([#52](/blog/2026/environment-as-reward/)\~[#54](/blog/2026/agentic-judge-rubric/))에서 reward가 어디서 조달되는지 세 갈래로 나눠봤다. 환경이 채점하거나(실행 결과, 통과/실패), 도구 호출 자체를 규칙으로 채점하거나, judge가 궤적을 보고 점수를 매기거나. 이제 12부에서는 이 세 조달처가 실제 도메인에서 어떻게 섞여 쓰이는지를 본다. 첫 번째 도메인은 **검색 에이전트**다.
 
-검색 에이전트는 이 시리즈에서 다루는 도메인 중 reward 설계가 가장 쉬워 보이는 축에 속한다. 이유는 단순하다. 질문에 정답이 있는 QA 태스크라면, 모델이 뱉은 답과 정답 문자열을 비교하는 것만으로 채점이 끝난다. Exact Match(EM) 한 줄이면 [#9](/blog/2026/environment-as-reward/)에서 다룬 "환경이 곧 reward다"의 가장 단순한 사례가 완성된다. 실제로 이 도메인의 첫 성공 사례인 Search-R1은 정확히 이 전략을 택했다 — reward 항을 하나만 두고, 형식 보너스도 검색 횟수 페널티도 없이, 그냥 EM 하나로 학습시켰다.
+검색 에이전트는 이 시리즈에서 다루는 도메인 중 reward 설계가 가장 쉬워 보이는 축에 속한다. 이유는 단순하다. 질문에 정답이 있는 QA 태스크라면, 모델이 뱉은 답과 정답 문자열을 비교하는 것만으로 채점이 끝난다. Exact Match(EM) 한 줄이면 [#52](/blog/2026/environment-as-reward/)에서 다룬 "환경이 곧 reward다"의 가장 단순한 사례가 완성된다. 실제로 이 도메인의 첫 성공 사례인 Search-R1은 정확히 이 전략을 택했다 — reward 항을 하나만 두고, 형식 보너스도 검색 횟수 페널티도 없이, 그냥 EM 하나로 학습시켰다.
 
 문제는 그 다음이다. 검색 에이전트는 한 번의 질의로 끝나지 않는다. 질문 하나를 풀기 위해 검색을 3번, 5번, 많으면 수십 번 호출하는 멀티턴 궤적이 만들어지는데, 최종 답이 맞았다는 스칼라 하나만으로는 **그 중 몇 번째 검색이 결정적이었는지, 어느 검색이 시간 낭비였는지** 전혀 알 수 없다. reward의 조달은 쉬운데 credit의 배분은 여전히 성기다 — 이게 이 편의 핵심 긴장이다.
 
@@ -42,13 +42,13 @@ $$T = [q, (c_1, a_1, o_1), \ldots, (c_m, a_m, o_m), c_{ans}, a_{eos}]$$
 
 ## 이 도메인이 세 조달처를 섞는 방식
 
-[#9](/blog/2026/environment-as-reward/)\~[#11](/blog/2026/agentic-judge-rubric/)에서 정리한 세 조달처를 이 도메인이 어떻게 조합하는지 미리 밝혀둔다.
+[#52](/blog/2026/environment-as-reward/)\~[#54](/blog/2026/agentic-judge-rubric/)에서 정리한 세 조달처를 이 도메인이 어떻게 조합하는지 미리 밝혀둔다.
 
-- **환경 검증(#9)**: 정답이 있는 QA이므로 최종 답을 문자열 규칙(EM)이나 집합 규칙(F1)으로 채점할 수 있다. Search-R1이 이 조달처만 쓴다.
-- **도구 호출 채점(#10)**: `<search>...</search>`, `<answer>...</answer>` 같은 태그가 정확한 형식으로 열리고 닫혔는지, 검색을 시도했는지 자체를 규칙으로 채점한다. R1-Searcher의 retrieval reward·format reward, DeepDive의 Format 항이 여기 해당한다.
-- **judge 채점(#11)**: 정답의 표현이 여러 형태로 존재할 수 있어("Inter Corp." vs "Inter Corporation") 문자열 매칭만으로는 억울한 오채점이 나온다. DeepDive는 이 지점에서 LLM judge를 답 동치 판정에 끼워 넣는다. R1-Searcher와 ReSearch도 평가 단계(학습 reward는 아니고)에서 LLM-as-Judge 지표를 보조로 쓴다.
+- **환경 검증(#52)**: 정답이 있는 QA이므로 최종 답을 문자열 규칙(EM)이나 집합 규칙(F1)으로 채점할 수 있다. Search-R1이 이 조달처만 쓴다.
+- **도구 호출 채점(#53)**: `<search>...</search>`, `<answer>...</answer>` 같은 태그가 정확한 형식으로 열리고 닫혔는지, 검색을 시도했는지 자체를 규칙으로 채점한다. R1-Searcher의 retrieval reward·format reward, DeepDive의 Format 항이 여기 해당한다.
+- **judge 채점(#54)**: 정답의 표현이 여러 형태로 존재할 수 있어("Inter Corp." vs "Inter Corporation") 문자열 매칭만으로는 억울한 오채점이 나온다. DeepDive는 이 지점에서 LLM judge를 답 동치 판정에 끼워 넣는다. R1-Searcher와 ReSearch도 평가 단계(학습 reward는 아니고)에서 LLM-as-Judge 지표를 보조로 쓴다.
 
-즉 이 도메인의 reward는 대부분 **환경 검증(정답 채점) + 도구 호출 채점(형식 채점)의 합**으로 만들어지고, 정답의 표현 다양성이 문제 되는 지점에서만 judge가 슬쩍 끼어든다. 세 조달처가 뚜렷하게 분업하는 [#10](/blog/2026/tool-call-reward/)의 순수 도구 채점 사례나 [#11](/blog/2026/agentic-judge-rubric/)의 순수 judge 사례와 달리, 여기서는 환경과 도구가 한 스칼라 안에 합산돼 있다.
+즉 이 도메인의 reward는 대부분 **환경 검증(정답 채점) + 도구 호출 채점(형식 채점)의 합**으로 만들어지고, 정답의 표현 다양성이 문제 되는 지점에서만 judge가 슬쩍 끼어든다. 세 조달처가 뚜렷하게 분업하는 [#53](/blog/2026/tool-call-reward/)의 순수 도구 채점 사례나 [#54](/blog/2026/agentic-judge-rubric/)의 순수 judge 사례와 달리, 여기서는 환경과 도구가 한 스칼라 안에 합산돼 있다.
 
 ## GRPO 한 줄 요약
 
@@ -56,7 +56,7 @@ $$T = [q, (c_1, a_1, o_1), \ldots, (c_m, a_m, o_m), c_{ans}, a_{eos}]$$
 
 $$A_i = \frac{r_i - \text{mean}(\{r_k\}_{k=1}^G)}{\text{std}(\{r_k\}_{k=1}^G)}$$
 
-$$r_i$$는 $$i$$번째 트레젝토리가 받은 reward, $$A_i$$는 정규화된 advantage다. 이 advantage 하나가 트레젝토리 안의 **모든 학습 대상 토큰에 동일하게 broadcast**된다 — 이게 "outcome reward"라는 말의 정확한 의미다. 알고리즘 자체에 대한 자세한 유도는 [#1](/blog/2026/agentic-rl-landscape/)\~[#3](/blog/2026/multi-turn-rl-practice/)을 참고한다.
+$$r_i$$는 $$i$$번째 트레젝토리가 받은 reward, $$A_i$$는 정규화된 advantage다. 이 advantage 하나가 트레젝토리 안의 **모든 학습 대상 토큰에 동일하게 broadcast**된다 — 이게 "outcome reward"라는 말의 정확한 의미다. 알고리즘 자체에 대한 자세한 유도는 [#44](/blog/2026/agentic-rl-landscape/)\~[#46](/blog/2026/multi-turn-rl-practice/)을 참고한다.
 
 # Method
 
@@ -152,7 +152,7 @@ DeepDive는 앞의 세 논문과 각도가 다르다. 앞선 논문들이 Hotpot
 
 $$r(T) = \begin{cases} 1 & (\forall i, \text{Format}(c_i, a_i)) \wedge \text{Judge}(a_{eos}, a^*) \\ 0 & \text{그 외} \end{cases}$$
 
-모든 스텝의 추론·행동이 형식을 지켰고(도구 호출 채점, [#10](/blog/2026/tool-call-reward/)), 최종 답이 LLM judge가 보기에 정답과 같다고 판정될 때만(judge 채점, [#11](/blog/2026/agentic-judge-rubric/)) 1점이다. 하나라도 어긋나면 0점. 정답 표현이 다양할 수 있어("Inter Corp." vs "Inter Corporation") 문자열 매칭 대신 LLM judge를 답 동치 판정에 쓴다.
+모든 스텝의 추론·행동이 형식을 지켰고(도구 호출 채점, [#53](/blog/2026/tool-call-reward/)), 최종 답이 LLM judge가 보기에 정답과 같다고 판정될 때만(judge 채점, [#54](/blog/2026/agentic-judge-rubric/)) 1점이다. 하나라도 어긋나면 0점. 정답 표현이 다양할 수 있어("Inter Corp." vs "Inter Corporation") 문자열 매칭 대신 LLM judge를 답 동치 판정에 쓴다.
 
 둘째, 검색 다양성을 유도하는 redundancy penalty다. 트레젝토리 $$T$$ 안의 검색 질의들 $$Q = [q_1, q_2, \ldots, q_T]$$에 대해, 질의를 키워드 집합으로 보고 두 질의의 자카드 유사도를 구한다.
 
@@ -166,7 +166,7 @@ $$S(T) = 1$$이면 모든 질의가 동일하다는 뜻이고, $$0$$이면 완�
 
 $$r'(T) = r(T) - \lambda \cdot S(T)$$
 
-$$\lambda = 0.1$$로, 정답을 맞히는 것이 여전히 지배적인 목표지만 같은 질의를 반복할수록 소폭 감점된다. 이 페널티는 [#8](/blog/2026/reward-shaping-agentic/)에서 다룬 shaping의 전형적인 형태다 — outcome reward(전부 아니면 전무인 binary)만으로는 학습이 안 뜨는 문제를, 트레젝토리 통계에서 뽑은 보조 항으로 부드럽게 만든다.
+$$\lambda = 0.1$$로, 정답을 맞히는 것이 여전히 지배적인 목표지만 같은 질의를 반복할수록 소폭 감점된다. 이 페널티는 [#51](/blog/2026/reward-shaping-agentic/)에서 다룬 shaping의 전형적인 형태다 — outcome reward(전부 아니면 전무인 binary)만으로는 학습이 안 뜨는 문제를, 트레젝토리 통계에서 뽑은 보조 항으로 부드럽게 만든다.
 
 **loss masking도 그대로 쓴다.** 논문의 그림에서 확인되는 바로는, reasoning·tool call·answer 토큰에는 loss가 걸리고 web content(관찰) 토큰에는 loss가 걸리지 않는다 — Search-R1의 retrieved token masking과 같은 원리다.
 
@@ -234,7 +234,7 @@ R1-Searcher의 ablation도 같은 종류의 교훈을 다른 각도에서 보여
 
 # Conclusion
 
-네 논문을 관통하는 메시지는 이렇다. **검색 에이전트는 reward의 조달 자체는 쉽다. 정답이 있는 QA라 EM이나 F1 같은 규칙, 또는 표현 다양성이 문제될 때는 LLM judge 하나만 있으면 채점이 끝난다. 하지만 그 쉬운 스칼라 하나가 트레젝토리 전체에 브로드캐스트되는 순간, "어느 검색이 결정적이었는가"라는 질문에는 아무도 답하지 못한다.** 이 시리즈의 언어로 말하면, 이 도메인은 [#9](/blog/2026/environment-as-reward/)의 환경 검증과 [#10](/blog/2026/tool-call-reward/)의 도구 호출 채점을 한 스칼라 안에 합쳐 쓰지만, 그 스칼라를 [#5](/blog/2026/turn-level-reward/)\~[#7](/blog/2026/token-segment-credit/)에서 다룬 턴·스텝·토큰 단위로 쪼개는 시도는 거의 하지 않는다.
+네 논문을 관통하는 메시지는 이렇다. **검색 에이전트는 reward의 조달 자체는 쉽다. 정답이 있는 QA라 EM이나 F1 같은 규칙, 또는 표현 다양성이 문제될 때는 LLM judge 하나만 있으면 채점이 끝난다. 하지만 그 쉬운 스칼라 하나가 트레젝토리 전체에 브로드캐스트되는 순간, "어느 검색이 결정적이었는가"라는 질문에는 아무도 답하지 못한다.** 이 시리즈의 언어로 말하면, 이 도메인은 [#52](/blog/2026/environment-as-reward/)의 환경 검증과 [#53](/blog/2026/tool-call-reward/)의 도구 호출 채점을 한 스칼라 안에 합쳐 쓰지만, 그 스칼라를 [#48](/blog/2026/turn-level-reward/)\~[#50](/blog/2026/token-segment-credit/)에서 다룬 턴·스텝·토큰 단위로 쪼개는 시도는 거의 하지 않는다.
 
 네 논문이 이 성긴 신호를 다루는 전략은 저마다 달랐다.
 
@@ -245,7 +245,7 @@ R1-Searcher의 ablation도 같은 종류의 교훈을 다른 각도에서 보여
 
 hacking 패턴도 이 전략의 이면이었다. 형식 항이 없거나 약하면 검색을 생략하거나(R1-Searcher의 Stage 1 생략 실험) 가짜 검색 결과를 지어내는(`<begin_of_documents>` 없이 문서를 만드는) hacking이 나타났고, 다양성 페널티가 없으면 같은 질의를 반복하는 hacking이 나타났다(DeepDive ablation). 반대로 채점 기준을 너무 엄격하게 잡으면(EM) 응답이 위축되는 방향의 붕괴가 나타났다(R1-Searcher ablation). 즉 이 도메인의 reward hacking은 "몰래 속이는" 형태보다는, **채점 기준의 엄격도와 형식 강제의 강도가 학습 안정성과 직결되는 형태**로 나타난다.
 
-한계도 분명하다. 네 논문 모두 "어느 검색 스텝이 결정적이었는가"를 직접 묻는 process-level 신호는 설계하지 않았다. DeepDive의 redundancy penalty가 가장 근접한 시도지만, 이것도 트레젝토리 전체의 통계량이지 스텝 단위 credit은 아니다. 이 공백은 다음 도메인들에서도 계속 마주치게 될 질문이다 — [#13](/blog/2026/swe-agent-rl/) 코드 에이전트는 테스트 실행이라는 훨씬 비싸지만 훨씬 세밀한 검증 수단을 갖고 있고, [#14](/blog/2026/web-gui-agent-rl/) 웹·GUI 에이전트는 반대로 정답 자체가 모호해 judge에 더 크게 의존한다.
+한계도 분명하다. 네 논문 모두 "어느 검색 스텝이 결정적이었는가"를 직접 묻는 process-level 신호는 설계하지 않았다. DeepDive의 redundancy penalty가 가장 근접한 시도지만, 이것도 트레젝토리 전체의 통계량이지 스텝 단위 credit은 아니다. 이 공백은 다음 도메인들에서도 계속 마주치게 될 질문이다 — [#56](/blog/2026/swe-agent-rl/) 코드 에이전트는 테스트 실행이라는 훨씬 비싸지만 훨씬 세밀한 검증 수단을 갖고 있고, [#57](/blog/2026/web-gui-agent-rl/) 웹·GUI 에이전트는 반대로 정답 자체가 모호해 judge에 더 크게 의존한다.
 
 # 참고 문헌
 
@@ -261,21 +261,104 @@ hacking 패턴도 이 전략의 이면이었다. 형식 항이 없거나 약하�
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열두 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰다섯 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -283,32 +366,35 @@ hacking 패턴도 이 전략의 이면이었다. 형식 항이 없거나 약하�
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><strong>(현재 글)</strong> 검색 에이전트 — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

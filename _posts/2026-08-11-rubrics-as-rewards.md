@@ -2,7 +2,7 @@
 layout: post
 title: "Rubrics as Rewards: 정답이 없는 도메인에 reward를 만드는 법"
 date: 2026-08-11 09:41:00 +0900
-description: "RLHF Reward 설계 시리즈 #41 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
+description: "RL Reward 설계 시리즈 #41 — 채점 기준표를 reward로 바꿔 RLVR을 비검증 도메인으로 확장하다"
 categories: [paper]
 tags: [rlhf, reward-model, rubric, rlvr, llm-as-a-judge, paper]
 giscus_comments: true
@@ -15,7 +15,7 @@ related_posts: true
 
 이 시리즈 [#33 DeepSeek-R1 글](/blog/2026/deepseek-r1/)은 "규칙이 reward가 될 때" 무슨 일이 벌어지는지를 다뤘다. 정답이 명확한 수학·코드 문제라면 채점 함수 하나로 충분했다. $$\boxed{42}$$가 맞았는지, 테스트 케이스를 통과했는지는 프로그램이 판단할 수 있다. 그런데 그 글의 끝에는 대답하지 않은 질문이 하나 남았다. **의료 상담, 과학 설명, 글쓰기, 그리고 이 시리즈의 독자층이 매일 마주하는 안전성 판단처럼 "정답 문자열"이 아예 없는 도메인은 어떻게 하나?**
 
-RLVR(Reinforcement Learning with Verifiable Rewards)은 강력하지만 근본적으로 이분법적이다. 맞았거나 틀렸거나. 하지만 "이 응답이 응급 상황을 적절히 안내했는가", "이 설명이 과학적으로 타당하면서도 이해하기 쉬운가" 같은 질문에는 $$\text{match}(y, \hat y) \in \{0,1\}$$ 같은 함수가 없다. 그렇다고 다시 사람이 라벨링한 선호 데이터로 스칼라 reward model을 학습시키는 길로 돌아가면, 이번엔 이 시리즈 3부에서 다룬 문제 — 길이·형식 같은 표면적 특징에 편승하는 reward hacking(11~14편)과 overoptimization([10편](/blog/2026/reward-model-overoptimization/)) — 이 그대로 재발한다. RLVR의 신뢰성과 선호 기반 RM의 표현력, 둘 다 원하는데 둘 다 완전히는 가질 수 없는 딜레마다.
+RLVR(Reinforcement Learning with Verifiable Rewards)은 강력하지만 근본적으로 이분법적이다. 맞았거나 틀렸거나. 하지만 "이 응답이 응급 상황을 적절히 안내했는가", "이 설명이 과학적으로 타당하면서도 이해하기 쉬운가" 같은 질문에는 $$\text{match}(y, \hat y) \in \{0,1\}$$ 같은 함수가 없다. 그렇다고 다시 사람이 라벨링한 선호 데이터로 스칼라 reward model을 학습시키는 길로 돌아가면, 이번엔 이 시리즈 3부에서 다룬 문제 — 길이·형식 같은 표면적 특징에 편승하는 reward hacking(11~14편)과 overoptimization([#10](/blog/2026/reward-model-overoptimization/)) — 이 그대로 재발한다. RLVR의 신뢰성과 선호 기반 RM의 표현력, 둘 다 원하는데 둘 다 완전히는 가질 수 없는 딜레마다.
 
 이번 글에서 다루는 **Rubrics as Rewards (RaR)**는 이 딜레마에 정면으로 답한다. 발상은 단순하다. **"정답은 없지만, 좋은 답이 갖춰야 할 조건은 열거할 수 있다."** 의료 상담이라면 "응급 신호를 놓치지 않았는가", "전문의 상담을 권했는가", "확정 진단을 함부로 내리지 않았는가" 같은 조건들이다. 이 조건들을 프롬프트마다 체크리스트(rubric)로 만들고, judge 모델이 각 항목의 충족 여부를 판정한 결과를 집계해 reward로 쓴다. 정답 하나를 요구하는 대신 "무엇을 갖췄는지"를 여러 개의 작은 이진 질문으로 쪼갠 것이다.
 
@@ -219,11 +219,20 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
 
 그런데 rubric이든 pairwise adaptive rubric이든, 결국 판정을 내리는 건 여전히 LLM judge라는 사실은 바뀌지 않는다. 항목을 아무리 잘게 쪼개고 비교 방식을 아무리 정교하게 다듬어도, judge 자체가 속는다면 이 모든 구조는 무의미해진다. [#43 One Token to Fool LLM-as-a-Judge 글](/blog/2026/one-token-to-fool-judge/)이 바로 이 지점 — judge를 단 하나의 토큰으로 속일 수 있다는 사실 — 을 다룬다.
 
+# 참고 문헌
+
+- Gunjal, Wang, Lau, Nath, He, Liu, Hendryx, 2025. [Rubrics as Rewards: Reinforcement Learning Beyond Verifiable Domains](https://arxiv.org/abs/2507.17746). Scale AI.
+- [OpenReview: Rubrics as Rewards (ICLR 2026)](https://openreview.net/forum?id=c1bTcrDmt4)
+- [Scale AI 공식 발표: ICLR 2026 Accepted Paper](https://x.com/ScaleAILabs/status/2047075931442077777)
+- Arora, Wei, Hicks, Bowman, Quiñonero-Candela, Tsimpourlas, Sharman, Shah, Vallone, Beutel, et al., 2025. [HealthBench: Evaluating Large Language Models Towards Improved Human Health](https://arxiv.org/abs/2505.08775).
+- Jia, Yang, Wu, Gai, Tao, Zhou, Lin, Jiang, Jiang, 2026. [Open Rubric System: Scaling Reinforcement Learning with Pairwise Adaptive Rubric](https://arxiv.org/abs/2602.14069). Alibaba Qwen Large Model Application Team.
+- [GitHub: Qwen-Applications/OpenRS](https://github.com/Qwen-Applications/OpenRS)
+
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 마흔한 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 마흔한 번째 글이다.
 
 **1부. 지형도**
 
@@ -298,7 +307,7 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -308,21 +317,53 @@ HealthBench의 human-authored rubric과 LLM이 참조 답안을 보고 합성한
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Gunjal, Wang, Lau, Nath, He, Liu, Hendryx, 2025. [Rubrics as Rewards: Reinforcement Learning Beyond Verifiable Domains](https://arxiv.org/abs/2507.17746). Scale AI.
-- [OpenReview: Rubrics as Rewards (ICLR 2026)](https://openreview.net/forum?id=c1bTcrDmt4)
-- [Scale AI 공식 발표: ICLR 2026 Accepted Paper](https://x.com/ScaleAILabs/status/2047075931442077777)
-- Arora, Wei, Hicks, Bowman, Quiñonero-Candela, Tsimpourlas, Sharman, Shah, Vallone, Beutel, et al., 2025. [HealthBench: Evaluating Large Language Models Towards Improved Human Health](https://arxiv.org/abs/2505.08775).
-- Jia, Yang, Wu, Gai, Tao, Zhou, Lin, Jiang, Jiang, 2026. [Open Rubric System: Scaling Reinforcement Learning with Pairwise Adaptive Rubric](https://arxiv.org/abs/2602.14069). Alibaba Qwen Large Model Application Team.
-- [GitHub: Qwen-Applications/OpenRS](https://github.com/Qwen-Applications/OpenRS)
+본 시리즈는 62편으로 구성된다.

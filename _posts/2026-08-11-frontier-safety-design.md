@@ -1,19 +1,19 @@
 ---
 layout: post
 title: "프론티어 모델은 harmlessness reward를 어떻게 설계했나"
-date: 2026-08-11 09:45:00 +0900
-description: "RLHF Reward 설계 시리즈 #45 — 안전성 reward의 실전 설계와 over-refusal 트레이드오프"
+date: 2026-08-11 10:00:00 +0900
+description: "RL Reward 설계 시리즈 #60 — 안전성 reward의 실전 설계와 over-refusal 트레이드오프"
 categories: [paper]
 tags: [rlhf, safety, harmlessness, over-refusal, reward-model, paper]
 giscus_comments: true
 related_posts: true
 ---
 
-> 이 글은 프론티어 모델들의 공개 자료에서 **안전성 reward 설계**만 따로 떼어 비교한다. 능력(helpfulness) 축은 [#44](/blog/2026/frontier-reward-design/)에서 다뤘다.
+> 이 글은 프론티어 모델들의 공개 자료에서 **안전성 reward 설계**만 따로 떼어 비교한다. 능력(helpfulness) 축은 [#59](/blog/2026/frontier-reward-design/)에서 다뤘다.
 
 # Introduction
 
-[#44](/blog/2026/frontier-reward-design/)은 열한 개 프론티어 모델이 helpfulness reward를 어떻게 설계했는지 훑었다. 결론은 비교적 깔끔했다 — 검증 가능한 도메인(수학, 코드)에서는 규칙 기반 reward로 수렴하고, 검증 불가능한 도메인(대화, 글쓰기)에서는 GRM과 rubric judge로 갈렸다. 이 글은 같은 자료를 다시 펼치되, 이번엔 harmlessness(안전성) reward만 따로 뜯는다.
+[#59](/blog/2026/frontier-reward-design/)은 열한 개 프론티어 모델이 helpfulness reward를 어떻게 설계했는지 훑었다. 결론은 비교적 깔끔했다 — 검증 가능한 도메인(수학, 코드)에서는 규칙 기반 reward로 수렴하고, 검증 불가능한 도메인(대화, 글쓰기)에서는 GRM과 rubric judge로 갈렸다. 이 글은 같은 자료를 다시 펼치되, 이번엔 harmlessness(안전성) reward만 따로 뜯는다.
 
 두 축을 한 글에 묶지 않은 데는 두 가지 이유가 있다.
 
@@ -161,13 +161,28 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
 
 넷째, **측정에는 반드시 대조군이 있어야 한다.** OR-Bench의 Spearman 0.878은 안전 프롬프트 거절률만 보고하는 지표가 왜 위험한지를 보여준다. Deliberative Alignment와 Safe RLHF가 신뢰할 만한 이유는 안전 지표와 함께 helpfulness·과잉거절 지표를 나란히 실었기 때문이다. 안전 수치 하나만 내놓는 report는, 그게 진짜 파레토 개선인지 단순히 거절을 늘려 얻은 착시인지 구분할 수 없다.
 
-이 넷을 관통하는 결론은 하나다. harmlessness reward 설계는 helpfulness reward 설계보다 어렵다 — 실패 모드가 하나 더 있고(과잉거절), 그 실패 모드는 안전 지표 하나만 봐서는 보이지 않기 때문이다. 다음 글 [#46](/blog/2026/reward-model-design/)에서는 이 시리즈 전체가 쌓은 결론 — helpfulness와 harmlessness를 아우르는 reward 설계 원칙 — 을 한 장으로 정리한다.
+이 넷을 관통하는 결론은 하나다. harmlessness reward 설계는 helpfulness reward 설계보다 어렵다 — 실패 모드가 하나 더 있고(과잉거절), 그 실패 모드는 안전 지표 하나만 봐서는 보이지 않기 때문이다. 다음 글 [#62](/blog/2026/reward-model-design/)에서는 이 시리즈 전체가 쌓은 결론 — helpfulness와 harmlessness를 아우르는 reward 설계 원칙 — 을 한 장으로 정리한다.
+
+# 참고 문헌
+
+- Dai et al. (PKU Alignment), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/)에서 다룬 제약 기반 안전 최적화.
+- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#16](/blog/2026/rule-based-rewards/).
+- Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339) — [#17](/blog/2026/deliberative-alignment/).
+- Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) — [#18](/blog/2026/shallow-safety-alignment/).
+- Cui et al., 2024. [OR-Bench: An Over-Refusal Benchmark for Large Language Models](https://arxiv.org/abs/2405.20947) — [#19](/blog/2026/or-bench/).
+- Touvron et al. (Meta AI), 2023. [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288) — [#8](/blog/2026/llama2-rlhf/).
+- Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
+- LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505).
+- SKT AI, 2026. [A.X K2 Technical Report](https://github.com/SKT-AI/A.X-K2).
+- Kimi Team, 2026. [Kimi K3: Open Frontier Intelligence](https://github.com/MoonshotAI/Kimi-K3).
+- Gemma Team (Google DeepMind), 2025. [Gemma 3 Technical Report](https://arxiv.org/abs/2503.19786).
+- Anthropic, 2025. [Constitutional Classifiers: Defending Against Universal Jailbreaks](https://www.anthropic.com/research/constitutional-classifiers).
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 마흔다섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 예순 번째 글이다.
 
 **1부. 지형도**
 
@@ -242,7 +257,7 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -252,27 +267,53 @@ Safe RLHF는 유해 응답을 53.08%에서 2.45%로 낮추면서 helpfulness·ha
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><strong>(현재 글)</strong> 프론티어의 harmlessness reward 설계 — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Dai et al. (PKU Alignment), 2023. [Safe RLHF: Safe Reinforcement Learning from Human Feedback](https://arxiv.org/abs/2310.12773) — [#15](/blog/2026/safe-rlhf/)에서 다룬 제약 기반 안전 최적화.
-- Mu et al. (OpenAI), 2024. [Rule Based Rewards for Language Model Safety](https://arxiv.org/abs/2411.01111) — [#16](/blog/2026/rule-based-rewards/).
-- Guan et al. (OpenAI), 2024. [Deliberative Alignment: Reasoning Enables Safer Language Models](https://arxiv.org/abs/2412.16339) — [#17](/blog/2026/deliberative-alignment/).
-- Qi et al. (Princeton University), 2024. [Safety Alignment Should Be Made More Than Just a Few Tokens Deep](https://arxiv.org/abs/2406.05946) — [#18](/blog/2026/shallow-safety-alignment/).
-- Cui et al., 2024. [OR-Bench: An Over-Refusal Benchmark for Large Language Models](https://arxiv.org/abs/2405.20947) — [#19](/blog/2026/or-bench/).
-- Touvron et al. (Meta AI), 2023. [Llama 2: Open Foundation and Fine-Tuned Chat Models](https://arxiv.org/abs/2307.09288) — [#8](/blog/2026/llama2-rlhf/).
-- Meta AI, 2025. [The Llama 4 herd: The beginning of a new era of natively multimodal AI innovation](https://ai.meta.com/blog/llama-4-multimodal-intelligence/).
-- LG AI Research, 2026. [K-EXAONE 2.0 Technical Report](https://arxiv.org/abs/2608.04505).
-- SKT AI, 2026. [A.X K2 Technical Report](https://github.com/SKT-AI/A.X-K2).
-- Kimi Team, 2026. [Kimi K3: Open Frontier Intelligence](https://github.com/MoonshotAI/Kimi-K3).
-- Gemma Team (Google DeepMind), 2025. [Gemma 3 Technical Report](https://arxiv.org/abs/2503.19786).
-- Anthropic, 2025. [Constitutional Classifiers: Defending Against Universal Jailbreaks](https://www.anthropic.com/research/constitutional-classifiers).
+본 시리즈는 62편으로 구성된다.

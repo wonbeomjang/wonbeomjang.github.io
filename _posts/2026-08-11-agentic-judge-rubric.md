@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "궤적을 judge가 채점한다 — rubric 생성형 reward의 확장"
-date: 2026-08-25 09:11:00 +0900
-description: "Agentic RL 설계 시리즈 #11 — 환경도 도구도 못 채점하는 궤적을 judge가 rubric으로 판정할 때 무엇이 달라지고, 어떻게 뚫리는가"
+date: 2026-08-11 09:54:00 +0900
+description: "RL Reward 설계 시리즈 #54 — 환경도 도구도 못 채점하는 궤적을 judge가 rubric으로 판정할 때 무엇이 달라지고, 어떻게 뚫리는가"
 categories: [paper]
 tags: [agentic-rl, reward-design, llm-judge, rubric, reward-hacking, credit-assignment, paper]
 giscus_comments: true
@@ -13,28 +13,28 @@ related_posts: true
 
 # Introduction
 
-[#9](/blog/2026/environment-as-reward/)는 환경의 최종 상태(파일이 생겼는가, DB row가 바뀌었는가, API가 200을 반환했는가)로 궤적을 채점했다. [#10](/blog/2026/tool-call-reward/)은 그 안의 개별 도구 호출 — 스키마가 맞는가, 인자가 유효한가 — 을 채점했다. 둘 다 공통점이 있다. **프로그램이 "예/아니오"로 답할 수 있는 것만 본다.**
+[#52](/blog/2026/environment-as-reward/)는 환경의 최종 상태(파일이 생겼는가, DB row가 바뀌었는가, API가 200을 반환했는가)로 궤적을 채점했다. [#53](/blog/2026/tool-call-reward/)은 그 안의 개별 도구 호출 — 스키마가 맞는가, 인자가 유효한가 — 을 채점했다. 둘 다 공통점이 있다. **프로그램이 "예/아니오"로 답할 수 있는 것만 본다.**
 
 그런데 프로그램이 답할 수 없는 질문이 남는다. "이 궤적이 좋은 접근이었나?" 결과가 맞아도 과정이 나빴을 수 있다 — 남의 주문을 잘못 취소했다가 되돌리고, 같은 API를 열 번 재시도하고, 결국 운 좋게 정답에 도착한 궤적도 최종 상태 검증기 앞에서는 완벽한 1점이다. 반대로 결과가 아깝게 틀렸어도 과정은 훌륭했을 수 있다 — 정확한 전략으로 접근했는데 마지막 API가 rate limit에 걸려 실패한 경우다. 이런 "과정의 질"은 규칙으로 짤 수 없고, 사람이 매번 채점하기엔 궤적 수가 너무 많다. 남는 선택지는 judge다.
 
-RLHF 시리즈가 정리한 reward [4분류](/blog/2026/reward-model-design/) — 규칙 기반, 스칼라 리워드 모델, reference 기반 judge, generative reward model(GRM) — 중 ③④가 이번 편의 무대다. 지금까지는 이 둘이 응답 하나(prompt-response 쌍)를 판정했다. 이 글은 판정 대상이 **응답이 아니라 궤적**으로 바뀔 때 무엇이 달라지는지를 다룬다.
+이 시리즈가 1\~8부에서 정리한 reward [4분류](/blog/2026/reward-model-design/) — 규칙 기반, 스칼라 리워드 모델, reference 기반 judge, generative reward model(GRM) — 중 ③④가 이번 편의 무대다. 지금까지는 이 둘이 응답 하나(prompt-response 쌍)를 판정했다. 이 글은 판정 대상이 **응답이 아니라 궤적**으로 바뀔 때 무엇이 달라지는지를 다룬다.
 
 결론을 먼저 적는다. 궤적으로 확장한 judge는 두 얼굴을 가진다.
 
 1. **강력해진다.** rubric을 궤적에 맞춰 그때그때 생성하고(Kimi K3의 Agentic GRM), 그 rubric을 트랜지션 단위로 쪼개 적용할 수 있다(TRCA). 환경검증과 도구채점이 놓치는 "부작용"과 "불필요한 반복" 같은 축을 하나의 자연어 판정에 담을 수 있다.
-2. **더 비싸지고, 더 쉽게 뚫린다.** 판정 1건이 10만 토큰짜리 궤적을 읽어야 할 수도 있고, 그 비용을 감당 못 한 판정자는 궤적의 결말에 의존하게 된다. 정책은 이걸 학습으로 발견한다 — "그럴듯하게 끝맺으면 이긴다"는 사실을. [One Token to Fool](/blog/2026/one-token-to-fool-judge/)이 응답 judge 하나가 토큰 하나로 뒤집히는 걸 보였다면, 궤적 judge는 구조적으로 더 크게 뚫린다. 이 취약점이 [#15](/blog/2026/agentic-reward-hacking/)에서 본격적인 공격 표면이 된다.
+2. **더 비싸지고, 더 쉽게 뚫린다.** 판정 1건이 10만 토큰짜리 궤적을 읽어야 할 수도 있고, 그 비용을 감당 못 한 판정자는 궤적의 결말에 의존하게 된다. 정책은 이걸 학습으로 발견한다 — "그럴듯하게 끝맺으면 이긴다"는 사실을. [One Token to Fool](/blog/2026/one-token-to-fool-judge/)이 응답 judge 하나가 토큰 하나로 뒤집히는 걸 보였다면, 궤적 judge는 구조적으로 더 크게 뚫린다. 이 취약점이 [#58](/blog/2026/agentic-reward-hacking/)에서 본격적인 공격 표면이 된다.
 
 # Background
 
 ## 4분류가 궤적에서 다시 배치되는 자리
 
-본격적으로 들어가기 전에, RLHF 시리즈의 reward [4분류](/blog/2026/reward-model-design/)가 이 시리즈 3부에서 어디에 각각 배치됐는지 정리하고 가자. 응답 단위였던 분류가 궤적 단위로 넘어오면서 항목마다 무게가 다르게 실린다.
+본격적으로 들어가기 전에, 1\~8부의 reward [4분류](/blog/2026/reward-model-design/)가 이 시리즈 3부에서 어디에 각각 배치됐는지 정리하고 가자. 응답 단위였던 분류가 궤적 단위로 넘어오면서 항목마다 무게가 다르게 실린다.
 
-| RLHF 4분류                | 응답 단위(RLHF 시리즈)            | 궤적 단위(이 시리즈 3부)                                                            |
+| RLHF 4분류                | 응답 단위(1\~8부)                 | 궤적 단위(이 시리즈 3부)                                                            |
 | ------------------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
-| ① 규칙 기반               | 정답 문자열 매칭, 형식 검사       | [#9](/blog/2026/environment-as-reward/) 환경검증 — 최종 상태를 규칙으로 확인        |
+| ① 규칙 기반               | 정답 문자열 매칭, 형식 검사       | [#52](/blog/2026/environment-as-reward/) 환경검증 — 최종 상태를 규칙으로 확인       |
 | ② 스칼라 리워드 모델      | 학습된 RM이 응답 하나에 점수 하나 | 궤적 전체에 스칼라 하나는 신호가 지나치게 성겨서 이 시리즈에서는 거의 쓰이지 않는다 |
-| ③ reference 기반 judge    | 정답과 후보를 대조                | [#10](/blog/2026/tool-call-reward/) 도구채점의 일부(스키마·기대 인자와의 대조)      |
+| ③ reference 기반 judge    | 정답과 후보를 대조                | [#53](/blog/2026/tool-call-reward/) 도구채점의 일부(스키마·기대 인자와의 대조)      |
 | ④ GRM(생성형 리워드 모델) | rubric·자유 서술 판정             | 이 글의 Kimi K3 Agentic GRM, TRCA                                                   |
 
 이 표가 보여주는 것은 단순하다. 궤적 단위로 넘어오면 ②는 거의 자취를 감추고, ①은 환경검증으로, ③은 도구채점의 일부로 흡수된다. 남는 건 ④뿐인데, ④가 감당해야 할 몫이 응답 하나였을 때보다 훨씬 커졌다 — "이 텍스트가 좋은가"가 아니라 "이 실행 과정 전체가 좋은가"를 판정해야 하기 때문이다. 이 확장이 정확히 무엇을 어렵게 만드는지가 다음 절의 주제다.
@@ -49,15 +49,15 @@ RLHF 시리즈가 정리한 reward [4분류](/blog/2026/reward-model-design/) �
 
 **2. 어디를 보고 판정할지.** 응답 judge는 "이 텍스트가 좋은가" 하나만 보면 된다. 궤적 judge는 "이 시퀀스의 어느 지점이 결정적이었는가"를 봐야 한다. 최종 상태 하나로는 안 보이는 축들이 있다 — 부작용을 일으켰는가, 불필요하게 반복했는가, 효율적으로 도달했는가.
 
-**3. 부분 성공의 표현.** 환경검증(#9)은 이진(0/1) 판정이 많다. 파일이 있거나 없거나다. 하지만 궤적은 "80% 왔는데 마지막에 삐끗"처럼 연속적인 실패가 흔하다. 이걸 스칼라 하나로 뭉개면 어디서 궤적이 틀어졌는지에 대한 신호가 사라진다.
+**3. 부분 성공의 표현.** 환경검증(#52)은 이진(0/1) 판정이 많다. 파일이 있거나 없거나다. 하지만 궤적은 "80% 왔는데 마지막에 삐끗"처럼 연속적인 실패가 흔하다. 이걸 스칼라 하나로 뭉개면 어디서 궤적이 틀어졌는지에 대한 신호가 사라진다.
 
-이 어려움이 추상적 주장이 아니라는 걸 실측한 벤치마크가 있다. **AgentRewardBench** (Lù et al., arXiv 2025)는 웹 에이전트 궤적 1,302개(5개 벤치마크 × 4개 대상 모델)를 전문가가 직접 리뷰하며 세 가지 질문에 답하게 했다 — **성공(success)했는가, 부작용(side effect)을 일으켰는가, 불필요하게 반복(repetitiveness)했는가.** 이 세 축에 대해 12개 LLM judge를 평가한 결과, 모든 벤치마크에서 고르게 우수한 judge는 하나도 없었다. 더 눈에 띄는 발견은 따로 있다 — 기존에 표준으로 쓰이던 **룰 기반 평가(=#9식 환경검증)가 실제 성공률을 체계적으로 과소 보고(underreport)**한다는 것이다. 즉 환경검증이 "성공을 성공으로 인정하지 못하는" 방향으로 이미 틀리고 있다는 걸 사람 리뷰와의 비교로 보여준 셈이다. 이게 이번 편이 필요한 이유의 실증적 근거다.
+이 어려움이 추상적 주장이 아니라는 걸 실측한 벤치마크가 있다. **AgentRewardBench** (Lù et al., arXiv 2025)는 웹 에이전트 궤적 1,302개(5개 벤치마크 × 4개 대상 모델)를 전문가가 직접 리뷰하며 세 가지 질문에 답하게 했다 — **성공(success)했는가, 부작용(side effect)을 일으켰는가, 불필요하게 반복(repetitiveness)했는가.** 이 세 축에 대해 12개 LLM judge를 평가한 결과, 모든 벤치마크에서 고르게 우수한 judge는 하나도 없었다. 더 눈에 띄는 발견은 따로 있다 — 기존에 표준으로 쓰이던 **룰 기반 평가(=#52식 환경검증)가 실제 성공률을 체계적으로 과소 보고(underreport)**한다는 것이다. 즉 환경검증이 "성공을 성공으로 인정하지 못하는" 방향으로 이미 틀리고 있다는 걸 사람 리뷰와의 비교로 보여준 셈이다. 이게 이번 편이 필요한 이유의 실증적 근거다.
 
 같은 결론이 다른 도메인에서도 되풀이된다. **MobileJudgeBench** (arXiv 2026, 2608.11434)는 모바일 에이전트 궤적 931개(6개 벤치마크, 4개 에이전트 모델, 68개 앱)를 사람이 주석한 뒤 6개 judge 방법론을 비교했다. 두 가지가 눈에 띈다 — 하나는 스크린샷을 몇 장 샘플링하는 단순한 baseline judge가 정교하게 설계된 전용 판정 파이프라인과 견줄 만하거나 오히려 능가했다는 점(즉 파이프라인을 복잡하게 짜는 것보다 judge의 backbone 모델 자체가 품질을 좌우한다), 다른 하나는 벤치마크 품질 지표가 실제 활용도와 상관돼 있다는 점이다 — judge를 on-policy RL의 reward 신호로 썼을 때의 다운스트림 성능까지 예측할 수 있었다. 웹 도메인(AgentRewardBench)과 모바일 도메인(MobileJudgeBench)에서 독립적으로 같은 그림이 나온다는 건, "궤적 judge는 균일하게 잘하지 못한다"는 문제가 특정 도메인의 우연이 아니라는 뜻이다.
 
 ## rubric 기반 채점이 궤적으로 확장될 때 무엇이 달라지는가
 
-RLHF 시리즈의 [Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)와 [Prometheus 2](/blog/2026/prometheus-2/)는 응답 하나에 rubric을 적용하는 방법을 다뤘다(재서술은 링크로 대신한다). 여기서는 그게 **궤적으로 확장될 때 새로 생기는 설계 축**만 짚는다.
+8부의 [Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)와 [Prometheus 2](/blog/2026/prometheus-2/)는 응답 하나에 rubric을 적용하는 방법을 다뤘다(재서술은 링크로 대신한다). 여기서는 그게 **궤적으로 확장될 때 새로 생기는 설계 축**만 짚는다.
 
 응답 하나에 rubric을 적용하는 건 "결과물 채점"이다. 궤적에 적용하면 최소 세 가지 축이 새로 열린다.
 
@@ -85,7 +85,7 @@ RLHF 시리즈의 [Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)와 [Prome
 
 트랜지션 3이 핵심이다. Foundational Reward는 여전히 양수다 — 유효한 실행이었으니까. 하지만 Breakthrough Reward는 0이다 — 이미 아는 걸 다시 확인했을 뿐 태스크를 진전시키지 않았기 때문이다. 이게 앞서 말한 "반복 행동에 자연스러운 페널티가 걸린다"는 설명의 구체적인 형태다. 트랜지션 하나만 보면 "유효한 실행"이라 나쁘지 않아 보이지만, 궤적 전체에서 보면 "이미 아는 걸 다시 확인하느라 스텝 하나를 낭비했다"는 게 Breakthrough Reward의 0이라는 값에 담긴다 — outcome-level 채점 하나로는 절대 볼 수 없는 정보다.
 
-이게 왜 중요한지는 비교하면 분명해진다. outcome-level rubric은 #9의 환경검증과 크게 다르지 않다 — 끝에 한 번 채점하는 건 매한가지고, 채점 함수가 규칙 대신 judge라는 차이만 있다. 궤적 judge가 진짜 다른 도구가 되는 지점은 **판정을 트랜지션 단위로 쪼갤 수 있다는 것**이다. 그리고 그 대가는 뒤에서 계산하는 비용이다 — 판정 횟수가 트랜지션 수만큼 늘어난다.
+이게 왜 중요한지는 비교하면 분명해진다. outcome-level rubric은 #52의 환경검증과 크게 다르지 않다 — 끝에 한 번 채점하는 건 매한가지고, 채점 함수가 규칙 대신 judge라는 차이만 있다. 궤적 judge가 진짜 다른 도구가 되는 지점은 **판정을 트랜지션 단위로 쪼갤 수 있다는 것**이다. 그리고 그 대가는 뒤에서 계산하는 비용이다 — 판정 횟수가 트랜지션 수만큼 늘어난다.
 
 # Method
 
@@ -118,7 +118,7 @@ Kimi K3 tech report(Kimi Team, arXiv 2607.24653, "K3 tech report")는 2.8T 파�
 
 이 rubric 순환 구조가 만드는 위험(장황함을 보상하는 방향으로 흐르는 것)에 대해 K3는 명시적 방어 장치를 둔다. **verbosity budget control**이다 — reasoning-effort RL에 쓰는 것과 같은 방식으로, cold-start 모델에서 추정한 초기 verbosity $$\ell_0$$과 배수 $$\sigma$$를 두고, 출력 길이가 $$\sigma \cdot \ell_0$$를 넘는 후보는 자동으로 tournament에서 패배 처리한다. reward hacking을 사후에 벌하는 대신, 애초에 그 경로로는 이길 수 없게 만드는 방식이다.
 
-RLHF 시리즈 [프론티어 편](/blog/2026/frontier-reward-design/)이 이 GRM을 "reward 설계 계보"(스칼라 RM을 GRM이 대체해가는 흐름) 관점에서 다뤘다면, 여기서는 **판정 대상이 원시 궤적이 아니라 산출물에 수렴한다**는, 궤적 판정 특유의 트레이드오프로 본다는 점이 다르다.
+14부의 [프론티어 편](/blog/2026/frontier-reward-design/)이 이 GRM을 "reward 설계 계보"(스칼라 RM을 GRM이 대체해가는 흐름) 관점에서 다뤘다면, 여기서는 **판정 대상이 원시 궤적이 아니라 산출물에 수렴한다**는, 궤적 판정 특유의 트레이드오프로 본다는 점이 다르다.
 
 ## 두 rubric 확장 방식의 대차대조
 
@@ -196,8 +196,8 @@ $$K=8$$이면 $$(K-1)/2 = 3.5$$다. 즉 tournament 방식은 pointwise보다 3.5
 
 | 채점 방식                         | (a) 짧고 정확 | (b) 길게 헤매다 성공 | 구분 가능한가                                                        |
 | --------------------------------- | ------------- | -------------------- | -------------------------------------------------------------------- |
-| 환경검증(#9, 최종 상태만)         | 1점           | 1점                  | 불가능 — 최종 DB 상태가 같다                                         |
-| 도구채점(#10, 마지막 호출만 검사) | 통과          | 통과                 | 대개 불가능 — 마지막 호출의 스키마·인자만 보면 중간 과정이 안 보인다 |
+| 환경검증(#52, 최종 상태만)        | 1점           | 1점                  | 불가능 — 최종 DB 상태가 같다                                         |
+| 도구채점(#53, 마지막 호출만 검사) | 통과          | 통과                 | 대개 불가능 — 마지막 호출의 스키마·인자만 보면 중간 과정이 안 보인다 |
 | rubric judge(궤적 전체를 읽음)    | 고득점        | 저득점               | 가능                                                                 |
 
 rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 예:
@@ -231,7 +231,7 @@ rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 �
 
 | 상황                                                                    | 권장 조합                                                                 | 근거                                                                                             |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 궤적이 짧고(예: 20스텝 미만) 태스크가 균일                              | outcome-level 고정 rubric + 도구채점(#10) 병행                            | 판정 비용이 크지 않고, 고정 rubric이 재현성을 준다                                               |
+| 궤적이 짧고(예: 20스텝 미만) 태스크가 균일                              | outcome-level 고정 rubric + 도구채점(#53) 병행                            | 판정 비용이 크지 않고, 고정 rubric이 재현성을 준다                                               |
 | 궤적이 매우 길거나(50스텝 이상) 태스크가 다양                           | 생성형 rubric(Kimi K3 방식)                                               | 태스크마다 rubric을 새로 쓸 필요가 없다. 대신 verbosity 통제가 필수다                            |
 | 성공 궤적이 희귀한 초기 RL 구간                                         | 트랜지션 rubric(TRCA류)                                                   | 앵커(성공 궤적) 없이도 dense한 신호를 만든다                                                     |
 | judge 예산이 빠듯함                                                     | pointwise 채점 + deferral cascade, 조기 종료(E-valuator·AgentForesight류) | 그룹 크기를 키울수록 tournament 비용이 제곱으로 늘어난다는 걸 앞서 계산했다                      |
@@ -239,17 +239,17 @@ rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 �
 
 마지막 행이 특히 중요하다. 이 시리즈가 지금까지 강조한 원칙 — "reward는 한 조달처에만 의존하지 않는다" — 이 judge 안에서도 반복된다. judge 하나에 전부를 맡기는 대신, 값싸고 판정이 좁은 신호(TF-IDF 탐지기, 규칙 기반 조기 종료)를 judge와 나란히 두면 서로의 약점을 메운다.
 
-# 통계 요약 — 3부를 닫는 종합표
+# 통계 요약 — 11부를 닫는 종합표
 
 지금까지 세 편에 걸쳐 본 것은 결국 "reward를 어디서 조달하는가"에 대한 세 가지 답이다.
 
-| 조달처                                        | 무엇을 검증하나                  | 신호 형태                                             | 무엇을 못 잡나                     | 비용 특성                            | 대표 취약점                         |
-| --------------------------------------------- | -------------------------------- | ----------------------------------------------------- | ---------------------------------- | ------------------------------------ | ----------------------------------- |
-| 환경([#9](/blog/2026/environment-as-reward/)) | 최종 상태(파일·DB·API 응답)      | 이진 0/1, 스텝별로 확장 가능                          | 과정 품질, 부작용, 효율            | 낮음(시뮬레이터 재실행 수준)         | 검증기 자체가 느슨하면 통과         |
-| 도구([#10](/blog/2026/tool-call-reward/))     | 개별 호출의 스키마·인자·부작용   | 스텝 단위, 세밀                                       | 전체 궤적이 왜 이 경로를 택했는가  | 낮음(정적 검사 수준)                 | 스키마만 맞추고 의미 없는 호출 반복 |
-| judge/rubric(#11)                             | 산출물·궤적의 품질, 부작용, 반복 | 연속 점수 또는 tournament 서열, rubric을 judge가 정의 | 판정자가 못 읽은 부분(컨텍스트 밖) | 매우 높음(궤적 길이에 비례, 위 계산) | confident closing·CoT 조작에 취약   |
+| 조달처                                         | 무엇을 검증하나                  | 신호 형태                                             | 무엇을 못 잡나                     | 비용 특성                            | 대표 취약점                         |
+| ---------------------------------------------- | -------------------------------- | ----------------------------------------------------- | ---------------------------------- | ------------------------------------ | ----------------------------------- |
+| 환경([#52](/blog/2026/environment-as-reward/)) | 최종 상태(파일·DB·API 응답)      | 이진 0/1, 스텝별로 확장 가능                          | 과정 품질, 부작용, 효율            | 낮음(시뮬레이터 재실행 수준)         | 검증기 자체가 느슨하면 통과         |
+| 도구([#53](/blog/2026/tool-call-reward/))      | 개별 호출의 스키마·인자·부작용   | 스텝 단위, 세밀                                       | 전체 궤적이 왜 이 경로를 택했는가  | 낮음(정적 검사 수준)                 | 스키마만 맞추고 의미 없는 호출 반복 |
+| judge/rubric(#54)                              | 산출물·궤적의 품질, 부작용, 반복 | 연속 점수 또는 tournament 서열, rubric을 judge가 정의 | 판정자가 못 읽은 부분(컨텍스트 밖) | 매우 높음(궤적 길이에 비례, 위 계산) | confident closing·CoT 조작에 취약   |
 
-세 조달처는 서로 배타적이지 않다. 오히려 실전에서는 섞어 쓴다. 이어지는 4부([#12](/blog/2026/search-agent-rl/)\~[#14](/blog/2026/web-gui-agent-rl/))에서 도메인마다 이 배합이 어떻게 달라지는지를 본다 — 검색 에이전트는 근거 인용의 품질을 판정에 맡기는 비중이 크고, 코드 에이전트는 테스트 스위트(환경검증의 강력한 형태)에 크게 의존하되 설계·스타일 판단만 judge에 맡기고, 웹·GUI 에이전트는 이번 편의 토이 예제와 같은 부작용·비효율 문제가 특히 두드러진다. 각 편에서 그 구체적인 배합을 다룬다.
+세 조달처는 서로 배타적이지 않다. 오히려 실전에서는 섞어 쓴다. 이어지는 12부([#55](/blog/2026/search-agent-rl/)\~[#57](/blog/2026/web-gui-agent-rl/))에서 도메인마다 이 배합이 어떻게 달라지는지를 본다 — 검색 에이전트는 근거 인용의 품질을 판정에 맡기는 비중이 크고, 코드 에이전트는 테스트 스위트(환경검증의 강력한 형태)에 크게 의존하되 설계·스타일 판단만 judge에 맡기고, 웹·GUI 에이전트는 이번 편의 토이 예제와 같은 부작용·비효율 문제가 특히 두드러진다. 각 편에서 그 구체적인 배합을 다룬다.
 
 # Conclusion
 
@@ -259,7 +259,7 @@ rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 �
 
 이 글의 비용 계산은 확인된 벤치마크 수치가 아니라 예시 가정 기반의 어림값이라는 한계가 있다. 또한 confident closing·CoT 조작 연구는 대부분 웹·앱 도메인에서 이뤄졌다 — 코드나 검색처럼 다른 도메인에도 같은 정도로 일반화되는지는 이어지는 편에서 다시 봐야 할 질문이다.
 
-3부([#9](/blog/2026/environment-as-reward/)\~#11)를 한 줄로 요약하면: reward는 환경에서, 도구에서, 그리고 judge에서 온다. 각각 무엇을 검증하고 무엇을 놓치는지가 다르며, 그 놓치는 지점이 곧 다음 취약점이다. [#15](/blog/2026/agentic-reward-hacking/)는 이 세 조달처 각각의 놓치는 지점을 정책이 어떻게 찾아내는지를 정리한다.
+11부([#52](/blog/2026/environment-as-reward/)\~#54)를 한 줄로 요약하면: reward는 환경에서, 도구에서, 그리고 judge에서 온다. 각각 무엇을 검증하고 무엇을 놓치는지가 다르며, 그 놓치는 지점이 곧 다음 취약점이다. [#58](/blog/2026/agentic-reward-hacking/)는 이 세 조달처 각각의 놓치는 지점을 정책이 어떻게 찾아내는지를 정리한다.
 
 # 참고 문헌
 
@@ -272,25 +272,108 @@ rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 �
 - Chen and Zhang, 2026. [Share the Judge, Learn the Deferral: Where Specialization Helps LLM Evaluation](https://arxiv.org/abs/2607.27984).
 - Sadhuka et al., 2025. [E-valuator: Reliable Agent Verifiers with Sequential Hypothesis Testing](https://arxiv.org/abs/2512.03109).
 - Boxuan Zhang et al., 2026. [AgentForesight: Online Auditing for Early Failure Prediction in Multi-Agent Systems](https://arxiv.org/abs/2605.08715).
-- RLHF Reward 설계 시리즈. [reward 4분류](/blog/2026/reward-model-design/), [프론티어 편](/blog/2026/frontier-reward-design/), [Rubrics as Rewards](/blog/2026/rubrics-as-rewards/), [Prometheus 2](/blog/2026/prometheus-2/), [One Token to Fool](/blog/2026/one-token-to-fool-judge/).
+- RL Reward 설계 시리즈. [reward 4분류](/blog/2026/reward-model-design/), [프론티어 편](/blog/2026/frontier-reward-design/), [Rubrics as Rewards](/blog/2026/rubrics-as-rewards/), [Prometheus 2](/blog/2026/prometheus-2/), [One Token to Fool](/blog/2026/one-token-to-fool-judge/).
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열한 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰네 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -298,32 +381,35 @@ rubric judge가 궤적 (a), (b)를 보고 스스로 생성할 법한 rubric의 �
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><strong>(현재 글)</strong> 궤적을 judge가 채점한다 — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

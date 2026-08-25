@@ -2,7 +2,7 @@
 layout: post
 title: "Secrets of RLHF II: 선호 데이터의 노이즈와 reward model의 일반화"
 date: 2026-08-11 09:05:00 +0900
-description: "RLHF Reward 설계 시리즈 #5 — 잘못된 선호 쌍을 걸러내고 RM을 OOD에 강하게 만드는 법"
+description: "RL Reward 설계 시리즈 #5 — 잘못된 선호 쌍을 걸러내고 RM을 OOD에 강하게 만드는 법"
 categories: [paper]
 tags: [rlhf, reward-model, preference-data, generalization, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-시리즈 [1편](/blog/2026/deep-rl-human-preferences/)에서는 사람의 선호로 보상을 배운다는 아이디어의 원형을 봤고, 거기서 이미 policy가 학습되며 분포가 이동하면 reward model이 낡아버린다는 문제가 예고됐다. [4편](/blog/2026/bradley-terry-rethinking/)은 그렇게 만든 reward model의 표준 학습 도구인 Bradley-Terry 손실이 이론적으로 타당한 가정 위에 서 있는지를 캐물었다. 이번 글이 던지는 질문은 결이 다르다. BT 손실이 수학적으로 옳다고 쳐도, 애초에 그 손실이 먹는 **데이터가 믿을 만한가**?
+시리즈 [#1](/blog/2026/deep-rl-human-preferences/)에서는 사람의 선호로 보상을 배운다는 아이디어의 원형을 봤고, 거기서 이미 policy가 학습되며 분포가 이동하면 reward model이 낡아버린다는 문제가 예고됐다. [#4](/blog/2026/bradley-terry-rethinking/)은 그렇게 만든 reward model의 표준 학습 도구인 Bradley-Terry 손실이 이론적으로 타당한 가정 위에 서 있는지를 캐물었다. 이번 글이 던지는 질문은 결이 다르다. BT 손실이 수학적으로 옳다고 쳐도, 애초에 그 손실이 먹는 **데이터가 믿을 만한가**?
 
 Fudan 대학 MOSS 팀이 쓴 이 논문은 두 가지를 동시에 문제 삼는다. 첫째, 사람이 만든 선호 쌍(preference pair) 자체가 오염돼 있다. 실제로 라벨이 뒤바뀐 쌍(incorrect pair)도 있고, 애초에 사람도 우열을 가리기 힘든 쌍(ambiguous pair)도 있다. 이 둘을 구분하지 않고 그냥 다 똑같은 가중치로 BT 손실에 넣으면 reward model(이하 RM)은 정확히 잘못된 방향으로, 혹은 존재하지 않는 신호를 향해 학습된다. 둘째, RLHF는 한 번에 끝나지 않는다. policy가 PPO로 업데이트될수록 그 policy가 뱉는 응답의 분포는 RM이 학습됐던 원래 선호 데이터의 분포에서 점점 멀어진다. 즉 RM은 자기가 만들어낸 policy에 의해 스스로 OOD(out-of-distribution) 상황에 놓이게 된다.
 
@@ -21,7 +21,7 @@ Fudan 대학 MOSS 팀이 쓴 이 논문은 두 가지를 동시에 문제 삼는
 
 # Background
 
-RM 학습의 표준 형태부터 복기하자. 프롬프트 $$x$$에 대해 사람이 두 응답 $$y_c$$(chosen)와 $$y_r$$(rejected) 중 하나를 골랐다고 하면, RM $$r_\psi$$는 Bradley-Terry 모델을 따라 다음 손실로 학습된다([4편 참고](/blog/2026/bradley-terry-rethinking/)).
+RM 학습의 표준 형태부터 복기하자. 프롬프트 $$x$$에 대해 사람이 두 응답 $$y_c$$(chosen)와 $$y_r$$(rejected) 중 하나를 골랐다고 하면, RM $$r_\psi$$는 Bradley-Terry 모델을 따라 다음 손실로 학습된다([#4 참고](/blog/2026/bradley-terry-rethinking/)).
 
 $$\mathcal{L}_{BT}(r_\psi) = -\mathbb{E}_{(x,y_c,y_r)\sim\mathcal{D}_{rm}}\Big[\log \sigma\big(r_\psi(x,y_c) - r_\psi(x,y_r)\big)\Big]$$
 
@@ -171,7 +171,7 @@ $$\mathcal{L}_{total} = \mathcal{L}_{rm} + \beta \cdot \mathcal{L}_{cl}$$
 
 ## meta-learning으로 policy 분포 이동을 뒤쫓기(MetaRM)
 
-여기서부터가 [1편](/blog/2026/deep-rl-human-preferences/)이 예고했던 문제, 즉 policy가 이동하면 RM이 낡는다는 문제에 대한 답이다. RLHF는 보통 한 번에 끝나지 않고 "PPO로 policy 업데이트 → 새 policy로 응답 샘플링 → 다시 선호 라벨링 → RM 재학습"을 여러 라운드 반복한다(iterative RLHF). 문제는 라운드가 진행될수록 policy $$\pi^{RL}$$이 뱉는 응답의 분포가 원래 RM이 학습했던 분포에서 멀어진다는 점이다. RM이 새 분포의 응답들을 서로 구분하지 못하면(다 비슷한 점수를 주면) 더 이상 유용한 학습 신호를 주지 못한다.
+여기서부터가 [#1](/blog/2026/deep-rl-human-preferences/)이 예고했던 문제, 즉 policy가 이동하면 RM이 낡는다는 문제에 대한 답이다. RLHF는 보통 한 번에 끝나지 않고 "PPO로 policy 업데이트 → 새 policy로 응답 샘플링 → 다시 선호 라벨링 → RM 재학습"을 여러 라운드 반복한다(iterative RLHF). 문제는 라운드가 진행될수록 policy $$\pi^{RL}$$이 뱉는 응답의 분포가 원래 RM이 학습했던 분포에서 멀어진다는 점이다. RM이 새 분포의 응답들을 서로 구분하지 못하면(다 비슷한 점수를 주면) 더 이상 유용한 학습 신호를 주지 못한다.
 
 이사를 자주 다니는 상황을 생각하면 이해가 쉽다. 예전 동네 지도만 들고 새 동네를 돌아다니면 길을 못 찾는다. 그렇다고 예전 지도를 통째로 버리고 새로 그리면 그동안 쌓은 방향 감각을 낭비하는 셈이다. 합리적인 방법은 새 동네를 몇 바퀴 둘러보며 "감"만 빠르게 업데이트하고, 그 감을 기준으로 기존 지도를 미세 조정하는 것이다. MetaRM이 하는 일이 정확히 이거다.
 
@@ -235,11 +235,19 @@ MetaRM을 적용한 iterative RLHF는 요약 태스크에서 라운드를 거듭
 
 이 결론이 남기는 부채는 두 가지다. 첫째, 이 논문은 여전히 선호를 1차원 스칼라로 다룬다. helpful과 harmless가 충돌하는 쌍, 즉 애초에 "무엇을 기준으로 우열을 가릴지"가 다차원적인 문제는 건드리지 않는다. 이 문제는 뒤에서 다룰 다목적 분해([ArmoRM](/blog/2026/armorm/))나 helpfulness·safety RM을 아예 분리해버리는 8편 [Llama 2](/blog/2026/llama2-rlhf/)의 실무적 해법으로 이어진다. 둘째, 이 논문의 20%/20%/60%/10%라는 경계는 이 논문이 쓴 HH-RLHF 데이터셋에서 튜닝된 값이지 보편 상수가 아니다. 대규모로 이 문제를 시스템화해서 데이터 큐레이션 파이프라인 자체를 만든 사례가 바로 다음 6편 [Skywork-Reward](/blog/2026/skywork-reward/)다. 그리고 이렇게 정제된 RM이 실제로 PPO 루프 안에서 어떻게 굴러가는지는 자매편인 [Part I](/blog/2026/secrets-rlhf-ppo/)에서 다룬다.
 
+# 참고 문헌
+
+- [Secrets of RLHF in Large Language Models Part II: Reward Modeling (arXiv:2401.06080)](https://arxiv.org/abs/2401.06080)
+- [Secrets of RLHF in Large Language Models Part II — HTML 전문](https://arxiv.org/html/2401.06080v2)
+- [Secrets of RLHF in Large Language Models Part I: PPO (arXiv:2307.04964)](https://arxiv.org/pdf/2307.04964)
+- [OpenLMLab/MOSS-RLHF (GitHub)](https://github.com/OpenLMLab/MOSS-RLHF)
+- [Secrets of RLHF Part II — Hugging Face Papers](https://huggingface.co/papers/2401.06080)
+
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 다섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 다섯 번째 글이다.
 
 **1부. 지형도**
 
@@ -314,7 +322,7 @@ MetaRM을 적용한 iterative RLHF는 요약 태스크에서 라운드를 거듭
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -324,20 +332,53 @@ MetaRM을 적용한 iterative RLHF는 요약 태스크에서 라운드를 거듭
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- [Secrets of RLHF in Large Language Models Part II: Reward Modeling (arXiv:2401.06080)](https://arxiv.org/abs/2401.06080)
-- [Secrets of RLHF in Large Language Models Part II — HTML 전문](https://arxiv.org/html/2401.06080v2)
-- [Secrets of RLHF in Large Language Models Part I: PPO (arXiv:2307.04964)](https://arxiv.org/pdf/2307.04964)
-- [OpenLMLab/MOSS-RLHF (GitHub)](https://github.com/OpenLMLab/MOSS-RLHF)
-- [Secrets of RLHF Part II — Hugging Face Papers](https://huggingface.co/papers/2401.06080)
+본 시리즈는 62편으로 구성된다.

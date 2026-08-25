@@ -2,7 +2,7 @@
 layout: post
 title: "RLOO: PPO의 절반은 RLHF에 필요 없었다"
 date: 2026-08-11 09:23:00 +0900
-description: "RLHF Reward 설계 시리즈 #23 — 응답 전체를 하나의 action으로 보면 REINFORCE로 충분하다는 주장"
+description: "RL Reward 설계 시리즈 #23 — 응답 전체를 하나의 action으로 보면 REINFORCE로 충분하다는 주장"
 categories: [paper]
 tags: [rlhf, reinforce, rloo, ppo, policy-gradient, paper]
 giscus_comments: true
@@ -13,13 +13,13 @@ related_posts: true
 
 # Introduction
 
-[22편 GRPO](/blog/2026/grpo-deepseekmath/)는 "critic을 유지할 비용이 없다"는 논리로 value network를 없앴다. 그룹 안에서 스스로를 정규화하면 별도의 critic 없이도 advantage를 만들 수 있다는 것이었다. 이번 글의 논문은 같은 결론 — PPO 없이도 RLHF가 된다 — 에 도착하지만, 출발점이 전혀 다르다. 이 논문은 비용을 말하지 않는다. 대신 **"RLHF라는 문제를 애초에 잘못 모델링했다"**고 말한다.
+[#22 GRPO](/blog/2026/grpo-deepseekmath/)는 "critic을 유지할 비용이 없다"는 논리로 value network를 없앴다. 그룹 안에서 스스로를 정규화하면 별도의 critic 없이도 advantage를 만들 수 있다는 것이었다. 이번 글의 논문은 같은 결론 — PPO 없이도 RLHF가 된다 — 에 도착하지만, 출발점이 전혀 다르다. 이 논문은 비용을 말하지 않는다. 대신 **"RLHF라는 문제를 애초에 잘못 모델링했다"**고 말한다.
 
 PPO는 각 토큰을 하나의 action으로, 그 토큰까지의 부분 시퀀스를 하나의 state로 본다. 그래서 [PPO([14편](/blog/2026/ppo/))](/blog/2026/ppo/)는 상태마다 가치를 추정하는 critic을 두고, GAE로 편향과 분산을 저울질하고, 정책이 너무 멀리 가지 않도록 토큰 단위로 clipping을 건다. 이 모든 장치는 "한 시퀀스 안에서 상태가 계속 바뀌고, 각 상태마다 가치가 다르다"는 전제 위에 서 있다.
 
 그런데 RLHF에서 보상은 언제 주어지는가? 사람이 매기는 것도, reward model이 매기는 것도 **다 만들어진 응답 하나**에 대해서다. "이 문장까지는 잘 썼고 다음 단어는 별로다" 같은 진짜 보상은 세상 어디에도 없다. 그렇다면 애초에 토큰 하나하나를 별도의 상태로 나눌 이유가 있을까? 이 논문(Ahmadian et al., 2024)의 답은 "없다"이다. 응답 전체를 하나의 행동(action)으로, 프롬프트를 하나의 초기 상태로 보는 **bandit 문제**로 재정의하면, GAE도 value network도 clipping도 자연스럽게 사라진다. 남는 것은 1992년에 나온 가장 오래된 정책 경사법, REINFORCE다. 그리고 여기에 샘플 여러 개를 곁들인 확장판이 이 논문이 제안하는 **RLOO(REINFORCE Leave-One-Out)**다.
 
-결론부터 요약하면 이렇다. Vanilla policy gradient(REINFORCE)조차 PPO를 win-rate 기준 3.2~20.3%p 앞섰고, RLOO는 PPO·DPO·RAFT를 전부 이겼다. [21편 Secrets of RLHF](/blog/2026/secrets-rlhf-ppo/)가 "PPO를 안정적으로 굴리는 트릭"을 다뤘다면, 이 글은 "애초에 그 트릭들이 왜 필요했는지부터 다시 묻는다"는 점에서 결이 다르다.
+결론부터 요약하면 이렇다. Vanilla policy gradient(REINFORCE)조차 PPO를 win-rate 기준 3.2~20.3%p 앞섰고, RLOO는 PPO·DPO·RAFT를 전부 이겼다. [#21 Secrets of RLHF](/blog/2026/secrets-rlhf-ppo/)가 "PPO를 안정적으로 굴리는 트릭"을 다뤘다면, 이 글은 "애초에 그 트릭들이 왜 필요했는지부터 다시 묻는다"는 점에서 결이 다르다.
 
 # Background
 
@@ -119,7 +119,7 @@ $$\frac{1}{k}\sum_{i=1}^{k}\left[R(y_{(i)}, x) - \frac{1}{k-1}\sum_{j\neq i} R(y
 
 ## GRPO와 같은 숫자, 다른 계산
 
-[22편 GRPO](/blog/2026/grpo-deepseekmath/)는 같은 상황에서 다른 방식을 쓴다. **자기 자신을 포함한** $$k$$개 전체의 평균과 표준편차로 정규화한다.
+[#22 GRPO](/blog/2026/grpo-deepseekmath/)는 같은 상황에서 다른 방식을 쓴다. **자기 자신을 포함한** $$k$$개 전체의 평균과 표준편차로 정규화한다.
 
 $$A_i^{GRPO} = \frac{r_i - \mathrm{mean}(r_1,\dots,r_k)}{\mathrm{std}(r_1,\dots,r_k)}$$
 
@@ -140,7 +140,7 @@ $$A_i^{GRPO} = \frac{r_i - \mathrm{mean}(r_1,\dots,r_k)}{\mathrm{std}(r_1,\dots,
 
 ## 세 알고리즘 한눈에 비교
 
-| 항목                  | PPO                                                    | GRPO ([22편](/blog/2026/grpo-deepseekmath/))           | RLOO (이 논문)                                                |
+| 항목                  | PPO                                                    | GRPO ([#22](/blog/2026/grpo-deepseekmath/))            | RLOO (이 논문)                                                |
 | :-------------------- | :----------------------------------------------------- | :----------------------------------------------------- | :------------------------------------------------------------ |
 | baseline/advantage    | 학습된 critic + GAE ($$\lambda$$로 bias-variance 조절) | 그룹 내 **자기 포함** 평균·표준편차로 정규화 (z-score) | 그룹 내 **자기 제외** $$k-1$$개 평균 (leave-one-out)          |
 | critic(value network) | 필요                                                   | 불필요                                                 | 불필요                                                        |
@@ -234,15 +234,26 @@ DPO는 평균 104토큰까지 늘어지는 verbosity 문제를 보이는 반면,
 
 한 줄로 요약하면: **RLHF에서 보상은 완성된 응답에만 있으므로, 부분 시퀀스를 상태로 모델링하는 PPO의 장치(GAE, critic, clipping)는 애초에 필요 없었고, 응답 전체를 하나의 action으로 보는 bandit 프레이밍 위에서 REINFORCE와 그 다중 샘플 확장 RLOO만으로 PPO·DPO·RAFT를 모두 이길 수 있다.**
 
-[22편 GRPO](/blog/2026/grpo-deepseekmath/)와 이 논문은 "critic 없는 RLHF"라는 같은 목적지에 서로 다른 길로 도착했다. GRPO는 비용 절감이라는 실용적 논리로 critic만 걷어냈고, clipping과 토큰 단위 프레이밍은 그대로 남겨뒀다. 이 논문은 문제 정의 자체를 다시 써서 clipping까지 포함한 PPO 전체를 걷어냈다. 그런데 이 논문은 한 걸음 더 나간다. RLOO가 **DPO보다도 낫다**고 주장한다 — RL 자체를 없앤 방법보다, RL을 제대로 다시 설계한 방법이 낫다는 것이다.
+[#22 GRPO](/blog/2026/grpo-deepseekmath/)와 이 논문은 "critic 없는 RLHF"라는 같은 목적지에 서로 다른 길로 도착했다. GRPO는 비용 절감이라는 실용적 논리로 critic만 걷어냈고, clipping과 토큰 단위 프레이밍은 그대로 남겨뒀다. 이 논문은 문제 정의 자체를 다시 써서 clipping까지 포함한 PPO 전체를 걷어냈다. 그런데 이 논문은 한 걸음 더 나간다. RLOO가 **DPO보다도 낫다**고 주장한다 — RL 자체를 없앤 방법보다, RL을 제대로 다시 설계한 방법이 낫다는 것이다.
 
-이 지점이 바로 다음 글로 이어지는 부채다. 이 논문의 실험은 TL;DR 요약과 HH 대화처럼 상대적으로 짧고 단일 턴에 가까운 과제에 국한되어 있고, reward model 하나에 크게 의존한다. [24편 DPO](/blog/2026/dpo/)는 정반대의 방향에서 질문한다 — reward model도, online sampling도, RL 루프 자체도 다 걷어내고 선호 쌍에서 정책을 직접 학습할 수 있다면 어떨까? 이 논문이 "RLOO가 DPO를 이긴다"고 결론지은 바로 그 지점에서, 다음 글은 "RL 자체가 정말 필요한가"라는 더 근본적인 질문을 던지며 긴장을 이어간다.
+이 지점이 바로 다음 글로 이어지는 부채다. 이 논문의 실험은 TL;DR 요약과 HH 대화처럼 상대적으로 짧고 단일 턴에 가까운 과제에 국한되어 있고, reward model 하나에 크게 의존한다. [#24 DPO](/blog/2026/dpo/)는 정반대의 방향에서 질문한다 — reward model도, online sampling도, RL 루프 자체도 다 걷어내고 선호 쌍에서 정책을 직접 학습할 수 있다면 어떨까? 이 논문이 "RLOO가 DPO를 이긴다"고 결론지은 바로 그 지점에서, 다음 글은 "RL 자체가 정말 필요한가"라는 더 근본적인 질문을 던지며 긴장을 이어간다.
+
+# 참고 문헌
+
+- Ahmadian et al., 2024. [Back to Basics: Revisiting REINFORCE-Style Optimization for Learning from Human Feedback in LLMs](https://arxiv.org/abs/2402.14740). ACL 2024.
+- [ACL Anthology: Back to Basics](https://aclanthology.org/2024.acl-long.662/)
+- Kool, van Hoof & Welling, 2019. [Buy 4 REINFORCE Samples, Get a Baseline for Free!](https://openreview.net/forum?id=r1lgTGL5DE) (RLOO 원 논문)
+- Williams, 1992. Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning. (REINFORCE 원 논문)
+- Dong et al., 2023. [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).
+- Rafailov et al., 2023. [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).
+- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
+- Shao et al., 2024. [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300). (GRPO 원 논문)
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 스물세 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 스물세 번째 글이다.
 
 **1부. 지형도**
 
@@ -317,7 +328,7 @@ DPO는 평균 104토큰까지 늘어지는 verbosity 문제를 보이는 반면,
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -327,23 +338,53 @@ DPO는 평균 104토큰까지 늘어지는 verbosity 문제를 보이는 반면,
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Ahmadian et al., 2024. [Back to Basics: Revisiting REINFORCE-Style Optimization for Learning from Human Feedback in LLMs](https://arxiv.org/abs/2402.14740). ACL 2024.
-- [ACL Anthology: Back to Basics](https://aclanthology.org/2024.acl-long.662/)
-- Kool, van Hoof & Welling, 2019. [Buy 4 REINFORCE Samples, Get a Baseline for Free!](https://openreview.net/forum?id=r1lgTGL5DE) (RLOO 원 논문)
-- Williams, 1992. Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning. (REINFORCE 원 논문)
-- Dong et al., 2023. [RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment](https://arxiv.org/abs/2304.06767).
-- Rafailov et al., 2023. [Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290).
-- Schulman et al., 2017. [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
-- Shao et al., 2024. [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300). (GRPO 원 논문)
+본 시리즈는 62편으로 구성된다.

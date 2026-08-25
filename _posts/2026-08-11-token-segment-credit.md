@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "토큰과 세그먼트로 더 잘게 — 세밀한 입도의 득과 실"
-date: 2026-08-25 09:07:00 +0900
-description: "Agentic RL 설계 시리즈 #7 — 토큰·세그먼트 단위 credit assignment의 득과 실, 그리고 추정이 만드는 hacking 표면"
+date: 2026-08-11 09:50:00 +0900
+description: "RL Reward 설계 시리즈 #50 — 토큰·세그먼트 단위 credit assignment의 득과 실, 그리고 추정이 만드는 hacking 표면"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, credit-assignment, token-level, segment-level, reward-hacking, grpo, ppo, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈의 2부는 입도(granularity)라는 사다리를 하나씩 내려가는 중이다. [#4](/blog/2026/outcome-vs-process-agentic/)는 사다리 맨 위, 에피소드 하나에 스칼라 하나였다. [#5](/blog/2026/turn-level-reward/)는 그걸 턴 단위로 쪼갰다. [#6](/blog/2026/step-level-credit/)은 턴 안의 개별 행동, 스텝 단위로 더 내려갔다. 이번 글은 이 사다리의 **가장 아래 칸**이다 — 토큰 하나하나, 그리고 토큰과 턴 사이 어딘가에 있는 세그먼트.
+이 시리즈의 10부는 입도(granularity)라는 사다리를 하나씩 내려가는 중이다. [#47](/blog/2026/outcome-vs-process-agentic/)는 사다리 맨 위, 에피소드 하나에 스칼라 하나였다. [#48](/blog/2026/turn-level-reward/)는 그걸 턴 단위로 쪼갰다. [#49](/blog/2026/step-level-credit/)은 턴 안의 개별 행동, 스텝 단위로 더 내려갔다. 이번 글은 이 사다리의 **가장 아래 칸**이다 — 토큰 하나하나, 그리고 토큰과 턴 사이 어딘가에 있는 세그먼트.
 
 당연히 따라오는 질문이 있다. 사다리를 계속 내려가면, 즉 신용을 계속 더 잘게 쪼개면, 그만큼 계속 좋아지는가? 이 글의 답은 **아니다**다. 그것도 그냥 "적당히 하자"는 애매한 답이 아니라, 왜 아닌지를 수식과 실제 사례로 보여줄 수 있는 아니다다.
 
@@ -43,13 +43,13 @@ $$
 
 여기서 $$V(s_t)$$는 학습된 크리틱이 매기는, 상태 $$s_t$$(즉 그 시점까지 생성된 프리픽스)의 가치다. 이 값은 토큰 위치 $$t$$마다 실제로 다르다 — 크리틱이 프리픽스를 입력으로 받아 그때그때 다른 숫자를 내놓기 때문이다. 형식적으로는 이게 완전한 토큰 단위 신용이다.
 
-그런데 [GRPO 글](/blog/2026/grpo-deepseekmath/)로 넘어가면 사정이 달라진다. GRPO는 크리틱을 아예 없애고, 그룹 상대 보상 하나를 계산해 그 값을 응답의 모든 토큰에 그대로 복사한다. SPO 논문이 이 사실을 정확히 이렇게 적는다 — "trajectory-level advantages are then assigned uniformly to all tokens in the corresponding trajectory to obtain $$\hat A_t$$"(궤적 단위 advantage가 해당 궤적의 모든 토큰에 균일하게 할당되어 $$\hat A_t$$가 된다). [#2](/blog/2026/credit-assignment-survey/)에서 이미 이 문제를 짚었다 — 궤적 하나에 스칼라 하나, 그 스칼라가 토큰 개수만큼 복제될 뿐이다.
+그런데 [GRPO 글](/blog/2026/grpo-deepseekmath/)로 넘어가면 사정이 달라진다. GRPO는 크리틱을 아예 없애고, 그룹 상대 보상 하나를 계산해 그 값을 응답의 모든 토큰에 그대로 복사한다. SPO 논문이 이 사실을 정확히 이렇게 적는다 — "trajectory-level advantages are then assigned uniformly to all tokens in the corresponding trajectory to obtain $$\hat A_t$$"(궤적 단위 advantage가 해당 궤적의 모든 토큰에 균일하게 할당되어 $$\hat A_t$$가 된다). [#45](/blog/2026/credit-assignment-survey/)에서 이미 이 문제를 짚었다 — 궤적 하나에 스칼라 하나, 그 스칼라가 토큰 개수만큼 복제될 뿐이다.
 
 즉 "토큰 단위 advantage"라는 표현 자체는 PPO에도 GRPO에도 있지만, 그 값이 **토큰마다 실제로 다른 정보를 담고 있는가**는 완전히 다른 문제다. PPO는 크리틱이 정확하기만 하면 진짜 토큰별 신호를 준다(다만 크리틱을 정확하게 학습시키는 게 어렵다는 게 다음 절의 주제다). GRPO는 애초에 토큰별 신호를 만들 생각이 없다 — 그저 궤적 하나의 값을 broadcast할 뿐이다. 이 구분을 분명히 해두는 게 이 글 전체의 출발점이다. **입도의 이름표(토큰)와 입도의 실질(그 신호가 실제로 국소적인가)은 다른 것이다.**
 
 ## 클리핑에도 입도가 있다 — GSPO와 CISPO를 잠깐 다시 보기
 
-credit의 입도만 선택지가 있는 게 아니다. PPO·GRPO의 clipped surrogate objective에는 이전 정책과 새 정책의 확률비, importance ratio가 들어가는데, **이 비율을 어느 단위로 계산하고 클립할지도 별도의 입도 선택**이다. 이 시리즈의 범위는 아니지만 — 본체는 [RLHF 시리즈 #27 GSPO](/blog/2026/gspo/)와 [#44 프론티어 reward 설계](/blog/2026/frontier-reward-design/)에 있다 — 이 시리즈의 언어로 재구성해두면 나머지 논의가 더 선명해진다.
+credit의 입도만 선택지가 있는 게 아니다. PPO·GRPO의 clipped surrogate objective에는 이전 정책과 새 정책의 확률비, importance ratio가 들어가는데, **이 비율을 어느 단위로 계산하고 클립할지도 별도의 입도 선택**이다. 이 시리즈의 범위는 아니지만 — 본체는 [#27 GSPO](/blog/2026/gspo/)와 [#59 프론티어 reward 설계](/blog/2026/frontier-reward-design/)에 있다 — 이 시리즈의 언어로 재구성해두면 나머지 논의가 더 선명해진다.
 
 - **GRPO·PPO**: importance ratio를 토큰마다 따로 계산하고 따로 클립한다.
 - **GSPO**: 응답 전체의 likelihood 비율을 길이로 정규화해 시퀀스 하나에 값 하나로 만들고, 클립도 시퀀스 하나를 통째로 한다.
@@ -65,13 +65,13 @@ credit의 입도만 선택지가 있는 게 아니다. PPO·GRPO의 clipped surr
 
 ### (a) 크리틱을 몬테카를로로 대체 — VinePPO
 
-가장 직접적인 접근은 [#2](/blog/2026/credit-assignment-survey/)에서 이미 다룬 VinePPO(Kazemnejad et al., ICML 2025, arXiv 2410.01679)다. 학습된 크리틱이 왜 부정확한가에 대한 답은 단순하다 — 추론이 필요한 문제에서 크리틱은 대안적인 다음 스텝들을 놓고 비교했을 때 무작위 베이스라인과 별 차이 없는 성능을 보인다는 것이 저자들의 직접적인 실측이다. VinePPO는 이 크리틱을 아예 버리고, 토큰 위치 $$t$$마다 그 지점에서 여러 번(K개) 롤아웃을 계속 이어가 실제로 도달한 결과의 평균으로 $$V(s_t)$$를 대체한다.
+가장 직접적인 접근은 [#45](/blog/2026/credit-assignment-survey/)에서 이미 다룬 VinePPO(Kazemnejad et al., ICML 2025, arXiv 2410.01679)다. 학습된 크리틱이 왜 부정확한가에 대한 답은 단순하다 — 추론이 필요한 문제에서 크리틱은 대안적인 다음 스텝들을 놓고 비교했을 때 무작위 베이스라인과 별 차이 없는 성능을 보인다는 것이 저자들의 직접적인 실측이다. VinePPO는 이 크리틱을 아예 버리고, 토큰 위치 $$t$$마다 그 지점에서 여러 번(K개) 롤아웃을 계속 이어가 실제로 도달한 결과의 평균으로 $$V(s_t)$$를 대체한다.
 
 $$
 \hat V(s_t) \approx \frac{1}{K}\sum_{k=1}^{K} R(\tau_t^{(k)})
 $$
 
-크리틱이 예측한 값이 아니라 **실제로 여러 번 굴려서 관찰한 값**이므로, 함수 근사 오차가 없다. 대가는 토큰 위치마다 $$K$$번의 추가 생성이 필요하다는 것 — MATH·GSM8K에서 PPO 대비 학습 wall-clock 시간을 최대 3.0배 단축했다고 보고한다(같은 학습 정확도에서 더 높은 테스트 정확도에 도달하는 방식으로, 즉 표본당 더 많은 일반화 신호를 뽑아내면서). VinePPO는 이 글에서 다루는 "(a) 크리틱/GAE" 축의 대표 방법이지만, 자세한 내용은 [#2](/blog/2026/credit-assignment-survey/)를 참고하고 여기서는 좌표만 확인한다.
+크리틱이 예측한 값이 아니라 **실제로 여러 번 굴려서 관찰한 값**이므로, 함수 근사 오차가 없다. 대가는 토큰 위치마다 $$K$$번의 추가 생성이 필요하다는 것 — MATH·GSM8K에서 PPO 대비 학습 wall-clock 시간을 최대 3.0배 단축했다고 보고한다(같은 학습 정확도에서 더 높은 테스트 정확도에 도달하는 방식으로, 즉 표본당 더 많은 일반화 신호를 뽑아내면서). VinePPO는 이 글에서 다루는 "(a) 크리틱/GAE" 축의 대표 방법이지만, 자세한 내용은 [#45](/blog/2026/credit-assignment-survey/)를 참고하고 여기서는 좌표만 확인한다.
 
 ### (b) 모델이 스스로 중요도를 찾는다 — T-REG
 
@@ -87,7 +87,7 @@ RED(Li et al., arXiv 2411.08302, 2024)는 앞의 둘과 다시 다른 전략이�
 
 ### (참고) From r to Q\* — DPO 안에 이미 토큰별 신용이 있다
 
-[#2](/blog/2026/credit-assignment-survey/)에서 다룬 Rafailov et al.의 "From r to Q\*"(Stanford, arXiv 2404.12358)는 위 세 방법과는 다른 각도다 — 아예 새로운 방법을 제안하는 게 아니라, [DPO 글](/blog/2026/dpo/)이 학습하는 게 실은 토큰 단위 MDP 위의 암묵적 Q함수라는 것을 이론적으로 보인다. DPO 학습 자체가 명시적인 의도 없이도 토큰 수준 credit을 "공짜로" 만들어낸다는 주장이다. iStar·ITPO 같은 후속 방법이 이 통찰을 실제로 뽑아 쓴다([#2](/blog/2026/credit-assignment-survey/) 참고).
+[#45](/blog/2026/credit-assignment-survey/)에서 다룬 Rafailov et al.의 "From r to Q\*"(Stanford, arXiv 2404.12358)는 위 세 방법과는 다른 각도다 — 아예 새로운 방법을 제안하는 게 아니라, [DPO 글](/blog/2026/dpo/)이 학습하는 게 실은 토큰 단위 MDP 위의 암묵적 Q함수라는 것을 이론적으로 보인다. DPO 학습 자체가 명시적인 의도 없이도 토큰 수준 credit을 "공짜로" 만들어낸다는 주장이다. iStar·ITPO 같은 후속 방법이 이 통찰을 실제로 뽑아 쓴다([#45](/blog/2026/credit-assignment-survey/) 참고).
 
 ## 세그먼트 단위: 토큰과 턴 사이
 
@@ -99,7 +99,7 @@ SPO 논문의 표현을 빌리면 이렇다 — "token-level methods aim to prov
 
 ### 세그먼트를 어떻게 정하는가 — 세 가지 경계 기준
 
-경계를 어디에 그을지가 그 자체로 설계 문제라는 건 [#2](/blog/2026/credit-assignment-survey/)에서 이미 예고했다. 실제 논문들이 쓰는 기준은 크게 셋이다.
+경계를 어디에 그을지가 그 자체로 설계 문제라는 건 [#45](/blog/2026/credit-assignment-survey/)에서 이미 예고했다. 실제 논문들이 쓰는 기준은 크게 셋이다.
 
 **고정 길이(fixed token count).** 가장 단순한 방법 — 토큰 몇 개마다 한 번씩 자른다. SPO는 이를 "Fixed Token Count Partition"이라 부르며, 긴 CoT(장문 추론)에서는 이 방식을 쓴다(SPO-tree). 구현이 간단하고 세그먼트 크기가 일정해 트리 구조로 조직하기 쉽지만, 경계가 의미와 무관하게 그어진다는 약점이 있다.
 
@@ -137,27 +137,27 @@ SCAR가 특히 강조하는 지점 하나는, 기존의 값싼 대안(Attention-
 
 지금까지 나온 여섯 가지 방법(VinePPO, RED, T-REG, SPO, TEMPO, SCAR)을 실제로 고를 때 순서를 정리해두면 이렇다.
 
-| 순서 | 질문                                                                                          | Yes                                                                      | No                                                                                                               |
-| ---- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 1    | 정답/오답 쌍을 자기 생성으로 만들 수 있는 과제인가(검증 규칙이 있는가)?                       | T-REG처럼 대조 추정이 가능 — 별도 모델 없이 가장 저렴                    | 2로                                                                                                              |
-| 2    | 이미 학습된 시퀀스 단위 보상 모델이 있는가?                                                   | RED처럼 그 모델의 내부에서 귀속을 뽑아 재활용                            | 3으로                                                                                                            |
-| 3    | 재현(다시 롤아웃)이 저렴한 순수 텍스트 생성 과제인가(도구 호출 없음)?                         | 몬테카를로 계열(VinePPO의 토큰, SPO·TEMPO의 세그먼트) 고려               | 재현이 비싸면 이 입도 자체를 재고 — [#6](/blog/2026/step-level-credit/)·[#5](/blog/2026/turn-level-reward/) 참고 |
-| 4    | 몬테카를로를 쓰기로 했다면, 예산이 토큰 수만큼 촘촘한가 아니면 세그먼트 수 정도만 감당되는가? | 세그먼트 수 정도라면 SPO·TEMPO — SCAR가 보여준 7배 비용 격차를 기억할 것 | 정말 예산이 넉넉하면 VinePPO식 토큰 단위                                                                         |
-| 5    | 신용 부호(양/음)를 명시적으로 구분해야 하는가(어떤 구간이 명백히 해로운가)?                   | SCAR의 Shapley value처럼 음수 귀속이 가능한 방법 필요                    | attention 기반 같은 단순 가중치 배분으로 충분                                                                    |
+| 순서 | 질문                                                                                          | Yes                                                                      | No                                                                                                                 |
+| ---- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 1    | 정답/오답 쌍을 자기 생성으로 만들 수 있는 과제인가(검증 규칙이 있는가)?                       | T-REG처럼 대조 추정이 가능 — 별도 모델 없이 가장 저렴                    | 2로                                                                                                                |
+| 2    | 이미 학습된 시퀀스 단위 보상 모델이 있는가?                                                   | RED처럼 그 모델의 내부에서 귀속을 뽑아 재활용                            | 3으로                                                                                                              |
+| 3    | 재현(다시 롤아웃)이 저렴한 순수 텍스트 생성 과제인가(도구 호출 없음)?                         | 몬테카를로 계열(VinePPO의 토큰, SPO·TEMPO의 세그먼트) 고려               | 재현이 비싸면 이 입도 자체를 재고 — [#49](/blog/2026/step-level-credit/)·[#48](/blog/2026/turn-level-reward/) 참고 |
+| 4    | 몬테카를로를 쓰기로 했다면, 예산이 토큰 수만큼 촘촘한가 아니면 세그먼트 수 정도만 감당되는가? | 세그먼트 수 정도라면 SPO·TEMPO — SCAR가 보여준 7배 비용 격차를 기억할 것 | 정말 예산이 넉넉하면 VinePPO식 토큰 단위                                                                           |
+| 5    | 신용 부호(양/음)를 명시적으로 구분해야 하는가(어떤 구간이 명백히 해로운가)?                   | SCAR의 Shapley value처럼 음수 귀속이 가능한 방법 필요                    | attention 기반 같은 단순 가중치 배분으로 충분                                                                      |
 
 이 순서가 말하는 건 결국 하나다 — **토큰이냐 세그먼트냐를 먼저 정하고 방법을 찾는 게 아니라, 어떤 자원(정답 쌍, 기성 보상 모델, 재현 예산)이 이미 있는지를 먼저 확인하고 그 자원이 감당하는 입도로 거꾸로 내려오는 것**이다. SCAR의 토큰-대-세그먼트 비교가 보여주듯, 예산이 부족한 채로 토큰까지 밀어붙이면 얻는 것 없이 비용만 7배가 된다.
 
 ## 트레이드오프: 이 편의 논지
 
-지금까지 나온 방법들을 [#2](/blog/2026/credit-assignment-survey/)의 입도 사다리 위에 다시 올려보자. 이 글이 담당하는 두 칸(토큰·세그먼트)이 사다리 전체에서 어디에 있는지 한눈에 보는 게 목적이다.
+지금까지 나온 방법들을 [#45](/blog/2026/credit-assignment-survey/)의 입도 사다리 위에 다시 올려보자. 이 글이 담당하는 두 칸(토큰·세그먼트)이 사다리 전체에서 어디에 있는지 한눈에 보는 게 목적이다.
 
-| 입도     | 대표 방법(이 시리즈가 다룬)      | 신호의 출처                                             | 담당 편                                      |
-| -------- | -------------------------------- | ------------------------------------------------------- | -------------------------------------------- |
-| 에피소드 | GRPO-OR 등(broadcast)            | 환경(최종 결과)                                         | [#4](/blog/2026/outcome-vs-process-agentic/) |
-| 턴       | AgentPRM, ArCHer, MT-GRPO/MT-PPO | 환경(턴 경계 관측 — 도구 실행, 검색 결과)               | [#5](/blog/2026/turn-level-reward/)          |
-| 스텝     | PURE, SPRO, GiGPO                | 부분적으로 환경(검증 가능한 계산), 부분적으로 추정(PRM) | [#6](/blog/2026/step-level-credit/)          |
-| 세그먼트 | SPO, TEMPO, SCAR                 | 추정(몬테카를로, TD, Shapley)                           | #7(이 글)                                    |
-| 토큰     | VinePPO, RED, T-REG              | 추정(몬테카를로, attribution, 대조 추정)                | #7(이 글)                                    |
+| 입도     | 대표 방법(이 시리즈가 다룬)      | 신호의 출처                                             | 담당 편                                       |
+| -------- | -------------------------------- | ------------------------------------------------------- | --------------------------------------------- |
+| 에피소드 | GRPO-OR 등(broadcast)            | 환경(최종 결과)                                         | [#47](/blog/2026/outcome-vs-process-agentic/) |
+| 턴       | AgentPRM, ArCHer, MT-GRPO/MT-PPO | 환경(턴 경계 관측 — 도구 실행, 검색 결과)               | [#48](/blog/2026/turn-level-reward/)          |
+| 스텝     | PURE, SPRO, GiGPO                | 부분적으로 환경(검증 가능한 계산), 부분적으로 추정(PRM) | [#49](/blog/2026/step-level-credit/)          |
+| 세그먼트 | SPO, TEMPO, SCAR                 | 추정(몬테카를로, TD, Shapley)                           | #50(이 글)                                    |
+| 토큰     | VinePPO, RED, T-REG              | 추정(몬테카를로, attribution, 대조 추정)                | #50(이 글)                                    |
 
 이 표에서 가장 중요한 열은 "신호의 출처"다. 에피소드와 턴 행에는 **환경**이라는 단어가 있다 — 최종 결과나 도구 실행 결과처럼, 아무도 만들어내지 않아도 이미 관찰 가능한 사실이다. 세그먼트와 토큰 행에는 그 단어가 사라지고 **추정**만 남는다. 몬테카를로든 Shapley든 attribution이든, 전부 "진짜 값을 모르니 계산해서 근사한다"는 같은 문장의 다른 표현이다.
 
@@ -165,15 +165,15 @@ SCAR가 특히 강조하는 지점 하나는, 기존의 값싼 대안(Attention-
 
 - **(+) 신호가 촘촘해져 분산이 줄고 학습이 빨라진다.** SPO의 6\~12퍼센트포인트, RED의 승률 +9.74퍼센트포인트(Qwen2.5 기준), T-REG의 최대 4.4퍼센트포인트가 이 이득의 크기다.
 - **(−) 중간 신호를 어디서 얻을지가 근본적으로 어려워진다.** 턴은 환경이 답을 준다. 토큰·세그먼트에는 아무도 답을 주지 않는다 — 그래서 크리틱을 학습시키거나(부정확할 수 있다), 여러 번 굴려보거나(비싸다), 모델 스스로에게 묻거나(자기 편향이 섞일 수 있다), 기존 보상 모델의 내부를 뒤진다(그 모델의 편향을 그대로 물려받는다).
-- **(−) 그 추정이 틀리면, 그 오차가 곧 hacking 표면이 된다.** 이게 다음 두 절(Experiments의 토이 모형과 반례)에서 정확히 확인할 내용이고, [#8](/blog/2026/reward-shaping-agentic/)과 [#15](/blog/2026/agentic-reward-hacking/)가 이 문제를 정면으로 다룬다.
+- **(−) 그 추정이 틀리면, 그 오차가 곧 hacking 표면이 된다.** 이게 다음 두 절(Experiments의 토이 모형과 반례)에서 정확히 확인할 내용이고, [#51](/blog/2026/reward-shaping-agentic/)과 [#58](/blog/2026/agentic-reward-hacking/)가 이 문제를 정면으로 다룬다.
 
 # Experiments
 
 ## 토이 모형 — 분산은 내려가지만, 환경 신호 아래로 내려가면 편향이 올라온다
 
-[#2](/blog/2026/credit-assignment-survey/)는 episode 단위 credit의 분산이 $$O(T^2)$$, step 단위 credit의 분산이 $$O(T)$$로 자란다는 것을 보였다. 이 글에서는 그 모형을 **입도 자체를 하나의 변수 $$w$$로 일반화**해서, 왜 분산만 보면 끝없이 세밀화하는 게 좋아 보이는지, 그런데 왜 실제로는 그렇지 않은지를 같은 수식 위에서 확인한다.
+[#45](/blog/2026/credit-assignment-survey/)는 episode 단위 credit의 분산이 $$O(T^2)$$, step 단위 credit의 분산이 $$O(T)$$로 자란다는 것을 보였다. 이 글에서는 그 모형을 **입도 자체를 하나의 변수 $$w$$로 일반화**해서, 왜 분산만 보면 끝없이 세밀화하는 게 좋아 보이는지, 그런데 왜 실제로는 그렇지 않은지를 같은 수식 위에서 확인한다.
 
-**설정.** 궤적이 $$T$$개의 원자적 단위(가장 미세한 해상도 — 실제로는 토큰이라고 생각해도 된다)로 이뤄져 있다고 하자. 이 $$T$$개를 크기 $$w$$짜리 창(window) $$T/w$$개로 묶고, 각 창에 credit 하나를 계산해 그 창에 속한 모든 원자 단위에 동일하게 broadcast한다. $$w=T$$면 이건 에피소드 단위고, $$w=1$$이면 원자 단위(토큰) 그 자체다. [#2](/blog/2026/credit-assignment-survey/)와 같은 토이 가정을 그대로 쓴다 — $$u_t = \nabla_\theta \log \pi_\theta(a_t \mid s_t)$$는 평균 0, 분산 $$\sigma_u^2$$, 서로 독립. 원자 단위 보상 $$r_t$$도 평균 0(베이스라인이 이미 빠진 상태), 분산 $$\sigma_r^2$$, $$u_t$$와 독립.
+**설정.** 궤적이 $$T$$개의 원자적 단위(가장 미세한 해상도 — 실제로는 토큰이라고 생각해도 된다)로 이뤄져 있다고 하자. 이 $$T$$개를 크기 $$w$$짜리 창(window) $$T/w$$개로 묶고, 각 창에 credit 하나를 계산해 그 창에 속한 모든 원자 단위에 동일하게 broadcast한다. $$w=T$$면 이건 에피소드 단위고, $$w=1$$이면 원자 단위(토큰) 그 자체다. [#45](/blog/2026/credit-assignment-survey/)와 같은 토이 가정을 그대로 쓴다 — $$u_t = \nabla_\theta \log \pi_\theta(a_t \mid s_t)$$는 평균 0, 분산 $$\sigma_u^2$$, 서로 독립. 원자 단위 보상 $$r_t$$도 평균 0(베이스라인이 이미 빠진 상태), 분산 $$\sigma_r^2$$, $$u_t$$와 독립.
 
 **분산.** 창 $$k$$의 참값 보상 $$R_k = \sum_{t \in W_k} r_t$$를 그 창의 모든 원자 단위에 broadcast하면 그래디언트 추정량은
 
@@ -187,9 +187,9 @@ $$
 \text{Var}[\hat g_w] = \frac{T}{w}\cdot w^2\sigma_r^2\sigma_u^2 = Tw\,\sigma_r^2\sigma_u^2
 $$
 
-극단값을 넣어 검증해보면 [#2](/blog/2026/credit-assignment-survey/)와 정확히 맞아떨어진다 — $$w=T$$(에피소드)를 넣으면 $$T^2\sigma_r^2\sigma_u^2$$, $$w=1$$(가장 세밀한 단위)을 넣으면 $$T\sigma_r^2\sigma_u^2$$다. 이 식만 보면 결론은 명백하다 — $$w$$를 계속 줄일수록(더 세밀하게 나눌수록) 분산은 계속 줄어든다. **여기까지만 보면 "가장 세밀한 것이 최선"이라는 결론이 나온다.**
+극단값을 넣어 검증해보면 [#45](/blog/2026/credit-assignment-survey/)와 정확히 맞아떨어진다 — $$w=T$$(에피소드)를 넣으면 $$T^2\sigma_r^2\sigma_u^2$$, $$w=1$$(가장 세밀한 단위)을 넣으면 $$T\sigma_r^2\sigma_u^2$$다. 이 식만 보면 결론은 명백하다 — $$w$$를 계속 줄일수록(더 세밀하게 나눌수록) 분산은 계속 줄어든다. **여기까지만 보면 "가장 세밀한 것이 최선"이라는 결론이 나온다.**
 
-**편향.** 그런데 위 유도는 결정적인 가정을 하나 숨기고 있다 — 창 $$k$$의 참값 $$R_k$$를 정확히 안다는 가정이다. 이게 성립하려면 환경이 그 해상도에서 실제로 신호를 줘야 한다. 환경이 검증 가능한 신용을 주는 가장 미세한 창 크기를 $$w_{env}$$라 하자(이 시리즈의 맥락에서는 턴 하나에 해당한다 — [#2](/blog/2026/credit-assignment-survey/)가 확인한 실제 범위로는 턴당 약 1K\~10K 토큰). $$w \ge w_{env}$$에서는 $$R_k$$가 진짜 값이므로 위 분산 공식이 편향 없이 그대로 성립한다. 문제는 $$w < w_{env}$$, 즉 턴보다 더 잘게 나눌 때다 — 이 구간에서는 $$R_k$$를 아무도 관찰할 수 없고, 대신 크리틱·확률 모델·귀속 같은 **추정기**로 대체해야 한다. 추정기는 학습 데이터에 없는 해상도를 만들어내야 하므로, 체계적인 편향 $$\beta(w)$$를 갖는다고 보는 게 합리적이다 — 세밀해질수록(w가 작아질수록) 추정기가 의존할 근거는 옅어지고 편향은 커진다.
+**편향.** 그런데 위 유도는 결정적인 가정을 하나 숨기고 있다 — 창 $$k$$의 참값 $$R_k$$를 정확히 안다는 가정이다. 이게 성립하려면 환경이 그 해상도에서 실제로 신호를 줘야 한다. 환경이 검증 가능한 신용을 주는 가장 미세한 창 크기를 $$w_{env}$$라 하자(이 시리즈의 맥락에서는 턴 하나에 해당한다 — [#45](/blog/2026/credit-assignment-survey/)가 확인한 실제 범위로는 턴당 약 1K\~10K 토큰). $$w \ge w_{env}$$에서는 $$R_k$$가 진짜 값이므로 위 분산 공식이 편향 없이 그대로 성립한다. 문제는 $$w < w_{env}$$, 즉 턴보다 더 잘게 나눌 때다 — 이 구간에서는 $$R_k$$를 아무도 관찰할 수 없고, 대신 크리틱·확률 모델·귀속 같은 **추정기**로 대체해야 한다. 추정기는 학습 데이터에 없는 해상도를 만들어내야 하므로, 체계적인 편향 $$\beta(w)$$를 갖는다고 보는 게 합리적이다 — 세밀해질수록(w가 작아질수록) 추정기가 의존할 근거는 옅어지고 편향은 커진다.
 
 이 편향이 실제로 왜 "잡음이 아니라 그래디언트를 특정 방향으로 미는 힘"인지는 표준적인 REINFORCE 항등식으로 바로 보일 수 있다. 어떤 패턴 $$P$$(예를 들어 "생각하는 척하는 토큰")에 속하는 토큰마다 편향 $$\beta$$가 더해진, 즉 $$\hat r_t = r_t + \beta\cdot\mathbb{1}[a_t \in P]$$인 추정기를 쓴다고 하자. 이 편향 성분이 그래디언트에 기여하는 기댓값은
 
@@ -216,7 +216,7 @@ $$
 
 $$D''(w) = 2\beta_0^2 w_{env}/w^3 > 0$$이므로 이 $$w^*$$는 이 구간의 최솟값이다. 즉 **$$D(w)$$는 $$w=w_{env}$$(턴)에서 시작해 $$w^*$$까지는 내려가다가, 그 아래로 더 내려가면 다시 올라간다.** 세밀화가 항상 좋은 게 아니라, 딱 $$w^*$$까지만 좋다.
 
-숫자를 넣어보자. $$T=100{,}000$$(토큰 수), $$\sigma_r^2=\sigma_u^2=1$$(임의 단위), $$w_{env}=2{,}000$$([#2](/blog/2026/credit-assignment-survey/)의 턴당 토큰 수 범위 1K\~10K 중 대표값), 추정기 신뢰도는 illustrative하게 $$\beta_0=50$$으로 둔다. 이 값을 넣으면 $$w^* = 50\sqrt{2000/100000} = 50\sqrt{0.02} \approx 7.07$$이다.
+숫자를 넣어보자. $$T=100{,}000$$(토큰 수), $$\sigma_r^2=\sigma_u^2=1$$(임의 단위), $$w_{env}=2{,}000$$([#45](/blog/2026/credit-assignment-survey/)의 턴당 토큰 수 범위 1K\~10K 중 대표값), 추정기 신뢰도는 illustrative하게 $$\beta_0=50$$으로 둔다. 이 값을 넣으면 $$w^* = 50\sqrt{2000/100000} = 50\sqrt{0.02} \approx 7.07$$이다.
 
 | 입도 $$w$$(토큰 수) | 해당 단위            | $$D(w)$$              |
 | ------------------- | -------------------- | --------------------- |
@@ -234,7 +234,7 @@ $$D''(w) = 2\beta_0^2 w_{env}/w^3 > 0$$이므로 이 $$w^*$$는 이 구간의 �
 
 ## 토이 예제 — 50턴 궤적을 네 가지 입도로 쪼갠다
 
-앞의 추상적 모형을 이 시리즈가 계속 써온 구체적인 궤적으로 다시 확인해보자. 50턴짜리 에이전트 궤적, 총 토큰 수 약 100,000개([#2](/blog/2026/credit-assignment-survey/)의 턴당 1K\~10K 범위에서 대표값 2,000토큰/턴을 취한 것)를 네 가지 입도로 쪼갠다.
+앞의 추상적 모형을 이 시리즈가 계속 써온 구체적인 궤적으로 다시 확인해보자. 50턴짜리 에이전트 궤적, 총 토큰 수 약 100,000개([#45](/blog/2026/credit-assignment-survey/)의 턴당 1K\~10K 범위에서 대표값 2,000토큰/턴을 취한 것)를 네 가지 입도로 쪼갠다.
 
 | 입도     | 신호 개수          | 신호 1개당 담당 토큰 수(대략) | 신호를 어디서 얻는가                                                                                                              |
 | -------- | ------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -263,7 +263,7 @@ Method에서 나온 숫자를 한자리에 모아, 세밀화의 이득이 실제
 
 ## 반례 — 편향이 이득을 집어삼킬 때: PURE의 학습 붕괴
 
-앞의 토이 모형이 예측한 "편향이 큰 추정기를 쓰면 세밀화가 오히려 손해"라는 결론이 실제로 벌어진 사례가 있다. [#2](/blog/2026/credit-assignment-survey/)에서 스텝 단위 방법으로 소개한 PURE(Cheng et al., NeurIPS 2025, arXiv 2504.15275)는 이 글의 스텝보다 한 단계 위지만, 정확히 같은 메커니즘 — 환경이 검증해주지 않는 해상도에서 학습된 모델(PRM)에 신용을 맡겼을 때 무슨 일이 벌어지는가 — 을 아주 상세하게 기록했다.
+앞의 토이 모형이 예측한 "편향이 큰 추정기를 쓰면 세밀화가 오히려 손해"라는 결론이 실제로 벌어진 사례가 있다. [#45](/blog/2026/credit-assignment-survey/)에서 스텝 단위 방법으로 소개한 PURE(Cheng et al., NeurIPS 2025, arXiv 2504.15275)는 이 글의 스텝보다 한 단계 위지만, 정확히 같은 메커니즘 — 환경이 검증해주지 않는 해상도에서 학습된 모델(PRM)에 신용을 맡겼을 때 무슨 일이 벌어지는가 — 을 아주 상세하게 기록했다.
 
 **문제의 구조.** 표준적인 process reward model은 상태 $$s_t$$의 가치를 미래 보상의 합으로 정의한다.
 
@@ -308,7 +308,7 @@ $$
 3. **분산과 편향은 반대 방향으로 움직인다.** 토이 모형이 유도한 $$D(w) = Tw\sigma_r^2\sigma_u^2 + \beta_0^2(w_{env}/w)$$는, 세밀화가 턴에서 세그먼트 방향으로는 손실을 줄이지만 토큰까지 밀어붙이면 편향 항이 이득을 갉아먹는다는 것을 보여준다. SCAR의 "토큰 대 세그먼트, 성능은 같은데 비용은 7배"라는 실측이 같은 이야기를 실험으로 확인해준다.
 4. **편향이 큰 추정기를 쓰면 세밀화는 순수한 손해가 된다.** PURE의 sum-form PRM은 5번의 그래디언트 업데이트 만에 학습을 붕괴시켰다. 검증자도, PRM도, 반복을 잡으려 만든 별도 탐지기도 이 붕괴를 막지 못했다 — 추정된 중간 신호를 신뢰하는 순간, 그 신호를 게임하는 정책의 능력을 과소평가해서는 안 된다는 뜻이다.
 
-이 글로 2부의 입도 사다리(에피소드→턴→스텝→토큰/세그먼트)를 전부 확대해봤다. 그런데 이 사다리 전체를 관통하는 질문 하나가 아직 정면으로 다뤄지지 않았다 — **추정된 중간 신호를 정책 학습에 어떻게 섞어 넣을 것인가, 그리고 그 섞음(shaping) 자체가 원래 목표와 정책을 얼마나 어긋나게 만들 수 있는가.** 2부를 닫는 [#8 shaping은 약인가 독인가](/blog/2026/reward-shaping-agentic/)가 이 질문을 정면으로 다룬다 — 이 글이 보여준 "추정이 곧 hacking 표면"이라는 결론의 다음 장이다.
+이 글로 10부의 입도 사다리(에피소드→턴→스텝→토큰/세그먼트)를 전부 확대해봤다. 그런데 이 사다리 전체를 관통하는 질문 하나가 아직 정면으로 다뤄지지 않았다 — **추정된 중간 신호를 정책 학습에 어떻게 섞어 넣을 것인가, 그리고 그 섞음(shaping) 자체가 원래 목표와 정책을 얼마나 어긋나게 만들 수 있는가.** 10부를 닫는 [#51 shaping은 약인가 독인가](/blog/2026/reward-shaping-agentic/)가 이 질문을 정면으로 다룬다 — 이 글이 보여준 "추정이 곧 hacking 표면"이라는 결론의 다음 장이다.
 
 # 참고 문헌
 
@@ -320,26 +320,109 @@ $$
 - Cheng, J. et al. (2025). [Stop Summation: Min-Form Credit Assignment Is All Process Reward Model Needs for Reasoning](https://arxiv.org/abs/2504.15275). NeurIPS 2025. (PURE)
 - Kazemnejad, A. et al. (2025). [VinePPO: Unlocking RL Potential For LLM Reasoning Through Refined Credit Assignment](https://arxiv.org/abs/2410.01679). ICML 2025.
 - Rafailov, R. et al. (Stanford). [From r to Q\*: Your Language Model is Secretly a Q-Function](https://arxiv.org/abs/2404.12358). arXiv 2404.12358.
-- Zhang, C. (2026). [From Reasoning to Agentic: Credit Assignment in Reinforcement Learning for Large Language Models](https://arxiv.org/abs/2604.09459). arXiv 2604.09459. (이 시리즈 2부 전체가 참조하는 지도, [#2](/blog/2026/credit-assignment-survey/) 참고)
-- 관련 시리즈: [RLHF Reward 설계 시리즈 #20 PPO](/blog/2026/ppo/), [#22 GRPO](/blog/2026/grpo-deepseekmath/), [#24 DPO](/blog/2026/dpo/), [#27 GSPO](/blog/2026/gspo/), [#44 프론티어 reward 설계(CISPO)](/blog/2026/frontier-reward-design/)
+- Zhang, C. (2026). [From Reasoning to Agentic: Credit Assignment in Reinforcement Learning for Large Language Models](https://arxiv.org/abs/2604.09459). arXiv 2604.09459. (이 시리즈 10부 전체가 참조하는 지도, [#45](/blog/2026/credit-assignment-survey/) 참고)
+- 관련 시리즈: [#20 PPO](/blog/2026/ppo/), [#22 GRPO](/blog/2026/grpo-deepseekmath/), [#24 DPO](/blog/2026/dpo/), [#27 GSPO](/blog/2026/gspo/), [#59 프론티어 reward 설계(CISPO)](/blog/2026/frontier-reward-design/)
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 일곱 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -347,32 +430,35 @@ $$
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

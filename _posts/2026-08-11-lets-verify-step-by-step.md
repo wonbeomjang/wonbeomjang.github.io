@@ -2,7 +2,7 @@
 layout: post
 title: "Let's Verify Step by Step: 결과가 아니라 과정에 보상을 주다"
 date: 2026-08-11 09:31:00 +0900
-description: "RLHF Reward 설계 시리즈 #31 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
+description: "RL Reward 설계 시리즈 #31 — process supervision이 outcome supervision을 이기는 이유와 PRM800K"
 categories: [paper]
 tags: [rlhf, reward-model, prm, process-supervision, reasoning, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[24편 DPO](/blog/2026/dpo/)까지 5부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([22편 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([23편 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 5부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
+[#24 DPO](/blog/2026/dpo/)까지 5부의 방향은 한결같았다. reward model을 아예 없애거나(DPO는 정책 자체를 암묵적 reward로 재파라미터화했다), value network를 걷어내거나([#22 GRPO](/blog/2026/grpo-deepseekmath/)), PPO의 복잡한 트릭을 REINFORCE 수준으로 되돌리는([#23 RLOO](/blog/2026/rloo-back-to-basics/)) 식으로 **reward 파이프라인을 단순화**하는 쪽으로 시리즈가 흘러왔다. 5부 전체를 한 문장으로 요약하면 "reward를 어떻게 줄일 것인가"였다.
 
 이번 글부터 시작하는 6부 "Process & Verifiable Reward"는 정확히 반대 방향으로 간다. reward를 없애는 게 아니라 **훨씬 더 촘촘하게 쪼갠다**. 지금까지 다룬 reward model(2부, 3부)은 전부 하나의 응답 전체에 스칼라 하나를 매기는 outcome-level reward였다. 수학 문제를 20단계로 풀어낸 chain-of-thought든, 한 줄짜리 답변이든 reward model은 마지막에 딱 한 번 점수를 준다. 이 글이 다루는 **Let's Verify Step by Step**(OpenAI, ICLR 2024)은 "그 한 번의 점수로 충분한가?"라는 질문에 정면으로 "아니다"라고 답한 논문이다.
 
@@ -30,7 +30,7 @@ related_posts: true
 
 ## sparse reward의 reasoning 버전 — credit assignment 문제
 
-[1편](/blog/2026/deep-rl-human-preferences/)에서 다룬 원형적 문제를 다시 떠올려보자. 사람의 선호로 reward를 학습하는 구도에서, reward는 trajectory(응답) 전체에 대해 스칼라 하나만 돌려준다. 이게 sparse reward다. [10편](/blog/2026/reward-model-overoptimization/)은 이 sparse한 proxy reward를 정책이 과최적화하면 실제 품질과 무관하게 점수만 오르는 Goodhart 현상을 정량화했다.
+[#1](/blog/2026/deep-rl-human-preferences/)에서 다룬 원형적 문제를 다시 떠올려보자. 사람의 선호로 reward를 학습하는 구도에서, reward는 trajectory(응답) 전체에 대해 스칼라 하나만 돌려준다. 이게 sparse reward다. [#10](/blog/2026/reward-model-overoptimization/)은 이 sparse한 proxy reward를 정책이 과최적화하면 실제 품질과 무관하게 점수만 오르는 Goodhart 현상을 정량화했다.
 
 reasoning 과제에서는 이 sparse reward 문제가 훨씬 날카로운 형태로 나타난다. 20단계짜리 수학 풀이가 있고 최종 답이 틀렸다고 해보자. outcome reward는 "틀렸다"는 사실 하나만 알려준다. **20단계 중 정확히 어느 단계에서 처음 어긋났는지는 전혀 알려주지 않는다.** 이것이 강화학습의 고전적인 **credit assignment 문제**의 reasoning 버전이다 — 마지막에 받은 스칼라 하나로 그 이전의 수십 개 결정 중 무엇이 잘못이었는지 역산해야 하는데, 정보량 자체가 부족하다.
 
@@ -83,7 +83,7 @@ $$
 | credit assignment        | 불가능 — 오류 위치를 모른다         | 가능 — 첫 오류 스텝을 특정 |
 | 학습에 필요한 base model | GPT-4 base(사전학습만, RLHF 이전)   | GPT-4 base(동일)           |
 
-실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [35편 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
+실험은 두 모델 모두 RLHF 이전의 GPT-4 base 체크포인트에서 파인튜닝했다. 그리고 중요한 스코프 제한 하나 — 이 논문은 PRM을 PPO 같은 RL 루프에 넣어 정책을 직접 파인튜닝하지 않는다. "generator를 RL로 파인튜닝하는 것은 자연스러운 다음 단계지만, 의도적으로 이 작업의 범위 밖에 둔다"고 명시한다. 대신 PRM을 **best-of-N 검색의 verifier(랭커)**로만 써서 "가장 신뢰할 수 있는 reward model을 만드는 것" 자체에 집중한다. 즉 이 글의 PRM은 정책을 학습시키는 RL reward라기보다, 여러 후보 중 가장 나은 것을 골라내는 채점관에 가깝다. 이 verifier 관점은 뒤에 [#35 Generative Verifiers](/blog/2026/generative-verifiers/)로 이어진다.
 
 # Method
 
@@ -231,13 +231,20 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
 2. **해법**: 스텝마다 사람이 positive/negative/neutral 라벨을 매긴 PRM800K(80만 라벨, 7만 5천 solution, 1만 2천 문제)로 process reward model을 학습한다. 여러 스텝 점수는 곱(또는 최솟값)으로 합쳐 solution 하나의 점수로 만든다.
 3. **비용**: active learning으로 2.6배 효율을 얻었어도, 결국 800K 라벨은 사람이 직접 매긴 것이다. 이 사람 라벨링 비용이 이 접근법 전체의 병목이다.
 
-이 병목이 바로 다음 글의 존재 이유다. [32편 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [10편](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [33편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
+이 병목이 바로 다음 글의 존재 이유다. [#32 Math-Shepherd](/blog/2026/math-shepherd/)는 "사람 라벨 없이 PRM을 어떻게 학습시킬 것인가"라는 질문에 자동 라벨링으로 답한다. 그리고 [#10](/blog/2026/reward-model-overoptimization/)에서 정량화한 과최적화 문제를 생각하면, dense한 process reward가 sparse한 outcome reward보다 Goodhart 현상에 더 강건할 가능성도 있다 — 매 스텝을 검증하는 만큼 정책이 "요행수 답"으로 빠져나갈 틈이 좁아지기 때문이다. [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)은 이와는 또 다른 방향에서, 사람 라벨도 학습된 PRM도 아닌 **규칙 기반 reward**로 검증 가능성을 확보하는 길을 보여준다.
+
+# 참고 문헌
+
+- Lightman et al., 2023. [Let's Verify Step by Step](https://arxiv.org/abs/2305.20050) (arXiv:2305.20050).
+- [Let's Verify Step by Step, ICLR 2024 proceedings](https://proceedings.iclr.cc/paper_files/paper/2024/hash/aca97732e30bcf1303bc22ac3924fd16-Abstract-Conference.html).
+- [OpenAI/prm800k GitHub repository](https://github.com/openai/prm800k) — PRM800K 데이터셋과 라벨링 가이드라인.
+- [arXiv HTML(ar5iv) 렌더링](https://ar5iv.labs.arxiv.org/html/2305.20050) — 본문 그림 출처.
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른한 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 서른한 번째 글이다.
 
 **1부. 지형도**
 
@@ -312,7 +319,7 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
   <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -322,19 +329,53 @@ MATH 테스트 문제 중 일부가 온라인에 이미 논의된 상태라, 사
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Lightman et al., 2023. [Let's Verify Step by Step](https://arxiv.org/abs/2305.20050) (arXiv:2305.20050).
-- [Let's Verify Step by Step, ICLR 2024 proceedings](https://proceedings.iclr.cc/paper_files/paper/2024/hash/aca97732e30bcf1303bc22ac3924fd16-Abstract-Conference.html).
-- [OpenAI/prm800k GitHub repository](https://github.com/openai/prm800k) — PRM800K 데이터셋과 라벨링 가이드라인.
-- [arXiv HTML(ar5iv) 렌더링](https://ar5iv.labs.arxiv.org/html/2305.20050) — 본문 그림 출처.
+본 시리즈는 62편으로 구성된다.

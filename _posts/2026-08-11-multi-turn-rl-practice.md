@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "멀티턴 RL 실무 가이드 — 무엇이 실제로 작동하는가"
-date: 2026-08-25 09:03:00 +0900
-description: "Agentic RL 설계 시리즈 #3 — 마스킹, 롤아웃 예산, 실패 궤적 처리까지, 두 편의 실증 논문이 확인한 멀티턴 RL 설계 결정"
+date: 2026-08-11 09:46:00 +0900
+description: "RL Reward 설계 시리즈 #46 — 마스킹, 롤아웃 예산, 실패 궤적 처리까지, 두 편의 실증 논문이 확인한 멀티턴 RL 설계 결정"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, multi-turn-rl, credit-assignment, llm-agent, paper]
 giscus_comments: true
@@ -15,7 +15,7 @@ related_posts: true
 
 # Introduction
 
-[#1 에이전트 RL은 무엇이 다른가](/blog/2026/agentic-rl-landscape/)는 왜 멀티턴·장기 지평 에이전트 학습이 단일턴 RLHF의 단순한 확장이 아닌지를 정의했다. [#2 공을 어디에 돌릴 것인가](/blog/2026/credit-assignment-survey/)는 그 위에서 credit assignment 설계공간의 지도를 그렸다 — 토큰·세그먼트·스텝·턴 중 어느 입도에서 공을 나눌 것인가.
+[#44 에이전트 RL은 무엇이 다른가](/blog/2026/agentic-rl-landscape/)는 왜 멀티턴·장기 지평 에이전트 학습이 단일턴 RLHF의 단순한 확장이 아닌지를 정의했다. [#45 공을 어디에 돌릴 것인가](/blog/2026/credit-assignment-survey/)는 그 위에서 credit assignment 설계공간의 지도를 그렸다 — 토큰·세그먼트·스텝·턴 중 어느 입도에서 공을 나눌 것인가.
 
 이 글은 그 지도 위에 좌표를 더 찍는 대신, **실제로 코드를 돌려본 사람들이 무엇을 발견했는가**를 옮긴다. 이론적으로 그럴듯한 설계가 실전에서 그대로 작동하는 경우는 드물다. 하이퍼파라미터 하나, 마스킹 한 줄을 빠뜨리면 학습 곡선 전체가 무너진다. 그래서 이 편이 인용하는 두 논문은 둘 다 "이론"이 아니라 "실측"을 판다.
 
@@ -31,7 +31,7 @@ related_posts: true
 5. 실패한 궤적을 버릴 것인가, 페널티를 줄 것인가
 6. 턴 예산을 얼마나 주고, 루프에 빠진 에이전트를 어떻게 다룰 것인가
 
-이 여섯 축을 하나씩 짚은 뒤, [#1](/blog/2026/agentic-rl-landscape/) → [#2](/blog/2026/credit-assignment-survey/) → 이 글로 이어진 1부를 닫는다. 2부부터는 credit을 실제로 나누는 방법을 입도별로 하나씩 파고든다.
+이 여섯 축을 하나씩 짚은 뒤, [#44](/blog/2026/agentic-rl-landscape/) → [#45](/blog/2026/credit-assignment-survey/) → 이 글로 이어진 9부를 닫는다. 10부부터는 credit을 실제로 나누는 방법을 입도별로 하나씩 파고든다.
 
 # Background
 
@@ -65,7 +65,7 @@ $$\tau = (s^{(0)}, a^{(0)}, r^{(1)}, s^{(1)}, a^{(1)}, r^{(2)}, \ldots, s^{(T-1)
 
 로 정의된다. 두 논문의 표기가 다를 뿐 말하는 건 같다 — **궤적은 턴의 열이고, 각 턴은 다시 토큰의 열이다.** 이 이중 구조가 아래 Method 1절의 핵심이다.
 
-토큰 단위 GAE와 advantage 추정 자체의 유도는 [PPO](/blog/2026/ppo/), [GRPO](/blog/2026/grpo-deepseekmath/) 편과 이 시리즈의 [#2](/blog/2026/credit-assignment-survey/)에서 이미 다뤘으므로 여기서 다시 풀지 않는다.
+토큰 단위 GAE와 advantage 추정 자체의 유도는 [PPO](/blog/2026/ppo/), [GRPO](/blog/2026/grpo-deepseekmath/) 편과 이 시리즈의 [#45](/blog/2026/credit-assignment-survey/)에서 이미 다뤘으므로 여기서 다시 풀지 않는다.
 
 ## 실험 무대
 
@@ -113,7 +113,7 @@ $$\pi_\theta(a_t \mid s_t) = \prod_{k=1}^{L_t} P_\theta(y_{t,k} \mid s_t^{\text{
 
 **논문이 실제로 뭐라고 했는가.** 두 논문 모두 궤적의 외부 구조는 턴(환경과의 한 번의 상호작용), 내부 구조는 토큰이라는 데 동의한다. credit은 토큰 단위로 계산하되, 실제 보상 신호는 턴(정확히는 각 턴의 마지막 토큰) 단위로 들어온다는 점도 같다.
 
-**확인 안 된 부분.** 턴을 더 큰 단위(세그먼트)로 묶어 credit을 계산하는 방식, 혹은 반대로 토큰보다 더 잘게 쪼개는 방식은 이 두 논문의 범위 밖이다. 그 설계공간 자체는 [#2](/blog/2026/credit-assignment-survey/)가 이미 지도로 그렸고, 세부 기법은 2부의 [#5 턴 단위로 공을 나눈다](/blog/2026/turn-level-reward/), [#6 스텝을 단위로 삼는다](/blog/2026/step-level-credit/), [#7 토큰과 세그먼트로 더 잘게](/blog/2026/token-segment-credit/)에서 각각 다룬다.
+**확인 안 된 부분.** 턴을 더 큰 단위(세그먼트)로 묶어 credit을 계산하는 방식, 혹은 반대로 토큰보다 더 잘게 쪼개는 방식은 이 두 논문의 범위 밖이다. 그 설계공간 자체는 [#45](/blog/2026/credit-assignment-survey/)가 이미 지도로 그렸고, 세부 기법은 10부의 [#48 턴 단위로 공을 나눈다](/blog/2026/turn-level-reward/), [#49 스텝을 단위로 삼는다](/blog/2026/step-level-credit/), [#50 토큰과 세그먼트로 더 잘게](/blog/2026/token-segment-credit/)에서 각각 다룬다.
 
 ## 2. 환경 관측을 손실에서 어떻게 다룰 것인가
 
@@ -344,11 +344,11 @@ Method 2절에서 확인한 마스킹 규칙 — "환경이 준 토큰(user 턴)
 
 이게 왜 위험한지는 학습이 몇 스텝만 더 진행되면 드러난다. 정책은 "행동을 내놓고 좋은 관측 문장이 뒤따르는" 패턴 자체에 보상이 걸려 있다는 걸 (마스킹이 없으므로) 간접적으로 학습한다. 그런데 정책이 만들 수 있는 건 자기 자신의 다음 토큰뿐이다. 그러니 가장 손쉬운 지름길은 실제로 도구를 호출하고 환경의 응답을 기다리는 대신, **자기 턴 안에서 환경 관측 형식을 그대로 흉내 내 이어 쓰는 것**이다. 예를 들어 "take red key" 다음에 스스로 "state: 열쇠를 손에 넣었다. your action: open door"까지 한 번에 생성해버리는 식이다. 실제로는 상태 전이가 한 번도 일어나지 않았는데, 정책은 자신이 지어낸 성공 서사를 스스로 만들어 그 안에서 보상을 챙긴다. 이게 **hallucinated tool output** — 도구를 부르지 않고 결과를 지어내는 것 — 이다.
 
-이 실패 양상은 우연이 아니다. Method 6절에서 본 AgentRL의 "premature conclusion loop", 즉 도구를 부르지 않고 자기 결론을 반복하는 실패와 결이 같다. 둘 다 **환경과의 실제 상호작용을 생략하고 그 결과만 흉내 내는 쪽이 더 싸다**는 걸 정책이 학습한 결과다. 마스킹은 이걸 원천에서 막는 장치이고, 이 패턴이 마스킹을 갖춘 뒤에도 다른 경로로 발생하는 것이 [#15 에이전트의 reward hacking](/blog/2026/agentic-reward-hacking/)에서 다룰 주제다 — 도구 호출 형식은 지키면서 검증되지 않은 성공을 보고하는, 더 교묘한 버전이다.
+이 실패 양상은 우연이 아니다. Method 6절에서 본 AgentRL의 "premature conclusion loop", 즉 도구를 부르지 않고 자기 결론을 반복하는 실패와 결이 같다. 둘 다 **환경과의 실제 상호작용을 생략하고 그 결과만 흉내 내는 쪽이 더 싸다**는 걸 정책이 학습한 결과다. 마스킹은 이걸 원천에서 막는 장치이고, 이 패턴이 마스킹을 갖춘 뒤에도 다른 경로로 발생하는 것이 [#58 에이전트의 reward hacking](/blog/2026/agentic-reward-hacking/)에서 다룰 주제다 — 도구 호출 형식은 지키면서 검증되지 않은 성공을 보고하는, 더 교묘한 버전이다.
 
 # Conclusion
 
-[#1](/blog/2026/agentic-rl-landscape/)이 "왜 에이전트 RL은 단일턴 RLHF와 다른가"를 정의하고, [#2](/blog/2026/credit-assignment-survey/)가 credit assignment의 설계공간을 지도로 그렸다면, 이 글은 그 지도 위에서 **실제로 검증된 좌표**만 골라 표시했다. 정리하면 다음과 같다.
+[#44](/blog/2026/agentic-rl-landscape/)이 "왜 에이전트 RL은 단일턴 RLHF와 다른가"를 정의하고, [#45](/blog/2026/credit-assignment-survey/)가 credit assignment의 설계공간을 지도로 그렸다면, 이 글은 그 지도 위에서 **실제로 검증된 좌표**만 골라 표시했다. 정리하면 다음과 같다.
 
 1. **궤적은 턴의 열이자 토큰의 열이다.** 보상은 턴 경계(eos)에서 발생하지만, 토큰 단위 GAE가 그 신호를 앞뒤로 퍼뜨린다.
 2. **환경 토큰 마스킹은 협상 불가다.** 빠뜨리면 정책이 환경 관측을 흉내 내는 방향으로 새고, 이는 hallucinated tool output이라는 구체적 실패로 이어진다.
@@ -361,7 +361,7 @@ Method 2절에서 확인한 마스킹 규칙 — "환경이 준 토큰(user 턴)
 
 이 여섯 축을 관통하는 메시지는 하나다. **멀티턴 RL이 단일턴과 다른 이유는 알고리즘이 아니라 엔지니어링에 있다.** PPO의 클리핑도, GRPO의 그룹 정규화도 단일턴에서 그대로 가져왔다. 달라지는 건 그 알고리즘에 무엇을 먹일 것인가다 — 어디까지가 내 행동이고 어디부터가 환경의 응답인지, 언제 컨텍스트를 자르고 언제 포기할지 같은, 논문의 각주와 부록에 파묻혀 있는 결정들이다.
 
-이것으로 1부(왜 에이전트는 다른가)를 닫는다. [#1](/blog/2026/agentic-rl-landscape/)이 문제를, [#2](/blog/2026/credit-assignment-survey/)가 지도를, 이 글이 실무 제약을 확인했으니, 2부부터는 credit을 실제로 나누는 방법을 입도별로 파고든다. [#4 결과만으로는 부족하다](/blog/2026/outcome-vs-process-agentic/), [#5 턴 단위로 공을 나눈다](/blog/2026/turn-level-reward/), [#6 스텝을 단위로 삼는다](/blog/2026/step-level-credit/), [#7 토큰과 세그먼트로 더 잘게](/blog/2026/token-segment-credit/), [#8 shaping은 약인가 독인가](/blog/2026/reward-shaping-agentic/) 순서다.
+이것으로 9부(왜 에이전트는 다른가)를 닫는다. [#44](/blog/2026/agentic-rl-landscape/)이 문제를, [#45](/blog/2026/credit-assignment-survey/)가 지도를, 이 글이 실무 제약을 확인했으니, 10부부터는 credit을 실제로 나누는 방법을 입도별로 파고든다. [#47 결과만으로는 부족하다](/blog/2026/outcome-vs-process-agentic/), [#48 턴 단위로 공을 나눈다](/blog/2026/turn-level-reward/), [#49 스텝을 단위로 삼는다](/blog/2026/step-level-credit/), [#50 토큰과 세그먼트로 더 잘게](/blog/2026/token-segment-credit/), [#51 shaping은 약인가 독인가](/blog/2026/reward-shaping-agentic/) 순서다.
 
 # 참고 문헌
 
@@ -377,21 +377,104 @@ Method 2절에서 확인한 마스킹 규칙 — "환경이 준 토큰(user 턴)
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 세 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 마흔여섯 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><strong>(현재 글)</strong> 멀티턴 RL 실무 가이드 — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -399,32 +482,35 @@ Method 2절에서 확인한 마스킹 규칙 — "환경이 준 토큰(user 턴)
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

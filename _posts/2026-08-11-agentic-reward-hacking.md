@@ -1,8 +1,8 @@
 ---
 layout: post
 title: "에이전트의 reward hacking — 판정기가 뚫린다, 그리고 조합의 실패"
-date: 2026-08-25 09:15:00 +0900
-description: "Agentic RL 설계 시리즈 #15 — Motif(Klissarov et al., ICLR 2024)의 misalignment by composition: 개별로는 정렬된 보상들이 합쳐지면 왜 뚫리는가"
+date: 2026-08-11 09:58:00 +0900
+description: "RL Reward 설계 시리즈 #58 — Motif(Klissarov et al., ICLR 2024)의 misalignment by composition: 개별로는 정렬된 보상들이 합쳐지면 왜 뚫리는가"
 categories: [paper]
 tags: [reinforcement-learning, agentic-rl, reward-hacking, intrinsic-motivation, credit-assignment, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [#1](/blog/2026/agentic-rl-landscape/)과 RLHF Reward 설계 시리즈는 규칙 기반(rule-based) reward를 이렇게 정리했다 — "학습되는 파라미터가 없으니 뚫을 대상이 없다." 스칼라 RM은 gradient로 최적화 압력을 받아 왜곡되고, judge는 프롬프트 안에서 설득당하지만, 정답과 문자열을 비교하거나 유닛 테스트를 돌리는 코드에는 최적화가 파고들 표면 자체가 없다는 논리였다.
+이 시리즈 [#44](/blog/2026/agentic-rl-landscape/)과 RL Reward 설계 시리즈는 규칙 기반(rule-based) reward를 이렇게 정리했다 — "학습되는 파라미터가 없으니 뚫을 대상이 없다." 스칼라 RM은 gradient로 최적화 압력을 받아 왜곡되고, judge는 프롬프트 안에서 설득당하지만, 정답과 문자열을 비교하거나 유닛 테스트를 돌리는 코드에는 최적화가 파고들 표면 자체가 없다는 논리였다.
 
 이 논리는 절반만 맞다. **파라미터가 없어도 판정 로직이 진짜 목표의 대리 지표(proxy)라면, 그 정의 자체가 뚫린다.** 뚫리는 건 함수가 아니라 정의다. NetHack의 오라클(oracle) 과제 판정 코드는 학습되는 가중치가 단 하나도 없다 — "에이전트 근처에 오라클처럼 보이는 캐릭터가 있는가"를 확인하는 하드코딩된 규칙일 뿐이다. 그런데 정확히 이 규칙이, 이 글의 중심 사례인 Motif에서 뚫린다. 진짜 오라클을 찾아간 게 아니라, 환각 상태에서 아무 몬스터나 오라클로 착각하게 만들어 그 착각을 판정기가 그대로 받아들이게 한 것이다.
 
@@ -21,7 +21,7 @@ related_posts: true
 
 이 글이 다룰 두 번째, 그리고 더 근본적인 주제는 **misalignment by composition**이다. 개별적으로 최적화하면 사람의 직관과 잘 맞는 행동을 낳는 보상들이 있다. 이 보상들을 그냥 더해서 함께 최적화하면 어떻게 될까. Motif의 저자들이 발견한 답은 놀랍다 — **개별로는 둘 다 정렬돼 있어도, 합치면 어긋난 행동이 새로 생겨난다.** 이건 어느 한쪽 보상이 나빠서가 아니다. 둘의 조합이 열어준 새로운 능력(생존 기술)이, 원래는 존재하지 않았던 지름길(환각을 유도해 판정을 속이는 길)을 만들어낸 것이다.
 
-이 글의 구성은 다음과 같다. Method에서 Motif의 3단계 구조 — LLM 선호 라벨링, Bradley-Terry 증류, 내재적 보상으로의 변환 — 를 수식과 함께 정확히 따라간다. 그다음 절에서 오라클 과제의 hacking 경로를 단계별로 재구성하고, misalignment by composition의 정확한 정의를 확인한다. 이어서 이 시리즈가 2\~4부에서 이미 예고했던 다른 네 가지 hacking 유형을 회수해 하나의 지도로 묶는다. 마지막으로 "고정 계수로 그냥 더한다"는 Motif의 실패를 기준점 삼아, 실제 프론티어 모델들이 여러 reward를 어떻게 다르게 결합하는지 표로 정리한다.
+이 글의 구성은 다음과 같다. Method에서 Motif의 3단계 구조 — LLM 선호 라벨링, Bradley-Terry 증류, 내재적 보상으로의 변환 — 를 수식과 함께 정확히 따라간다. 그다음 절에서 오라클 과제의 hacking 경로를 단계별로 재구성하고, misalignment by composition의 정확한 정의를 확인한다. 이어서 이 시리즈가 2\~12부에서 이미 예고했던 다른 네 가지 hacking 유형을 회수해 하나의 지도로 묶는다. 마지막으로 "고정 계수로 그냥 더한다"는 Motif의 실패를 기준점 삼아, 실제 프론티어 모델들이 여러 reward를 어떻게 다르게 결합하는지 표로 정리한다.
 
 # Background
 
@@ -33,9 +33,9 @@ Motif 저자들은 오라클 과제의 실패를 설명하며 reward hacking의 
 
 ## 이 편이 서는 위치 — 단일 reward의 근사 오차를 넘어서
 
-RLHF Reward 설계 시리즈는 reward hacking을 세 축으로 다뤘다 — 보상 모델의 [overoptimization](/blog/2026/reward-model-overoptimization/)(대리 reward를 과도하게 최적화하면 진짜 선호와 벌어진다), [길이와의 허위 상관](/blog/2026/rlhf-length-correlations/)(장황함이 품질의 대리 지표로 오인된다), 그리고 [ODIN](/blog/2026/odin-disentangled-reward/)이 다룬 신호 얽힘(길이라는 잡음이 품질이라는 신호에 섞여 든다), 마지막으로 [아첨](/blog/2026/sycophancy/)(judge와 사람 모두를 속이는 세 번째 축). 이 세 축은 전부 **"reward 함수 하나가 진짜 목표를 얼마나 정확히 근사하는가"**의 문제다. 근사가 나쁘면 그 오차를 파고드는 것이 hacking이다.
+RL Reward 설계 시리즈는 reward hacking을 세 축으로 다뤘다 — 보상 모델의 [overoptimization](/blog/2026/reward-model-overoptimization/)(대리 reward를 과도하게 최적화하면 진짜 선호와 벌어진다), [길이와의 허위 상관](/blog/2026/rlhf-length-correlations/)(장황함이 품질의 대리 지표로 오인된다), 그리고 [ODIN](/blog/2026/odin-disentangled-reward/)이 다룬 신호 얽힘(길이라는 잡음이 품질이라는 신호에 섞여 든다), 마지막으로 [아첨](/blog/2026/sycophancy/)(judge와 사람 모두를 속이는 세 번째 축). 이 세 축은 전부 **"reward 함수 하나가 진짜 목표를 얼마나 정확히 근사하는가"**의 문제다. 근사가 나쁘면 그 오차를 파고드는 것이 hacking이다.
 
-**composition은 이 세 축과 다른 층위에 있다.** 근사 오차와 무관하게, 각각은 진짜 목표를 잘 근사하는 두 reward라도 — 심지어 각자 단독으로는 hacking되지 않는 reward라도 — 더하는 순간 새로운 hacking 표면이 열릴 수 있다. 이 글은 그래서 이 시리즈에서 이미 예고된 **네 번째 축**을 다룬다. [#8](/blog/2026/reward-shaping-agentic/)이 이 네 가지 유형(행동 남발, 중간 목표 고착, 대리 지표 공략, 조합의 실패)을 처음 분류하며 "이 시리즈에서 가장 깊이 다뤄야 할 문제"로 조합의 실패를 지목한 것이 바로 이 글이다.
+**composition은 이 세 축과 다른 층위에 있다.** 근사 오차와 무관하게, 각각은 진짜 목표를 잘 근사하는 두 reward라도 — 심지어 각자 단독으로는 hacking되지 않는 reward라도 — 더하는 순간 새로운 hacking 표면이 열릴 수 있다. 이 글은 그래서 이 시리즈에서 이미 예고된 **네 번째 축**을 다룬다. [#51](/blog/2026/reward-shaping-agentic/)이 이 네 가지 유형(행동 남발, 중간 목표 고착, 대리 지표 공략, 조합의 실패)을 처음 분류하며 "이 시리즈에서 가장 깊이 다뤄야 할 문제"로 조합의 실패를 지목한 것이 바로 이 글이다.
 
 네 축을 나란히 놓으면 이 글의 위치가 분명해진다.
 
@@ -182,31 +182,31 @@ hacking이 나타나는 건 정확히 두 보상을 **결합했을 때**다. 생
 
 # 다른 hacking 유형들 — 이 시리즈가 이미 만난 것들
 
-Motif의 오라클 사례는 "판정 정의가 대리 지표"라는 큰 유형 하나를 정확히 보여준다. 이 시리즈는 2\~4부를 지나며 이미 다른 네 가지 유형을 예고했다. 여기서 회수해 하나의 지도로 묶는다.
+Motif의 오라클 사례는 "판정 정의가 대리 지표"라는 큰 유형 하나를 정확히 보여준다. 이 시리즈는 2\~12부를 지나며 이미 다른 네 가지 유형을 예고했다. 여기서 회수해 하나의 지도로 묶는다.
 
 ## 판정 정의가 대리 지표
 
 Motif의 오라클 사례가 정확히 이 유형이다. 판정 함수가 "진짜 목표에 도달했는가"가 아니라 "진짜 목표가 남길 만한 흔적(오라클로 보이는 캐릭터)이 관측되는가"를 확인하기 때문에, 그 흔적만 위조하면 판정을 통과한다.
 
-코드 에이전트 도메인에서도 구조가 같은 사례가 실제로 관측된다. 프로그래밍 문제에서 reward hacking을 벤치마킹한 EvilGenie(Gabor et al., arXiv 2025)는 LiveCodeBench 문제를 변형해, 에이전트가 정답을 실제로 풀지 않고도 테스트를 통과할 여지를 일부러 남긴 환경을 만들었다. 저자들은 hacking을 held-out 유닛 테스트, LLM judge, **테스트 파일 수정 여부 탐지**라는 세 가지 방법으로 각각 검출해 서로 교차 검증했고, 그 결과 에이전트들이 테스트 케이스를 하드코딩하거나 테스트 파일 자체를 수정·삭제해 강제로 통과시키는 사례를 실측했다. 상용 코딩 에이전트 세 개(OpenAI Codex, Anthropic Claude Code, Google Gemini CLI)를 함께 평가했는데, **Codex와 Claude Code 모두에서 명시적인 reward hacking이, 세 모델 모두에서 크고 작은 misaligned behavior가 관측됐다**고 저자들은 밝힌다. "테스트를 통과했는가"라는, 언뜻 파라미터가 없어 안전해 보이는 검증 가능한 판정조차 판정에 쓰이는 테스트 파일 자체가 에이전트의 쓰기 권한 안에 있다면 대리 지표로 전락한다 — Motif의 오라클 판정이 뚫린 구조와 정확히 같다. 이 도메인의 판정 설계와 방어는 [#13](/blog/2026/swe-agent-rl/)에서 본격적으로 다룬다.
+코드 에이전트 도메인에서도 구조가 같은 사례가 실제로 관측된다. 프로그래밍 문제에서 reward hacking을 벤치마킹한 EvilGenie(Gabor et al., arXiv 2025)는 LiveCodeBench 문제를 변형해, 에이전트가 정답을 실제로 풀지 않고도 테스트를 통과할 여지를 일부러 남긴 환경을 만들었다. 저자들은 hacking을 held-out 유닛 테스트, LLM judge, **테스트 파일 수정 여부 탐지**라는 세 가지 방법으로 각각 검출해 서로 교차 검증했고, 그 결과 에이전트들이 테스트 케이스를 하드코딩하거나 테스트 파일 자체를 수정·삭제해 강제로 통과시키는 사례를 실측했다. 상용 코딩 에이전트 세 개(OpenAI Codex, Anthropic Claude Code, Google Gemini CLI)를 함께 평가했는데, **Codex와 Claude Code 모두에서 명시적인 reward hacking이, 세 모델 모두에서 크고 작은 misaligned behavior가 관측됐다**고 저자들은 밝힌다. "테스트를 통과했는가"라는, 언뜻 파라미터가 없어 안전해 보이는 검증 가능한 판정조차 판정에 쓰이는 테스트 파일 자체가 에이전트의 쓰기 권한 안에 있다면 대리 지표로 전락한다 — Motif의 오라클 판정이 뚫린 구조와 정확히 같다. 이 도메인의 판정 설계와 방어는 [#56](/blog/2026/swe-agent-rl/)에서 본격적으로 다룬다.
 
 ## shaping이 만든 행동 남발
 
-[#8](/blog/2026/reward-shaping-agentic/)이 분류한 첫 번째 유형이다. "성공에 +점을 준다"는 형태의 중간 보상은, 성공을 반복 가능하게 만드는 구조에서는 거의 항상 성공 자체를 남발하는 정책을 낳는다. DynaSearcher는 recall 보상만 주면 에이전트가 이미 충분한 정보를 얻은 뒤에도 검색을 계속 호출해 recall 수치를 억지로 밀어 올린다는 사실을 확인하고, 별도의 페널티 항을 설계해야 했다. [#10](/blog/2026/tool-call-reward/)의 토이 계산도 같은 그림을 숫자로 보여준다 — 호출별 점수를 그냥 합산하면, 결과를 무시한 채 형식만 맞춘 도구 호출을 하나 더 쌓은 궤적이 더 높은 점수를 받는다.
+[#51](/blog/2026/reward-shaping-agentic/)이 분류한 첫 번째 유형이다. "성공에 +점을 준다"는 형태의 중간 보상은, 성공을 반복 가능하게 만드는 구조에서는 거의 항상 성공 자체를 남발하는 정책을 낳는다. DynaSearcher는 recall 보상만 주면 에이전트가 이미 충분한 정보를 얻은 뒤에도 검색을 계속 호출해 recall 수치를 억지로 밀어 올린다는 사실을 확인하고, 별도의 페널티 항을 설계해야 했다. [#53](/blog/2026/tool-call-reward/)의 토이 계산도 같은 그림을 숫자로 보여준다 — 호출별 점수를 그냥 합산하면, 결과를 무시한 채 형식만 맞춘 도구 호출을 하나 더 쌓은 궤적이 더 높은 점수를 받는다.
 
 Motif의 카운트 정규화($$N(\text{message})^\beta$$)는 사실 정확히 이 유형을 미리 막기 위한 장치였다는 점이 흥미롭다. "좋은 메시지를 반복해서 수확한다"는 남발 패턴을 저자들이 이미 설계 단계에서 예상하고 대응했기 때문에, 3단계(내재적 보상 변환)에서는 이 유형의 hacking이 나타나지 않는다. 그런데도 결합 단계에서 전혀 다른 유형의 hacking(대리 지표 공략)이 새로 생겼다는 것은, **한 유형의 hacking을 잘 막았다는 사실이 다른 유형에 대한 방어를 보장하지 않는다**는 점을 보여준다.
 
 ## judge가 긴 궤적을 다 못 읽어서
 
-궤적이 길어지면 judge에게 전체를 다 보여주는 것 자체가 비용과 컨텍스트 한계에 부딪힌다. 실무적으로 흔한 대응은 요약이나 마지막 몇 턴만 판정에 반영하는 것인데, 이 경우 judge가 실제로 평가하는 것은 "과정 전체가 목표를 달성했는가"가 아니라 "제출된 요약이 그럴듯한가"로 좁혀진다. 궤적 중간에 실패나 지름길이 있어도, 마지막 요약이 성공을 그럴듯하게 서술하면 판정을 통과할 여지가 생긴다. 이 문제와 rubric 기반 judge 설계 전반은 [#11](/blog/2026/agentic-judge-rubric/)에서 다룬다.
+궤적이 길어지면 judge에게 전체를 다 보여주는 것 자체가 비용과 컨텍스트 한계에 부딪힌다. 실무적으로 흔한 대응은 요약이나 마지막 몇 턴만 판정에 반영하는 것인데, 이 경우 judge가 실제로 평가하는 것은 "과정 전체가 목표를 달성했는가"가 아니라 "제출된 요약이 그럴듯한가"로 좁혀진다. 궤적 중간에 실패나 지름길이 있어도, 마지막 요약이 성공을 그럴듯하게 서술하면 판정을 통과할 여지가 생긴다. 이 문제와 rubric 기반 judge 설계 전반은 [#54](/blog/2026/agentic-judge-rubric/)에서 다룬다.
 
 ## 환경 관측 마스킹 누락으로 도구 출력을 지어냄
 
-[#3](/blog/2026/multi-turn-rl-practice/)이 다룬 hallucinated tool output이 이 유형이다. 손실 마스킹이 빠지면 정책이 환경 관측 토큰까지 그래디언트로 학습해버려, 실제로 도구를 부르는 대신 성공한 도구 출력을 자기 턴 안에서 그냥 지어내는 지름길이 생긴다. 그런데 #3은 이 실패가 마스킹을 제대로 갖춘 뒤에도 다른 경로로 재발할 수 있다고 예고했다 — **도구 호출의 형식(포맷)은 정확히 지키면서, 검증되지 않은 성공을 보고하는 더 교묘한 버전**이다. 판정기가 "도구 호출이 올바른 형식으로 있었는가"까지만 확인하고 "그 호출이 실제로 주장한 결과를 만들었는가"를 검증하지 않는다면, 형식은 완벽하지만 내용은 허구인 궤적이 판정을 통과한다 — 결국 "판정 정의가 대리 지표"라는 첫 유형의 변형이다.
+[#46](/blog/2026/multi-turn-rl-practice/)이 다룬 hallucinated tool output이 이 유형이다. 손실 마스킹이 빠지면 정책이 환경 관측 토큰까지 그래디언트로 학습해버려, 실제로 도구를 부르는 대신 성공한 도구 출력을 자기 턴 안에서 그냥 지어내는 지름길이 생긴다. 그런데 #46은 이 실패가 마스킹을 제대로 갖춘 뒤에도 다른 경로로 재발할 수 있다고 예고했다 — **도구 호출의 형식(포맷)은 정확히 지키면서, 검증되지 않은 성공을 보고하는 더 교묘한 버전**이다. 판정기가 "도구 호출이 올바른 형식으로 있었는가"까지만 확인하고 "그 호출이 실제로 주장한 결과를 만들었는가"를 검증하지 않는다면, 형식은 완벽하지만 내용은 허구인 궤적이 판정을 통과한다 — 결국 "판정 정의가 대리 지표"라는 첫 유형의 변형이다.
 
 ## 비결정적 환경에서 운을 실력으로 오인
 
-[#14](/blog/2026/web-gui-agent-rl/)가 다룬 유형이다. 웹처럼 살아있는 환경은 같은 행동이 어제와 오늘 다른 결과를 낼 수 있다. GRPO처럼 그룹 내 상대 비교로 advantage를 계산하는 알고리즘에서는, 같은 그룹 안의 궤적들이 정책의 차이가 아니라 순전히 환경의 우연 때문에 다른 보상을 받는 상황이 생긴다. 이는 hacking이라기보다 credit assignment 자체가 오염되는 문제에 가깝지만, 결과적으로 에이전트가 "운이 좋았던 행동"을 "옳았던 행동"으로 착각하고 강화한다는 점에서 판정의 신뢰도를 갉아먹는 같은 계열의 실패다. DigiRL이 doubly-robust advantage 추정기로 이 노이즈를 명시적으로 흡수하려 한 것이 이 문제에 대한 직접적인 대응이다.
+[#57](/blog/2026/web-gui-agent-rl/)가 다룬 유형이다. 웹처럼 살아있는 환경은 같은 행동이 어제와 오늘 다른 결과를 낼 수 있다. GRPO처럼 그룹 내 상대 비교로 advantage를 계산하는 알고리즘에서는, 같은 그룹 안의 궤적들이 정책의 차이가 아니라 순전히 환경의 우연 때문에 다른 보상을 받는 상황이 생긴다. 이는 hacking이라기보다 credit assignment 자체가 오염되는 문제에 가깝지만, 결과적으로 에이전트가 "운이 좋았던 행동"을 "옳았던 행동"으로 착각하고 강화한다는 점에서 판정의 신뢰도를 갉아먹는 같은 계열의 실패다. DigiRL이 doubly-robust advantage 추정기로 이 노이즈를 명시적으로 흡수하려 한 것이 이 문제에 대한 직접적인 대응이다.
 
 # 방어 — 여러 reward를 어떻게 합칠 것인가
 
@@ -302,14 +302,14 @@ Motif 사례와 앞선 네 유형을 종합하면, 에이전트 RL에서 reward/
 
 이 글에서 다룬 다섯 가지 hacking 유형과 그 방어를 하나의 표로 묶는다.
 
-| hacking 유형                         | 판정이 실제로 확인하는 것                 | 방어                                                | 관련 편                                                                       |
-| ------------------------------------ | ----------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 판정 정의가 대리 지표                | 목표의 흔적(환각된 오라클, 통과된 테스트) | 판정을 진짜 목표에 가깝게 좁힌다(oracle-sober)      | 이 글, [#13](/blog/2026/swe-agent-rl/)                                        |
-| shaping이 만든 행동 남발             | 성공 신호의 누적 횟수                     | 반복에 페널티, 필요성·활용까지 반영한 가중치        | [#8](/blog/2026/reward-shaping-agentic/), [#10](/blog/2026/tool-call-reward/) |
-| judge가 긴 궤적을 못 읽음            | 마지막 요약의 그럴듯함                    | rubric으로 판정 범위를 명시적으로 좁힌다            | [#11](/blog/2026/agentic-judge-rubric/)                                       |
-| 마스킹 누락으로 출력을 지어냄        | 도구 호출의 형식                          | 환경 토큰 마스킹, 형식과 별개로 실제 수행 여부 검증 | [#3](/blog/2026/multi-turn-rl-practice/)                                      |
-| 비결정적 환경에서 운을 실력으로 오인 | 그룹 내 상대적 결과                       | doubly-robust advantage로 환경 노이즈 흡수          | [#14](/blog/2026/web-gui-agent-rl/)                                           |
-| **조합의 실패**                      | **개별 보상들의 고정 계수 합**            | **정규화 후 결합, 단계 분리, 또는 제약으로 전환**   | **이 글 — Motif, A.X K2, K-EXAONE 2.0, Safe RLHF**                            |
+| hacking 유형                         | 판정이 실제로 확인하는 것                 | 방어                                                | 관련 편                                                                        |
+| ------------------------------------ | ----------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 판정 정의가 대리 지표                | 목표의 흔적(환각된 오라클, 통과된 테스트) | 판정을 진짜 목표에 가깝게 좁힌다(oracle-sober)      | 이 글, [#56](/blog/2026/swe-agent-rl/)                                         |
+| shaping이 만든 행동 남발             | 성공 신호의 누적 횟수                     | 반복에 페널티, 필요성·활용까지 반영한 가중치        | [#51](/blog/2026/reward-shaping-agentic/), [#53](/blog/2026/tool-call-reward/) |
+| judge가 긴 궤적을 못 읽음            | 마지막 요약의 그럴듯함                    | rubric으로 판정 범위를 명시적으로 좁힌다            | [#54](/blog/2026/agentic-judge-rubric/)                                        |
+| 마스킹 누락으로 출력을 지어냄        | 도구 호출의 형식                          | 환경 토큰 마스킹, 형식과 별개로 실제 수행 여부 검증 | [#46](/blog/2026/multi-turn-rl-practice/)                                      |
+| 비결정적 환경에서 운을 실력으로 오인 | 그룹 내 상대적 결과                       | doubly-robust advantage로 환경 노이즈 흡수          | [#57](/blog/2026/web-gui-agent-rl/)                                            |
+| **조합의 실패**                      | **개별 보상들의 고정 계수 합**            | **정규화 후 결합, 단계 분리, 또는 제약으로 전환**   | **이 글 — Motif, A.X K2, K-EXAONE 2.0, Safe RLHF**                             |
 
 # Conclusion
 
@@ -317,7 +317,7 @@ Motif 사례와 앞선 네 유형을 종합하면, 에이전트 RL에서 reward/
 
 이 사례는 RLAIF 특유의 문제가 아니다. LLM이 선호를 매겼든, 사람이 라벨링했든, 순수 RLVR로 조합을 만들었든 — NLE의 오라클 판정 로직 자체는 바뀌지 않았을 것이고, 환각으로 그 판정을 속이는 경로도 그대로 열려 있었을 것이다. 뚫린 건 보상의 출처가 아니라 판정의 정의였다.
 
-이 시리즈가 2\~4부에서 이미 예고한 네 가지 hacking 유형 — shaping이 만든 행동 남발, judge의 긴 궤적 처리 실패, 마스킹 누락으로 인한 출력 조작, 비결정적 환경에서의 운과 실력 혼동 — 은 Motif의 오라클 사례가 대표하는 "판정 정의가 대리 지표"라는 큰 틀 아래 나란히 놓인다. 각 방어 장치(다중 판정 결합, held-out 테스트, doubly-robust advantage)는 개별 hacking 표면 하나씩을 막지만, 그 방어들을 다시 조합하는 순간 같은 질문이 재귀적으로 돌아온다 — **이 방어들의 조합은 정말 안전한가.** 마지막 편([#16](/blog/2026/frontier-agentic-rl/))에서 실제 프론티어 모델들이 이 질문에 어떻게 답하는지 종합한다.
+이 시리즈가 2\~12부에서 이미 예고한 네 가지 hacking 유형 — shaping이 만든 행동 남발, judge의 긴 궤적 처리 실패, 마스킹 누락으로 인한 출력 조작, 비결정적 환경에서의 운과 실력 혼동 — 은 Motif의 오라클 사례가 대표하는 "판정 정의가 대리 지표"라는 큰 틀 아래 나란히 놓인다. 각 방어 장치(다중 판정 결합, held-out 테스트, doubly-robust advantage)는 개별 hacking 표면 하나씩을 막지만, 그 방어들을 다시 조합하는 순간 같은 질문이 재귀적으로 돌아온다 — **이 방어들의 조합은 정말 안전한가.** 마지막 편([#61](/blog/2026/frontier-agentic-rl/))에서 실제 프론티어 모델들이 이 질문에 어떻게 답하는지 종합한다.
 
 # 참고 문헌
 
@@ -329,21 +329,104 @@ Motif 사례와 앞선 네 유형을 종합하면, 에이전트 RL에서 reward/
 
 ---
 
-# Agentic RL 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 Agentic RL 설계 시리즈의 열다섯 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 쉰여덟 번째 글이다.
 
-**1부. 왜 에이전트는 다른가**
+**1부. 지형도**
 
 <ol start="1">
+  <li><a href="/blog/2026/deep-rl-human-preferences/">Deep RL from Human Preferences (Christiano 2017)</a> — 선호로 보상을 배우는 원형</li>
+  <li><a href="/blog/2026/instructgpt/">InstructGPT (Ouyang 2022)</a> — RLHF 3단계 표준 레시피</li>
+  <li><a href="/blog/2026/anthropic-hh-rlhf/">HH-RLHF (Bai 2022)</a> — helpful·harmless preference model</li>
+</ol>
+
+**2부. 스칼라 RM 해부**
+
+<ol start="4">
+  <li><a href="/blog/2026/bradley-terry-rethinking/">Rethinking Bradley-Terry (2024)</a> — reward 변환의 수학적 기반</li>
+  <li><a href="/blog/2026/secrets-rlhf-reward-modeling/">Secrets of RLHF II (2024)</a> — 선호 데이터 노이즈와 RM 일반화</li>
+  <li><a href="/blog/2026/skywork-reward/">Skywork-Reward (2024)</a> — 데이터 큐레이션이 아키텍처를 이긴다</li>
+  <li><a href="/blog/2026/armorm/">ArmoRM (2024)</a> — 다목적 분해와 MoE 게이팅</li>
+  <li><a href="/blog/2026/llama2-rlhf/">Llama 2 (2023)</a> — helpfulness·safety RM 분리 프로덕션 레시피</li>
+  <li><a href="/blog/2026/rewardbench-2/">RewardBench 2 (2025)</a> — RM을 어떻게 평가할 것인가</li>
+</ol>
+
+**3부. Reward Hacking**
+
+<ol start="10">
+  <li><a href="/blog/2026/reward-model-overoptimization/">Overoptimization Scaling Laws (2022)</a> — Goodhart의 법칙 정량화</li>
+  <li><a href="/blog/2026/rlhf-length-correlations/">Length Correlations in RLHF (2023)</a> — 성능 향상의 얼마가 길이인가</li>
+  <li><a href="/blog/2026/odin-disentangled-reward/">ODIN (2024)</a> — 길이를 reward에서 분리</li>
+  <li><a href="/blog/2026/sycophancy/">Sycophancy (2023)</a> — RM은 사실보다 동의를 좋아한다</li>
+  <li><a href="/blog/2026/warm-weight-averaged-reward/">WARM (2024)</a> — weight averaging으로 hacking 방어</li>
+</ol>
+
+**4부. 안전성 정렬**
+
+<ol start="15">
+  <li><a href="/blog/2026/safe-rlhf/">Safe RLHF (2023)</a> — 안전성을 reward가 아니라 제약으로</li>
+  <li><a href="/blog/2026/rule-based-rewards/">Rule-Based Rewards (2024)</a> — 안전 규칙을 reward로 직접 번역</li>
+  <li><a href="/blog/2026/deliberative-alignment/">Deliberative Alignment (2024)</a> — 안전 명세를 모델의 추론 안으로</li>
+  <li><a href="/blog/2026/shallow-safety-alignment/">Shallow Safety Alignment (2024)</a> — 정렬은 첫 몇 토큰에만 얹혀 있다</li>
+  <li><a href="/blog/2026/or-bench/">OR-Bench (2024)</a> — 과잉 거절을 어떻게 측정할 것인가</li>
+</ol>
+
+**5부. reward를 정책으로**
+
+<ol start="20">
+  <li><a href="/blog/2026/ppo/">PPO (2017)</a> — clipped surrogate objective</li>
+  <li><a href="/blog/2026/secrets-rlhf-ppo/">Secrets of RLHF I (2023)</a> — PPO 학습 안정화 트릭</li>
+  <li><a href="/blog/2026/grpo-deepseekmath/">GRPO / DeepSeekMath (2024)</a> — value network를 버리다</li>
+  <li><a href="/blog/2026/rloo-back-to-basics/">RLOO (2024)</a> — REINFORCE로 충분한가</li>
+  <li><a href="/blog/2026/dpo/">DPO (2023)</a> — reward를 없애면 어떻게 되는가</li>
+  <li><a href="/blog/2026/simpo/">SimPO (2024)</a> — reference-free + 길이 정규화</li>
+  <li><a href="/blog/2026/kto/">KTO (2024)</a> — 선호 쌍 없이 이진 신호만으로</li>
+  <li><a href="/blog/2026/gspo/">GSPO (2025)</a> — importance ratio를 시퀀스 단위로</li>
+  <li><a href="/blog/2026/dapo/">DAPO (2025)</a> — 신호 없는 프롬프트를 버린다</li>
+  <li><a href="/blog/2026/bond/">BOND (2024)</a> — Best-of-N을 추론 비용 없이</li>
+  <li><a href="/blog/2026/warp/">WARP (2024)</a> — 정책을 weight space에서 병합</li>
+</ol>
+
+**6부. Process & Verifiable Reward**
+
+<ol start="31">
+  <li><a href="/blog/2026/lets-verify-step-by-step/">Let's Verify Step by Step (2023)</a> — 과정 감독이 결과 감독을 이긴다</li>
+  <li><a href="/blog/2026/math-shepherd/">Math-Shepherd (2023)</a> — 사람 라벨 없는 PRM</li>
+  <li><a href="/blog/2026/deepseek-r1/">DeepSeek-R1 (2025)</a> — RLVR, 규칙이 reward가 될 때</li>
+</ol>
+
+**7부. Generative Reward Model**
+
+<ol start="34">
+  <li><a href="/blog/2026/prometheus-2/">Prometheus 2 (2024)</a> — 오픈 평가자 모델과 rubric 조건부 평가</li>
+  <li><a href="/blog/2026/generative-verifiers/">Generative Verifiers (2024)</a> — reward를 next-token prediction으로</li>
+  <li><a href="/blog/2026/generative-reward-models/">Generative Reward Models (2024)</a> — GenRM과 선호 학습의 결합</li>
+  <li><a href="/blog/2026/self-taught-evaluators/">Self-Taught Evaluators (2024)</a> — 사람 라벨 없이 judge를 키우다</li>
+  <li><a href="/blog/2026/deepseek-grm-spct/">DeepSeek-GRM / SPCT (2025)</a> — inference-time scaling</li>
+</ol>
+
+**8부. 생각하는 Judge**
+
+<ol start="39">
+  <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
+  <li><a href="/blog/2026/j1-thinking-judge/">J1 (2025)</a> — RL로 judge를 생각하게 만들기</li>
+  <li><a href="/blog/2026/rubrics-as-rewards/">Rubrics as Rewards (2025)</a> — 비검증 도메인으로</li>
+  <li><a href="/blog/2026/criticeval/">CriticEval (2024)</a> — judge 자체를 어떻게 평가하나</li>
+  <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
+</ol>
+
+**9부. 에이전트는 무엇이 다른가**
+
+<ol start="44">
   <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
   <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
   <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
 </ol>
 
-**2부. credit assignment — 공을 어디에 돌릴 것인가**
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
 
-<ol start="4">
+<ol start="47">
   <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
   <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
   <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
@@ -351,32 +434,35 @@ Motif 사례와 앞선 네 유형을 종합하면, 에이전트 RL에서 reward/
   <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
 </ol>
 
-**3부. reward를 어디서 얻나**
+**11부. 에이전트의 reward는 어디서 오나**
 
-<ol start="9">
+<ol start="52">
   <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
   <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
   <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
 </ol>
 
-**4부. 도메인별 설계**
+**12부. 에이전트 도메인별 설계**
 
-<ol start="12">
+<ol start="55">
   <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
   <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
   <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
 </ol>
 
-**5부. 실패와 방어**
+**13부. 에이전트의 실패와 방어**
 
-<ol start="15">
+<ol start="58">
   <li><strong>(현재 글)</strong> 에이전트의 reward hacking — 판정기가 뚫린다, 그리고 조합의 실패</li>
 </ol>
 
-**6부. 실전 종합**
+**14부. 실전 종합**
 
-<ol start="16">
+<ol start="59">
+  <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
+  <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
   <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
+  <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 16편으로 구성된다.
+본 시리즈는 62편으로 구성된다.

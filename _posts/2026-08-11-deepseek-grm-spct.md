@@ -2,7 +2,7 @@
 layout: post
 title: "DeepSeek-GRM: reward model이 평가 기준을 스스로 만든다"
 date: 2026-08-11 09:38:00 +0900
-description: "RLHF Reward 설계 시리즈 #38 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
+description: "RL Reward 설계 시리즈 #38 — SPCT로 원칙과 critique를 생성하고, inference-time scaling으로 training-time scaling을 이기다"
 categories: [paper]
 tags: [rlhf, reward-model, genrm, inference-time-scaling, deepseek, paper]
 giscus_comments: true
@@ -13,13 +13,13 @@ related_posts: true
 
 # Introduction
 
-이 시리즈 [33편 DeepSeek-R1](/blog/2026/deepseek-r1/)은 규칙(rule)이 그대로 reward가 되는 경우를 다뤘다. 수학 문제는 정답이 하나뿐이라, 최종 답만 정답 파서로 확인하면 완벽하게 검증 가능한 reward를 공짜로 얻는다. [35편 Generative Verifiers](/blog/2026/generative-verifiers/)는 이 reward를 "next-token prediction"으로 표현하는 법을, [36편 Generative Reward Models](/blog/2026/generative-reward-models/)는 GenRM을 선호 학습과 결합하는 법을 각각 보여줬다. 세 글 모두 공통된 전제가 있다. **"무엇이 좋은 응답인가"를 판정할 기준이 이미 존재하거나, 최소한 사람이 미리 정해줄 수 있다**는 전제다.
+이 시리즈 [#33 DeepSeek-R1](/blog/2026/deepseek-r1/)은 규칙(rule)이 그대로 reward가 되는 경우를 다뤘다. 수학 문제는 정답이 하나뿐이라, 최종 답만 정답 파서로 확인하면 완벽하게 검증 가능한 reward를 공짜로 얻는다. [#35 Generative Verifiers](/blog/2026/generative-verifiers/)는 이 reward를 "next-token prediction"으로 표현하는 법을, [#36 Generative Reward Models](/blog/2026/generative-reward-models/)는 GenRM을 선호 학습과 결합하는 법을 각각 보여줬다. 세 글 모두 공통된 전제가 있다. **"무엇이 좋은 응답인가"를 판정할 기준이 이미 존재하거나, 최소한 사람이 미리 정해줄 수 있다**는 전제다.
 
 일반 도메인(general domain) — instruction-following, 상담, 코딩 리뷰, 창작 — 에는 이 전제가 무너진다. 논문은 이 문제를 다음과 같이 짚는다.
 
 > "특정 도메인의 고품질 reward는 대개 명확한 조건을 가진, 사람이 설계한 환경에서 얻거나(예: 게임의 승패 규칙), 검증 가능한 문제(예: 수학 문제)에 대해 손으로 짠 규칙에서 얻는다. 일반 도메인에서는 reward 생성이 훨씬 더 어렵다. 기준이 더 다양하고 복잡하며, 명시적인 참조 답이나 정답이 없는 경우가 많기 때문이다."
 
-이 문제에 [7편 ArmoRM](/blog/2026/armorm/)이 내놓은 답은 "기준을 고정하고 분해하자"였다. helpfulness, correctness, coherence, complexity, verbosity 등 19개의 고정된 축으로 응답을 채점한 뒤 MoE 게이팅으로 가중합을 냈다. 그런데 이 축들은 **모든 입력에 똑같이 적용된다.** "이별한 친구를 위로하는 메시지"와 "SQL 인젝션 취약점을 찾는 코드 리뷰"는 좋은 응답의 기준이 근본적으로 다른데, 같은 19개의 자로 잰다.
+이 문제에 [#7 ArmoRM](/blog/2026/armorm/)이 내놓은 답은 "기준을 고정하고 분해하자"였다. helpfulness, correctness, coherence, complexity, verbosity 등 19개의 고정된 축으로 응답을 채점한 뒤 MoE 게이팅으로 가중합을 냈다. 그런데 이 축들은 **모든 입력에 똑같이 적용된다.** "이별한 친구를 위로하는 메시지"와 "SQL 인젝션 취약점을 찾는 코드 리뷰"는 좋은 응답의 기준이 근본적으로 다른데, 같은 19개의 자로 잰다.
 
 DeepSeek-GRM(방법론 이름은 Self-Principled Critique Tuning, 이하 SPCT)의 답은 반대 방향이다. **기준(principle) 자체를 모델이 매 입력마다 스스로 새로 만들게 한다.** 그리고 이 논문이 시리즈에서 특별한 이유가 하나 더 있다. reward 모델을 크게 키우는 대신(training-time scaling), **같은 모델로 여러 번 채점하고 투표하는 쪽(inference-time scaling)이 더 이득**이라는 것을 정량적으로 보여준다. 27B급 DeepSeek-GRM이 32번 샘플링해서 투표하면 종합 벤치마크 점수 72.8점을 받아, GPT-4o(71.3)와 671B급 DeepSeek-V3를 그리디(greedy) 디코딩으로 돌린 결과에 필적하는 성능을 낸다.
 
@@ -58,9 +58,9 @@ reward 모델을 설계할 때는 실은 독립된 두 가지 선택지가 있�
 
 ## 누가 기준을 정하는가 — ArmoRM과의 대비
 
-pointwise GRM을 택했다는 것과, principle을 **누가 만드는가**는 별개의 질문이다. 논문은 여기서도 갈림길을 만든다. principle을 사람이 미리 정해줄 수도 있고, 모델이 매번 새로 생성할 수도 있다. [7편 ArmoRM](/blog/2026/armorm/)과 DeepSeek-GRM은 정확히 이 지점에서 갈라진다.
+pointwise GRM을 택했다는 것과, principle을 **누가 만드는가**는 별개의 질문이다. 논문은 여기서도 갈림길을 만든다. principle을 사람이 미리 정해줄 수도 있고, 모델이 매번 새로 생성할 수도 있다. [#7 ArmoRM](/blog/2026/armorm/)과 DeepSeek-GRM은 정확히 이 지점에서 갈라진다.
 
-| 구분           | ArmoRM ([7편](/blog/2026/armorm/))                                     | DeepSeek-GRM / SPCT                                      |
+| 구분           | ArmoRM ([#7](/blog/2026/armorm/))                                      | DeepSeek-GRM / SPCT                                      |
 | -------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
 | 평가 축의 출처 | 사람이 사전 정의 (helpfulness, correctness, coherence 등 19개 고정 축) | 모델이 입력마다 스스로 생성 (개수도 가변)                |
 | 축의 개수      | 모든 입력에 동일                                                       | 입력마다 다름 (실사용 예시에서 보통 2~4개)               |
@@ -68,7 +68,7 @@ pointwise GRM을 택했다는 것과, principle을 **누가 만드는가**는 �
 | 해석가능성     | 축별 점수는 보이지만, 게이팅 가중치 자체는 블랙박스                    | critique 텍스트가 왜 그 principle을 썼는지 자연어로 설명 |
 | 축을 늘리려면  | 사람이 새 축을 정의하고 재학습                                         | 이미 생성 과정의 일부라 별도 재설계 불필요               |
 
-**정답이 있는 도메인은 사람이 기준을 정해도 된다.** 수학 문제의 "정답과 일치하는가"([33편](/blog/2026/deepseek-r1/))처럼 기준 자체가 자명하기 때문이다. 하지만 일반 도메인처럼 기준 자체가 입력마다 달라지는 상황에서는, 고정된 19개 축(ArmoRM)이든 몇 개의 rubric 문항이든 사람이 미리 정한 기준은 항상 "이 입력엔 안 맞는 축이 섞여 있거나, 필요한 축이 빠져 있다"는 문제를 겪는다. SPCT는 이 문제를 아예 "기준을 정하는 일도 모델의 출력으로 만들어서" 피해간다. 이 선택이 [41편 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)가 다시 반대 방향(사람이 rubric을 준다)으로 돌아가는 이유이기도 하다 — principle을 모델이 만들면 유연하지만, 그 principle 자체가 틀렸을 때 검증할 방법이 없다는 대가가 따른다.
+**정답이 있는 도메인은 사람이 기준을 정해도 된다.** 수학 문제의 "정답과 일치하는가"([#33](/blog/2026/deepseek-r1/))처럼 기준 자체가 자명하기 때문이다. 하지만 일반 도메인처럼 기준 자체가 입력마다 달라지는 상황에서는, 고정된 19개 축(ArmoRM)이든 몇 개의 rubric 문항이든 사람이 미리 정한 기준은 항상 "이 입력엔 안 맞는 축이 섞여 있거나, 필요한 축이 빠져 있다"는 문제를 겪는다. SPCT는 이 문제를 아예 "기준을 정하는 일도 모델의 출력으로 만들어서" 피해간다. 이 선택이 [#41 Rubrics as Rewards](/blog/2026/rubrics-as-rewards/)가 다시 반대 방향(사람이 rubric을 준다)으로 돌아가는 이유이기도 하다 — principle을 모델이 만들면 유연하지만, 그 principle 자체가 틀렸을 때 검증할 방법이 없다는 대가가 따른다.
 
 # Method
 
@@ -95,7 +95,7 @@ SPCT는 이름 그대로 "원칙에 기반한 스스로의 critique"를 **튜닝
 
 **1단계 — Rejective Fine-Tuning (cold start).** 목표는 GRM이 정확한 형식으로 principle과 critique를 생성하고, 다양한 입력 형태($$n=1,2,\dots$$)를 다루도록 만드는 것이다. 여기서 "rejective"는 거부 샘플링을 뜻한다 — 예측 점수가 정답과 어긋나는 궤적, 그리고 모든 샘플이 이미 정답을 맞히는(너무 쉬운) 궤적을 학습 데이터에서 제거한다. 너무 쉬운 문제만 남으면 모델이 principle을 진지하게 만들 유인이 없어지기 때문이다. 어려운 케이스에는 정답 응답을 힌트로 살짝 흘려주는 hinted sampling도 함께 쓴다.
 
-**2단계 — Rule-Based Online RL.** [22편 GRPO](/blog/2026/grpo-deepseekmath/)와 같은 알고리즘을 그대로 가져온다. 다만 22편에서 GRPO는 수학 풀이 정책을 학습하는 데 쓰였다면, 여기서는 **reward를 매기는 모델 자신**을 학습하는 데 쓰인다. reward 함수는 규칙 기반이며 단순하다.
+**2단계 — Rule-Based Online RL.** [#22 GRPO](/blog/2026/grpo-deepseekmath/)와 같은 알고리즘을 그대로 가져온다. 다만 22편에서 GRPO는 수학 풀이 정책을 학습하는 데 쓰였다면, 여기서는 **reward를 매기는 모델 자신**을 학습하는 데 쓰인다. reward 함수는 규칙 기반이며 단순하다.
 
 $$
 r_i =
@@ -177,29 +177,29 @@ $$S_i^{\text{vote}} = \sum_{j \,\in\, \text{top-}k_{\text{meta}}(M_\theta)} S_i^
 
 ## 벤치마크
 
-| 벤치마크         | 초점                                                       | 비고                                                  |
-| ---------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
-| RewardBench (RB) | chat / chat-hard / safety / reasoning 4개 서브셋           | [9편](/blog/2026/rewardbench-2/)에서 다룬 그 벤치마크 |
-| PPE Preference   | Chatbot Arena에서 수집한 16K건의 실제 사람 선호 쌍         | Frick et al., 2024 (arXiv:2410.14872)                 |
-| PPE Correctness  | 정답이 검증 가능한 벤치마크(수학·코드 등)에서 만든 선호 쌍 | 같은 논문의 다른 split                                |
-| RMB              | 49개 실제 시나리오, pairwise + Best-of-N 평가              | Zhou et al., 2024 (arXiv:2410.09893)                  |
+| 벤치마크         | 초점                                                       | 비고                                                 |
+| ---------------- | ---------------------------------------------------------- | ---------------------------------------------------- |
+| RewardBench (RB) | chat / chat-hard / safety / reasoning 4개 서브셋           | [#9](/blog/2026/rewardbench-2/)에서 다룬 그 벤치마크 |
+| PPE Preference   | Chatbot Arena에서 수집한 16K건의 실제 사람 선호 쌍         | Frick et al., 2024 (arXiv:2410.14872)                |
+| PPE Correctness  | 정답이 검증 가능한 벤치마크(수학·코드 등)에서 만든 선호 쌍 | 같은 논문의 다른 split                               |
+| RMB              | 49개 실제 시나리오, pairwise + Best-of-N 평가              | Zhou et al., 2024 (arXiv:2410.09893)                 |
 
 네 벤치마크의 평균을 논문은 Overall로 보고한다. 성격이 서로 다른 벤치마크(사람 선호 vs 검증 가능한 정답 vs 실제 시나리오)를 섞은 것이 핵심이다 — 하나의 벤치마크에서만 잘하는 RM은 여기서 걸러진다.
 
 ## 메인 비교
 
-| 모델                                       |    RB    | PPE Pref. | PPE Corr. |   RMB    | Overall  | Avg. Rank |
-| ------------------------------------------ | :------: | :-------: | :-------: | :------: | :------: | :-------: |
-| ArmoRM-8B-v0.1 ([7편](/blog/2026/armorm/)) |   90.4   |   60.6    |   61.2    |   64.6   |   69.2   |     —     |
-| Nemotron-4-340B-Reward                     |   92.0   |   59.3    |   60.8    |   69.9   |   70.5   |     —     |
-| GPT-4o                                     |   86.7   |   67.1    |   57.6    |   73.8   |   71.3   |     —     |
-| LLM-as-a-Judge (재현)                      |   83.4   |   64.2    |   58.8    |   64.8   |   67.8   |   4.50    |
-| CLoud-Gemma-2-27B (재현)                   |   82.0   |   67.1    |   62.4    |   63.4   |   68.7   |   3.50    |
-| DeepSeek-PairRM-27B (재현)                 |   87.1   |   65.8    |   64.8    |   58.2   |   69.0   |   2.75    |
-| DeepSeek-GRM-27B (RFT만)                   |   84.5   |   64.1    |   59.6    |   67.0   |   68.8   |   4.00    |
-| **DeepSeek-GRM-27B (RFT+RL, greedy)**      | **86.0** | **64.7**  | **59.8**  | **69.0** | **69.9** | **2.75**  |
+| 모델                                      |    RB    | PPE Pref. | PPE Corr. |   RMB    | Overall  | Avg. Rank |
+| ----------------------------------------- | :------: | :-------: | :-------: | :------: | :------: | :-------: |
+| ArmoRM-8B-v0.1 ([#7](/blog/2026/armorm/)) |   90.4   |   60.6    |   61.2    |   64.6   |   69.2   |     —     |
+| Nemotron-4-340B-Reward                    |   92.0   |   59.3    |   60.8    |   69.9   |   70.5   |     —     |
+| GPT-4o                                    |   86.7   |   67.1    |   57.6    |   73.8   |   71.3   |     —     |
+| LLM-as-a-Judge (재현)                     |   83.4   |   64.2    |   58.8    |   64.8   |   67.8   |   4.50    |
+| CLoud-Gemma-2-27B (재현)                  |   82.0   |   67.1    |   62.4    |   63.4   |   68.7   |   3.50    |
+| DeepSeek-PairRM-27B (재현)                |   87.1   |   65.8    |   64.8    |   58.2   |   69.0   |   2.75    |
+| DeepSeek-GRM-27B (RFT만)                  |   84.5   |   64.1    |   59.6    |   67.0   |   68.8   |   4.00    |
+| **DeepSeek-GRM-27B (RFT+RL, greedy)**     | **86.0** | **64.7**  | **59.8**  | **69.0** | **69.9** | **2.75**  |
 
-고정 축을 쓰는 [ArmoRM-8B](/blog/2026/armorm/)이 RewardBench 한 곳(90.4)에서는 DeepSeek-GRM-27B(86.0)보다 높지만, PPE Correctness(61.2 vs 59.8 — 근소 우위)를 빼면 다른 벤치마크에서 밀리며 Overall은 69.2로 DeepSeek-GRM-27B의 69.9보다 낮다. 8B 파라미터의 스칼라 RM이 특정 벤치마크에서 강점을 보이는 것과, 27B GRM이 네 종류의 이질적인 벤치마크에서 고르게 상위권을 유지하는 것은 다른 이야기다. **Avg. Rank**(네 벤치마크 각각에서의 순위 평균, 낮을수록 좋음) 열이 이걸 정량화한다 — LLM-as-a-Judge(4.50)나 CLoud(3.50) 대비 DeepSeek-GRM-27B(2.75)가 가장 낮다. 논문은 이를 "SPCT가 scalar·semi-scalar RM 대비 유의미하게 편향이 적다"는 근거로 제시한다. [9편 RewardBench 2](/blog/2026/rewardbench-2/)가 던진 "RM을 어떻게 평가할 것인가"라는 질문에, 이 논문은 "한 벤치마크의 최고점이 아니라 여러 벤치마크의 고른 상위권"으로 답하는 셈이다.
+고정 축을 쓰는 [ArmoRM-8B](/blog/2026/armorm/)이 RewardBench 한 곳(90.4)에서는 DeepSeek-GRM-27B(86.0)보다 높지만, PPE Correctness(61.2 vs 59.8 — 근소 우위)를 빼면 다른 벤치마크에서 밀리며 Overall은 69.2로 DeepSeek-GRM-27B의 69.9보다 낮다. 8B 파라미터의 스칼라 RM이 특정 벤치마크에서 강점을 보이는 것과, 27B GRM이 네 종류의 이질적인 벤치마크에서 고르게 상위권을 유지하는 것은 다른 이야기다. **Avg. Rank**(네 벤치마크 각각에서의 순위 평균, 낮을수록 좋음) 열이 이걸 정량화한다 — LLM-as-a-Judge(4.50)나 CLoud(3.50) 대비 DeepSeek-GRM-27B(2.75)가 가장 낮다. 논문은 이를 "SPCT가 scalar·semi-scalar RM 대비 유의미하게 편향이 적다"는 근거로 제시한다. [#9 RewardBench 2](/blog/2026/rewardbench-2/)가 던진 "RM을 어떻게 평가할 것인가"라는 질문에, 이 논문은 "한 벤치마크의 최고점이 아니라 여러 벤치마크의 고른 상위권"으로 답하는 셈이다.
 
 ## Inference-time scaling 결과
 
@@ -239,13 +239,20 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
 3. **추론**: 단순 다수결이 아니라 meta RM이 저품질 샘플을 걸러낸 뒤 투표한다. 27B 모델의 Voting@32+MetaRM(Overall 72.8)이 GPT-4o(71.3)를 넘고, RewardBench 90.4점은 671B 모델을 training-time scaling으로 키운 것과 맞먹는다.
 4. **일관성**: 네 종류의 이질적인 벤치마크에서 Avg. Rank 2.75로 가장 고르게 상위권을 유지한다 — 특정 벤치마크에만 강한 편향이 상대적으로 적다.
 
-한계도 분명하다. 32개 샘플을 병렬로 뽑고 meta RM까지 추가로 돌리는 구조는 **추론 비용이 그리디 대비 수십 배**로 뛴다. RLHF 학습 루프 안에서 매 스텝 reward를 계산해야 하는 상황이라면 이 비용은 그대로 학습 시간에 얹힌다. 그리고 저자들 스스로도 인정하듯, principle과 critique가 "그럴듯하지만 실제로는 왜곡된" 방향으로 생성될 가능성(unfaithful principles and critiques)은 여전히 무시할 수 없다 — 모델이 스스로 기준을 만드는 유연성은, 그 기준 자체를 유리하게 왜곡해 hacking하는 새로운 경로를 열어놓는다는 뜻이기도 하다. 이 hacking 가능성은 [43편 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)에서 정면으로 다룬다.
+한계도 분명하다. 32개 샘플을 병렬로 뽑고 meta RM까지 추가로 돌리는 구조는 **추론 비용이 그리디 대비 수십 배**로 뛴다. RLHF 학습 루프 안에서 매 스텝 reward를 계산해야 하는 상황이라면 이 비용은 그대로 학습 시간에 얹힌다. 그리고 저자들 스스로도 인정하듯, principle과 critique가 "그럴듯하지만 실제로는 왜곡된" 방향으로 생성될 가능성(unfaithful principles and critiques)은 여전히 무시할 수 없다 — 모델이 스스로 기준을 만드는 유연성은, 그 기준 자체를 유리하게 왜곡해 hacking하는 새로운 경로를 열어놓는다는 뜻이기도 하다. 이 hacking 가능성은 [#43 One Token to Fool LLM-as-a-Judge](/blog/2026/one-token-to-fool-judge/)에서 정면으로 다룬다.
+
+# 참고 문헌
+
+- Liu et al., 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495). arXiv:2504.02495.
+- 논문 원문 HTML: [arxiv.org/html/2504.02495](https://arxiv.org/html/2504.02495)
+- Frick et al., 2024. [How to Evaluate Reward Models for RLHF](https://arxiv.org/abs/2410.14872) (PPE 벤치마크). arXiv:2410.14872.
+- Zhou et al., 2024. [RMB: Comprehensively Benchmarking Reward Models in LLM Alignment](https://arxiv.org/abs/2410.09893). arXiv:2410.09893.
 
 ---
 
-# RLHF Reward 설계 시리즈
+# RL Reward 설계 시리즈
 
-이 글은 RLHF Reward 설계 시리즈의 서른여덟 번째 글이다.
+이 글은 RL Reward 설계 시리즈의 서른여덟 번째 글이다.
 
 **1부. 지형도**
 
@@ -320,7 +327,7 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
   <li><strong>(현재 글)</strong> DeepSeek-GRM / SPCT (2025) — inference-time scaling</li>
 </ol>
 
-**8부. 생각하는 Judge, 그리고 그 신뢰**
+**8부. 생각하는 Judge**
 
 <ol start="39">
   <li><a href="/blog/2026/reasongrm/">ReasonGRM (2025)</a> — reasoning 능력을 judge에 이식</li>
@@ -330,19 +337,53 @@ Greedy에서 Voting@8로 가면 +0.7, Voting@32까지 가도 +1.1에 그친다. 
   <li><a href="/blog/2026/one-token-to-fool-judge/">One Token to Fool LLM-as-a-Judge (2025)</a> — GenRM도 뚫린다</li>
 </ol>
 
-**9부. 실전 종합**
+**9부. 에이전트는 무엇이 다른가**
 
 <ol start="44">
+  <li><a href="/blog/2026/agentic-rl-landscape/">에이전트 RL은 무엇이 다른가</a> — 장기 지평·희소 보상·긴 궤적</li>
+  <li><a href="/blog/2026/credit-assignment-survey/">공을 어디에 돌릴 것인가</a> — credit assignment 47개 방법의 지도</li>
+  <li><a href="/blog/2026/multi-turn-rl-practice/">멀티턴 RL 실무 가이드</a> — 무엇이 실제로 작동하는가</li>
+</ol>
+
+**10부. credit assignment — 공을 어디에 돌릴 것인가**
+
+<ol start="47">
+  <li><a href="/blog/2026/outcome-vs-process-agentic/">결과만으로는 부족하다</a> — 장기 지평에서 증폭되는 RLVR의 한계</li>
+  <li><a href="/blog/2026/turn-level-reward/">턴 단위로 공을 나눈다</a> — turn-level reward 설계</li>
+  <li><a href="/blog/2026/step-level-credit/">스텝을 단위로 삼는다</a> — 행동 단위 궤적 표현과 credit</li>
+  <li><a href="/blog/2026/token-segment-credit/">토큰과 세그먼트로 더 잘게</a> — 세밀한 입도의 득과 실</li>
+  <li><a href="/blog/2026/reward-shaping-agentic/">shaping은 약인가 독인가</a> — 중간 보상의 효율과 위험</li>
+</ol>
+
+**11부. 에이전트의 reward는 어디서 오나**
+
+<ol start="52">
+  <li><a href="/blog/2026/environment-as-reward/">환경이 곧 reward다</a> — 샌드박스·테스트·상태 검증</li>
+  <li><a href="/blog/2026/tool-call-reward/">도구 호출을 어떻게 채점하나</a> — ToolRL·ToolRM</li>
+  <li><a href="/blog/2026/agentic-judge-rubric/">궤적을 judge가 채점한다</a> — rubric 생성형 reward의 확장</li>
+</ol>
+
+**12부. 에이전트 도메인별 설계**
+
+<ol start="55">
+  <li><a href="/blog/2026/search-agent-rl/">검색 에이전트</a> — Search-R1에서 DeepDive까지</li>
+  <li><a href="/blog/2026/swe-agent-rl/">코드 에이전트</a> — SWE-RL과 테스트라는 reward</li>
+  <li><a href="/blog/2026/web-gui-agent-rl/">웹·GUI 에이전트</a> — end-to-end 멀티턴 RL</li>
+</ol>
+
+**13부. 에이전트의 실패와 방어**
+
+<ol start="58">
+  <li><a href="/blog/2026/agentic-reward-hacking/">에이전트의 reward hacking</a> — 판정기가 뚫린다, 그리고 조합의 실패</li>
+</ol>
+
+**14부. 실전 종합**
+
+<ol start="59">
   <li><a href="/blog/2026/frontier-reward-design/">프론티어의 helpfulness reward 설계</a> — 열한 개 모델이 능력 축에서 택한 것</li>
   <li><a href="/blog/2026/frontier-safety-design/">프론티어의 harmlessness reward 설계</a> — 안전 축과 over-refusal 트레이드오프</li>
+  <li><a href="/blog/2026/frontier-agentic-rl/">프론티어 모델은 실제로 어떻게 하나</a> — 최신 모델들의 agentic RL 설계</li>
   <li><a href="/blog/2026/reward-model-design/">reward를 어떻게 설계할 것인가</a> — 시리즈를 관통한 RM 설계 원칙 한 장</li>
 </ol>
 
-본 시리즈는 46편으로 구성된다.
-
-# 참고 문헌
-
-- Liu et al., 2025. [Inference-Time Scaling for Generalist Reward Modeling](https://arxiv.org/abs/2504.02495). arXiv:2504.02495.
-- 논문 원문 HTML: [arxiv.org/html/2504.02495](https://arxiv.org/html/2504.02495)
-- Frick et al., 2024. [How to Evaluate Reward Models for RLHF](https://arxiv.org/abs/2410.14872) (PPE 벤치마크). arXiv:2410.14872.
-- Zhou et al., 2024. [RMB: Comprehensively Benchmarking Reward Models in LLM Alignment](https://arxiv.org/abs/2410.09893). arXiv:2410.09893.
+본 시리즈는 62편으로 구성된다.
