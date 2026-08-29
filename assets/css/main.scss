@@ -49,3 +49,17 @@ mjx-container[jax="CHTML"] {
 mjx-container[jax="CHTML"][display="true"] {
   overflow: visible !important;
 }
+
+// 본문 마크다운 표를 화면 가운데 정렬
+// 테마는 td/th 의 padding·border 만 정의하고 margin 을 두지 않아 표가 왼쪽에 붙는다.
+#markdown-content table:not(.table) {
+  margin-left: auto;
+  margin-right: auto;
+
+  // 셀 padding 이 오른쪽에만 있어(0 1rem 0 0) 가운데 정렬 시 좌우가 어긋난다 — 대칭으로 맞춘다.
+  td,
+  th {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
