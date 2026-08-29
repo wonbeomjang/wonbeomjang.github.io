@@ -63,7 +63,11 @@ related_posts: true
 
 벤치마킹이라는 관행이 어디서 왔는지부터 봐야 한다. 초기에 벤치마크는 알고리즘 선택이 아니라 **컴퓨터 선택**에 쓰였다 — 어떤 기계를 살지 정하려고 여러 컴퓨터에서 프로그램을 돌리는 식이었다. 1962년 Auerbach Corporation의 Standard EDP Reports가 그 초기 사례다.
 
-오늘날 익숙한 형태로 굳어진 것은 1980년대 중반이다. IBM의 Fred Jelinek과 DARPA의 Charles Wayne이 음성 인식·기계 번역의 정량적 공통 평가를 위해 **Common Task Framework(CTF)**를 발전시켰다. 물리학자 Wendell Pierce가 AI 분야를 두고 "실제 성과가 아니라 (되다 만) 이론의 매력에 속고 있다"고 비판한 데 대한 대응이었다.
+오늘날 익숙한 형태로 굳어진 것은 1980년대 중반이다. IBM의 Fred Jelinek과 DARPA의 Charles Wayne이 음성 인식·기계 번역의 정량적 공통 평가를 위해 **Common Task Framework(CTF)**를 발전시켰다. Bell Labs의 **J. R. Pierce**가 기계번역 연구에 내린 판정에 대한 대응이었다.
+
+Pierce는 트랜지스터라는 단어를 만들고 최초의 통신위성 개발을 감독한 인물로, 1960년대에 미국의 기계번역 투자를 평가하는 일을 맡았다. 그가 겨눈 것은 Chomsky 언어이론에서 파생된 이론적 번역 접근법이었다 — 당시 많은 연구자가 그 이론의 카리스마에 경도돼 있었는데, Pierce가 보기에 그들은 **번역에서의 실제 성과가 아니라 (되다 만) 이론의 매력에 속고 있었다.**
+
+그는 이 분야가 **"glamor and deceit"(허울과 기만)**에 취약하다고 결론 내렸고, 그 판정으로 미국의 기계번역 연구는 수십 년간 사실상 멈췄다(1966년 ALPAC 보고서). 기계번역이 되살아난 것은 한참 뒤 **Pierce의 비난에 취약해지지 않는 방법을 찾고 나서**였다. 그 방법이 곧 CTF다 — 이론이 얼마나 우아한가로 겨루지 말고, 고정된 과제에서 실제로 몇 점이 나오는가로 겨루자는 것이다.
 
 CTF의 구성 요소는 딱 셋이다.
 
@@ -413,7 +417,7 @@ Raji et al.이 GLUE·ImageNet에 던진 질문은 셋이었다.
 
 ## MMLU — "매시브 멀티태스크"라는 이름이 정당화되는가
 
-MMLU(Hendrycks et al., 2021, ICLR 2021)는 "텍스트 모델의 멀티태스크 정확도를 측정하는 새로운 테스트"를 제안하며 초등 수학·미국사·컴퓨터과학·법학 등 **57개 과제**를 대상으로 한다고 밝힌다.
+MMLU(Hendrycks et al., 2021, ICLR 2021)는 "텍스트 모델의 멀티태스크 정확도를 측정하는 새로운 테스트"를 제안하며 초등 수학·미국사·컴퓨터과학·법학 등 **57개 과목**을 대상으로 한다고 밝힌다.
 
 그런데 논문 어디에서도 이 질문에 답하지 않는다 — **왜 정확히 이 57개 과목의 조합인가.**
 
@@ -433,11 +437,11 @@ MMLU가 "지식이 많다", "일반 지식과 추론에 뛰어나다"는 주장�
 
 BIG-bench(Srivastava et al., 2022\~2023)는 정반대 방향에서 같은 문제에 부딪힌다.
 
-|             | MMLU                  | BIG-bench                           |
-| ----------- | --------------------- | ----------------------------------- |
-| 누가 고르나 | 소수 저자             | **132개 기관, 400명 이상의 기여자** |
-| 규모        | 57개 과목             | **204개 태스크**                    |
-| 방식        | 접근 가능한 시험 자료 | 크라우드소싱 공모                   |
+|             | MMLU                  | BIG-bench                      |
+| ----------- | --------------------- | ------------------------------ |
+| 누가 고르나 | 소수 저자             | **132개 기관, 450명의 기여자** |
+| 규모        | 57개 과목             | **204개 태스크**               |
+| 방식        | 접근 가능한 시험 자료 | 크라우드소싱 공모              |
 
 과제 다양성의 극단적 형태다. 언어유희부터 사회적 편향, 물리적 추론, 코드 생성까지 상상할 수 있는 거의 모든 과제가 포함된다.
 
@@ -451,7 +455,7 @@ BIG-bench(Srivastava et al., 2022\~2023)는 정반대 방향에서 같은 문제
 | ---- | -------------------------- | ------------------------------------------------- |
 | 정체 | 당장 손에 있던 것들의 집합 | 당장 기여하고 싶어 한 사람들이 제출한 것들의 집합 |
 
-규모(204개, 400명 이상, 132개 기관)라는 숫자는 인상적이다. 그러나 Raji et al.의 논지에 따르면 그 규모가 "일반 능력을 잰다"는 주장을 자동으로 정당화하지 않는다 — **ImageNet의 카테고리 수가 20배 많다고 "일반 시각 지능"을 잰다는 주장이 성립하지 않았던 것과 같은 이유다.**
+규모(204개 태스크, 450명, 132개 기관)라는 숫자는 인상적이다. 그러나 Raji et al.의 논지에 따르면 그 규모가 "일반 능력을 잰다"는 주장을 자동으로 정당화하지 않는다 — **ImageNet의 카테고리 수가 20배 많다고 "일반 시각 지능"을 잰다는 주장이 성립하지 않았던 것과 같은 이유다.**
 
 실제로 이후 BIG-bench Hard처럼 태스크 하위 집합에 대한 후속 분석이 필요했다는 사실 자체가, 204개라는 원래 집합의 이질성과 대표성 불확실성을 방증한다. 이 벤치마크가 어떻게 재구성됐는지는 [#10](/blog/2026/knowledge-benchmarks/)에서 이어 다룬다.
 
@@ -547,7 +551,7 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 - Shankar, Halpern, Breck, Atwood, Wilson, Sculley, 2017. [No Classification without Representation: Assessing Geodiversity Issues in Open Data Sets for the Developing World](https://arxiv.org/abs/1711.08536).
 - de Vries, Misra, Wang, van der Maaten, 2019. [Does Object Recognition Work for Everyone?](https://arxiv.org/abs/1906.02659) (CVPR Workshops 2019).
 - Bowman, S. R. & Dahl, G., 2021. [What Will it Take to Fix Benchmarking in Natural Language Understanding?](https://aclanthology.org/2021.naacl-main.385/) (NAACL 2021).
-- Donoho, D., 2017. [50 Years of Data Science](https://doi.org/10.1080/10618600.2017.1384734). _Journal of Computational and Graphical Statistics_, 26(4), 745-766.
+- Donoho, D., 2017. [50 Years of Data Science](https://doi.org/10.1080/10618600.2017.1384734). _Journal of Computational and Graphical Statistics_, 26(4), 745-766. — CTF의 기원과 J. R. Pierce의 기계번역 비판이 서술된 1차 출처(p.17). Raji et al.은 이 대목을 인용하며 Pierce의 이름을 "Wendell Pierce"로 적었으나, Donoho 원문은 **J. R. Pierce**(Bell Labs, 트랜지스터 명명·최초 통신위성 개발 감독)다. 이 글은 1차 출처를 따랐다.
 - Hendrycks, D., Burns, C., Basart, S., Zou, A., Mazeika, M., Song, D., Steinhardt, J., 2021. [Measuring Massive Multitask Language Understanding](https://arxiv.org/abs/2009.03300) (ICLR 2021).
 - Srivastava et al., 2022/2023. [Beyond the Imitation Game: Quantifying and Extrapolating the Capabilities of Language Models](https://arxiv.org/abs/2206.04615) (TMLR 2023).
 - Simonite, T., 2015. [Why and How Baidu Cheated an Artificial Intelligence Test](https://www.technologyreview.com/2015/06/04/72951/why-and-how-baidu-cheated-an-artificial-intelligence-test/). _MIT Technology Review_.
