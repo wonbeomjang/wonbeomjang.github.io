@@ -15,6 +15,9 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
+<!-- al-folio v1 유틸리티 클래스 (gem 템플릿이 사용). preflight 없는 유틸리티 전용 빌드라 부트스트랩과 충돌하지 않는다 -->
+<link rel="stylesheet" href="{{ '/assets/css/tailwind.css' | relative_url | bust_file_cache }}">
+
 <!-- Bootstrap & MDB -->
 <link rel="stylesheet" href="{{ '/assets/css/bootstrap.min.css' | relative_url | bust_file_cache }}">
 <link
