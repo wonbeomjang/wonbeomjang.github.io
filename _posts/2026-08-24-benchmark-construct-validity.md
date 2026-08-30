@@ -152,12 +152,12 @@ $$
 
 구성타당도를 다룬 논문은 이 한 편이 아니다. 다만 나머지 네 편은 각자 한 편을 채울 만큼 내용이 많아 독립 포스트로 뒀다. 여기서는 **445편 리뷰와 어떻게 맞물리는지**만 짚고 본문은 각 편으로 넘긴다.
 
-| 논문                                                                             | 이 글과의 관계                                                                                              | 본문                                        |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **Raji et al. (2021)** — AI and the Everything in the Whole Wide World Benchmark | 445편이 실증한 문제를 **개념적으로 먼저 진단**했다. "범용 능력을 잰다"는 주장 자체가 검증 불가능하다는 논증 | [#2](/blog/2026/everything-benchmark/)      |
-| **Bowman & Dahl (2021)** — What Will it Take to Fix Benchmarking in NLU          | 같은 문제를 **네 가지 점검 기준**으로 조작화했다. 이 글의 네 질문표가 사실 이 논문의 후손이다               | [#3](/blog/2026/fixing-nlu-benchmarking/)   |
-| **Pacchiardi et al. (2024)** — Clever Hans                                       | 이 글이 "무관 분산이 있다"고 말한 것을, 벤치 19개 × LLM 44개로 **직접 측정**해 보인다                       | [#5](/blog/2026/clever-hans-benchmarks/)    |
-| **Liang et al. (2022)** — HELM                                                   | 진단이 아니라 **처방** 쪽이다. 단일 점수를 버리고 시나리오 × 지표 행렬로 가는 설계                          | [#15](/blog/2026/helm-holistic-evaluation/) |
+| 논문                                                                                                                     | 이 글과의 관계                                                                                              | 본문                                        |
+| ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **[Raji et al. (2021)](https://arxiv.org/abs/2111.15366)** — AI and the Everything in the Whole Wide World Benchmark     | 445편이 실증한 문제를 **개념적으로 먼저 진단**했다. "범용 능력을 잰다"는 주장 자체가 검증 불가능하다는 논증 | [#2](/blog/2026/everything-benchmark/)      |
+| **[Bowman & Dahl (2021)](https://aclanthology.org/2021.naacl-main.385/)** — What Will it Take to Fix Benchmarking in NLU | 같은 문제를 **네 가지 점검 기준**으로 조작화했다. 이 글의 네 질문표가 사실 이 논문의 후손이다               | [#3](/blog/2026/fixing-nlu-benchmarking/)   |
+| **[Pacchiardi et al. (2024)](https://arxiv.org/abs/2410.11672)** — Clever Hans                                           | 이 글이 "무관 분산이 있다"고 말한 것을, 벤치 19개 × LLM 44개로 **직접 측정**해 보인다                       | [#5](/blog/2026/clever-hans-benchmarks/)    |
+| **[Liang et al. (2022)](https://arxiv.org/abs/2211.09110)** — HELM                                                       | 진단이 아니라 **처방** 쪽이다. 단일 점수를 버리고 시나리오 × 지표 행렬로 가는 설계                          | [#15](/blog/2026/helm-holistic-evaluation/) |
 
 네 편을 이렇게 배치한 이유가 있다. **Raji와 Bowman & Dahl은 2021년의 진단이고, Bean et al.은 2025년의 성적표다.** 두 논문이 "이런 기준을 지켜야 한다"고 말한 지 4년 뒤, 445편 중 통계 검정을 수행한 것이 16.0%였다. 진단이 처방으로 이어지지 않은 4년의 기록인 셈이다.
 
@@ -165,7 +165,7 @@ $$
 
 ## (짧게) It Takes Two to Tango (Subramonian et al., Findings of ACL 2023)
 
-마지막으로 짧게 하나 더. Arjun Subramonian, Xingdi Yuan, Hal Daumé III, Su Lin Blodgett의 이 논문(arXiv 2305.09022)은 구성타당도 실패를 **두 층위**로 더 정밀하게 쪼갠다.
+마지막으로 짧게 하나 더. Arjun Subramonian, Xingdi Yuan, Hal Daumé III, Su Lin Blodgett의 이 논문([arXiv 2305.09022](https://arxiv.org/abs/2305.09022))은 구성타당도 실패를 **두 층위**로 더 정밀하게 쪼갠다.
 
 1. **과제 개념화(task conceptualization)의 불일치** — 같은 이름의 과제("coreference resolution", "질의응답")를 연구자마다 다르게 정의한다.
 2. **성능 측정의 조작화(operationalization) 불일치** — 같은 개념화 안에서도 그것을 어떤 지표·데이터셋으로 잴지가 갈린다.
@@ -176,18 +176,18 @@ $$
 
 지금까지 다룬 다섯(+1) 편이 공통으로 가리키는 결론은 하나다 — **벤치마크 실패는 몇 개의 개별 버그가 아니라, [#1](/blog/2026/what-is-evaluation/)의 두 축(구성개념 부족 / 구성개념 무관 분산)으로 정리되는 반복 패턴이다.** 이 시리즈 후반부에서 각각 더 깊이 다룰 알려진 벤치마크 문제들을 이 두 축으로 분류하면 다음과 같다.
 
-| 알려진 문제                                                   | 구성개념 부족 | 구성개념 무관 분산 | 이 시리즈에서                                                                                                       | 근거                                               |
-| ------------------------------------------------------------- | :-----------: | :----------------: | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| "범용 능력"이라는 과잉 주장 (GLUE, ImageNet)                  |       ✓       |                    | [#1](/blog/2026/what-is-evaluation/), [#10](/blog/2026/knowledge-benchmarks/), [#12](/blog/2026/mt-bench-to-arena/) | Raji et al. (2021)                                 |
-| 정의되지 않았거나 논쟁적인 구성개념(47.8%)                    |       ✓       |                    | 본 글                                                                                                               | Bean et al. (2025)                                 |
-| 편의표집으로 개념 공간을 대표 못 함(39.3%)                    |       ✓       |                    | 본 글                                                                                                               | Bean et al. (2025)                                 |
-| MMLU 정답 오류·모호 문항(전체 약 6.49%, 일부 과목은 최대 57%) |               |         ✓          | [#10](/blog/2026/knowledge-benchmarks/)                                                                             | Gema et al., MMLU-Redux (2024)                     |
-| 선택지 위치·순서 편향                                         |               |         ✓          | [#9](/blog/2026/mcqa-fragility/)                                                                                    | Zheng et al. (2024), Pezeshkpour & Hruschka (2023) |
-| 프롬프트 포맷 민감도(같은 과제, 포맷만 바꿔 최대 76점p 차이)  |               |         ✓          | [#9](/blog/2026/mcqa-fragility/)                                                                                    | Sclar et al., FormatSpread (2024)                  |
-| 표층 n-gram 단서로 정답 예측(19개 중 9개, κ > 0.2)            |               |         ✓          | 본 글                                                                                                               | Pacchiardi et al. (2024)                           |
-| 훈련 데이터 오염                                              |               |         ✓          | [#24](/blog/2026/contamination-reproducibility/)                                                                    | Oren et al. (2023) 등                              |
-| 소규모 문항 수로 인한 넓은 신뢰구간(MT-Bench 80문항)          |       ✓       |                    | [#12](/blog/2026/mt-bench-to-arena/), [#21](/blog/2026/statistical-power/)                                          | Zheng et al., MT-Bench (2023)                      |
-| judge의 verbosity·self-enhancement 편향                       |               |         ✓          | [#23](/blog/2026/judge-statistics/)                                                                                 | Zheng et al., MT-Bench (2023)                      |
+| 알려진 문제                                                   | 구성개념 부족 | 구성개념 무관 분산 | 이 시리즈에서                                                                                                       | 근거                                                                                                                       |
+| ------------------------------------------------------------- | :-----------: | :----------------: | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| "범용 능력"이라는 과잉 주장 (GLUE, ImageNet)                  |       ✓       |                    | [#1](/blog/2026/what-is-evaluation/), [#10](/blog/2026/knowledge-benchmarks/), [#12](/blog/2026/mt-bench-to-arena/) | Raji et al. (2021)                                                                                                         |
+| 정의되지 않았거나 논쟁적인 구성개념(47.8%)                    |       ✓       |                    | 본 글                                                                                                               | Bean et al. (2025)                                                                                                         |
+| 편의표집으로 개념 공간을 대표 못 함(39.3%)                    |       ✓       |                    | 본 글                                                                                                               | Bean et al. (2025)                                                                                                         |
+| MMLU 정답 오류·모호 문항(전체 약 6.49%, 일부 과목은 최대 57%) |               |         ✓          | [#10](/blog/2026/knowledge-benchmarks/)                                                                             | [Gema et al., MMLU-Redux (2024)](https://arxiv.org/abs/2406.04127)                                                         |
+| 선택지 위치·순서 편향                                         |               |         ✓          | [#9](/blog/2026/mcqa-fragility/)                                                                                    | [Zheng et al. (2024)](https://arxiv.org/abs/2309.03882), [Pezeshkpour & Hruschka (2023)](https://arxiv.org/abs/2308.11483) |
+| 프롬프트 포맷 민감도(같은 과제, 포맷만 바꿔 최대 76점p 차이)  |               |         ✓          | [#9](/blog/2026/mcqa-fragility/)                                                                                    | [Sclar et al., FormatSpread (2024)](https://arxiv.org/abs/2310.11324)                                                      |
+| 표층 n-gram 단서로 정답 예측(19개 중 9개, κ > 0.2)            |               |         ✓          | 본 글                                                                                                               | Pacchiardi et al. (2024)                                                                                                   |
+| 훈련 데이터 오염                                              |               |         ✓          | [#24](/blog/2026/contamination-reproducibility/)                                                                    | [Oren et al. (2023)](https://arxiv.org/abs/2310.17623) 등                                                                  |
+| 소규모 문항 수로 인한 넓은 신뢰구간(MT-Bench 80문항)          |       ✓       |                    | [#12](/blog/2026/mt-bench-to-arena/), [#21](/blog/2026/statistical-power/)                                          | [Zheng et al., MT-Bench (2023)](https://arxiv.org/abs/2306.05685)                                                          |
+| judge의 verbosity·self-enhancement 편향                       |               |         ✓          | [#23](/blog/2026/judge-statistics/)                                                                                 | Zheng et al., MT-Bench (2023)                                                                                              |
 
 표를 읽는 법을 짚어두자. **왼쪽 열(구성개념 부족)**에 속하는 문제들은 대체로 "설계 단계"의 실패다 — 애초에 무엇을 잴지 불명확했거나, 잴 대상을 좁게 표집했다. Bean et al.의 권고 1\~4번(정의·측정 범위·표집·재사용 인정)이 이 열을 겨냥한다. **오른쪽 열(구성개념 무관 분산)**에 속하는 문제들은 "실행·채점 단계"의 실패다 — 개념 정의는 멀쩡해도 채점 과정에서 잡음이 섞여 든다. Bean et al.의 권고 2, 5\~7번(무관 요인 통제·오염 대비·통계 검정·오류 분석)이 여기 대응한다.
 
