@@ -332,7 +332,7 @@ Background에서 본 판정 수 성장 속도의 차이를 실제 비용으로 �
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
 <ol start="5">
-  <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
+  <li><a href="/blog/2026/measurement-scales/">1~5점 평가는 평균내도 되는가</a> — 척도와 허용 연산</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
   <li><a href="/blog/2026/mcqa-fragility/">객관식 평가는 왜 흔들리나</a> — 위치 편향과 포맷 민감도</li>
