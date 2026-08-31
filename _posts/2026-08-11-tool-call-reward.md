@@ -70,7 +70,7 @@ $$r_{\text{param}} = \sum_{G_j \in G} \frac{|\text{keys}(P_G) \cap \text{keys}(P
 
 $$r_{\text{value}} = \sum_{G_j \in G} \sum_{k \in \text{keys}(G_j)} \mathbb{1}[P_G[k] = P_P[k]] \in \left[0, \sum_{G_j \in G} |\text{keys}(G_j)|\right]$$
 
-세 항을 더한 매치 점수 $$r_{\text{match}} = r_{\text{name}} + r_{\text{param}} + r_{\text{value}}$$를 예측-정답 사이 최적 매칭에 대해 최대화한 값이 $$R_{\max}$$이고, 이론적 최댓값은 $$S_{\max} = 1 + |G| + \sum_{G_j \in G} |\text{keys}(G_j)|$$다. 최종 정확성 reward는 이를 $$[-3, 3]$$으로 정규화한다.
+세 항을 더한 매치 점수 $$r_{\text{match}} = r_{\text{name}} + r_{\text{param}} + r_{\text{value}}$$를 예측-정답 사이 최적 매칭에 대해 최대화한 값이 $$R_{\max}$$이고, 이론적 최댓값은 $$S_{\max} = 1 + \lvert G \rvert + \sum_{G_j \in G} \lvert \text{keys}(G_j) \rvert$$다. 최종 정확성 reward는 이를 $$[-3, 3]$$으로 정규화한다.
 
 $$\mathcal{R}_{\text{correct}} = 6 \cdot \frac{R_{\max}}{S_{\max}} - 3 \in [-3, 3]$$
 

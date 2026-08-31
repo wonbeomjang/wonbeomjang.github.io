@@ -77,7 +77,7 @@ $$\mathcal{L}_{\text{M-GRPO}}(\theta) = -\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|\tau
 
 기호를 풀면,
 
-- $$\tau_i = \{a_{i,1}, \ldots, a_{i,|\tau_i|}\}$$: $$i$$번째 궤적을 구성하는 행동(턴)들의 시퀀스.
+- $$\tau_i = \{a_{i,1}, \ldots, a_{i,\lvert \tau_i \rvert}\}$$: $$i$$번째 궤적을 구성하는 행동(턴)들의 시퀀스.
 - $$\tilde{A}_{i,j,t} = \min\{r_{i,j,t}(\theta) A_{i,j},\ \text{clip}(r_{i,j,t}(\theta), 1-\epsilon, 1+\epsilon) A_{i,j}\}$$: PPO식 클리핑이 적용된 토큰 단위 advantage.
 - $$r_{i,j,t}(\theta) = \pi_\theta(a_{i,j,t} \mid q, a_{i,j,<t}) / \pi_{\text{old}}(a_{i,j,t} \mid q, a_{i,j,<t})$$: 중요도 샘플링 비율.
 - $$A_{i,j} = (r_i - \text{mean}(\boldsymbol{r})) / \text{std}(\boldsymbol{r})$$: 그룹 상대 advantage. $$\boldsymbol{r} = \{r_1, \ldots, r_G\}$$는 규칙 기반 보상 함수가 매긴 그룹 내 보상들이다.

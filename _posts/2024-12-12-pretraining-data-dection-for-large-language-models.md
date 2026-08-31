@@ -99,7 +99,7 @@ $$
 p(x_i; \mathcal{D}') = \frac{\text{count}(x_i) + 1}{N' + |V|}
 $$
 
-여기서 $$|V|$$는 vocabulary 크기이다.
+여기서 $$\lvert V \rvert$$는 vocabulary 크기이다.
 
 ### Step 3: Score Calculation via Cross-Entropy
 
