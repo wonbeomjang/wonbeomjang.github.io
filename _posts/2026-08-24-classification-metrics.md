@@ -2,7 +2,7 @@
 layout: post
 title: "분류 지표 — accuracy의 함정부터 PR-AUC까지"
 date: 2026-08-24 09:07:00 +0900
-description: "LLM 평가 체계 시리즈 #7 — accuracy의 함정, macro/micro F1, ROC-AUC와 PR-AUC의 결정적 차이, 그리고 안전 분류기의 운영점 지표"
+description: "LLM 평가 체계 시리즈 #6 — accuracy의 함정, macro/micro F1, ROC-AUC와 PR-AUC의 결정적 차이, 그리고 안전 분류기의 운영점 지표"
 categories: [paper]
 tags: [evaluation, classification, roc-auc, pr-auc, imbalance, paper]
 giscus_comments: true
@@ -21,9 +21,9 @@ LLM 평가라고 하면 보통 객관식 정답률이나 사람 선호도 같은
 2. **F1과 macro/micro 평균은 서로 다른 질문에 답한다.** F1은 TN을 아예 무시하고, micro는 표본 수로 가중해 다수 클래스에 지배되고, macro는 클래스 크기와 무관하게 동등 가중한다. 안전 taxonomy처럼 범주별 빈도가 크게 갈릴 때 이 셋은 정반대 결론을 낼 수 있다.
 3. **ROC-AUC는 불균형 앞에서 낙관적인 착시를 만든다.** FPR의 분모가 실제 음성 수라서, 음성이 압도적으로 많으면 FP가 꽤 늘어도 FPR은 거의 움직이지 않는다. PR-AUC는 분모가 예측 양성 수라 FP에 훨씬 민감하다.
 4. **AUC 계열 지표는 임계값 전체를 요약한 값이라, 실제 배포 임계값 하나에서의 성능을 알려주지 않는다.** 운영점 지표(recall@FPR, precision@k, partial AUC)를 따로 봐야 한다.
-5. **이 모든 지표는 순위(ranking)만 본다.** "유해할 확률 0.7"이 실제로 70%인지는 별개의 질문이다 — 이건 calibration이고, [#25](/blog/2026/safety-evaluation-statistics/)에서 다룬다.
+5. **이 모든 지표는 순위(ranking)만 본다.** "유해할 확률 0.7"이 실제로 70%인지는 별개의 질문이다 — 이건 calibration이고, [#24](/blog/2026/safety-evaluation-statistics/)에서 다룬다.
 
-이 다섯 개를 순서대로 뜯는다. [#6 척도와 허용 연산](/blog/2026/measurement-scales/)이 "평균을 내도 되는가"를 물었다면, 이번 글은 "이 숫자가 애초에 무엇을 재고 있는가"를 묻는다.
+이 다섯 개를 순서대로 뜯는다. [#5 척도와 허용 연산](/blog/2026/measurement-scales/)이 "평균을 내도 되는가"를 물었다면, 이번 글은 "이 숫자가 애초에 무엇을 재고 있는가"를 묻는다.
 
 # Background
 
@@ -124,7 +124,7 @@ $$
 - macro는 클래스별 F1을 먼저 계산한 뒤 **표본 수와 무관하게** 단순 평균한다. 클래스 하나가 10,000건이든 200건이든 macro 평균에서 가중치는 똑같이 $$1/K$$다.
 - weighted는 macro처럼 클래스별로 먼저 계산하지만 $$n_i/N$$으로 가중한다 — 다수 클래스 쪽으로 다시 끌려간다는 점에서 micro와 성격이 비슷하다.
 
-**왜 이게 중요한가.** micro-F1(=accuracy)은 "전체 트래픽에서 내가 맞힌 비율"을 답한다. 다수 클래스가 압도적이면 그 클래스만 잘 맞혀도 micro-F1은 높다. macro-F1은 "각 범주를 똑같이 중요하게 쳤을 때 성능"을 답한다. 안전 taxonomy에서 희귀하지만 심각한 범주(예: 무기 제조, 아동 안전 위반)의 실패가 흔한 범주(예: 욕설)의 성공에 묻히면 안 되기 때문에, **범주별 빈도가 크게 갈리는 안전 평가에서는 macro 또는 클래스별 리포트를 반드시 함께 봐야 한다.** 다만 macro는 표본이 적은 클래스에서 F1 자체가 불안정해질 수 있다는 대가가 있다 — 이 표본 크기 문제는 [#19 신뢰구간](/blog/2026/confidence-intervals/)에서 다시 다룬다.
+**왜 이게 중요한가.** micro-F1(=accuracy)은 "전체 트래픽에서 내가 맞힌 비율"을 답한다. 다수 클래스가 압도적이면 그 클래스만 잘 맞혀도 micro-F1은 높다. macro-F1은 "각 범주를 똑같이 중요하게 쳤을 때 성능"을 답한다. 안전 taxonomy에서 희귀하지만 심각한 범주(예: 무기 제조, 아동 안전 위반)의 실패가 흔한 범주(예: 욕설)의 성공에 묻히면 안 되기 때문에, **범주별 빈도가 크게 갈리는 안전 평가에서는 macro 또는 클래스별 리포트를 반드시 함께 봐야 한다.** 다만 macro는 표본이 적은 클래스에서 F1 자체가 불안정해질 수 있다는 대가가 있다 — 이 표본 크기 문제는 [#18 신뢰구간](/blog/2026/confidence-intervals/)에서 다시 다룬다.
 
 ## ROC-AUC vs PR-AUC — 이 글의 핵심
 
@@ -219,7 +219,7 @@ accuracy는 0.98로 거의 완벽해 보이지만, 이 중 상당 부분은 다�
 
 여기까지 다룬 모든 지표 — precision, recall, F1, ROC-AUC, PR-AUC, MCC — 는 공통점이 하나 있다. **전부 순위(ranking)만 본다.** 분류기가 유해한 응답에 안전한 응답보다 높은 점수를 매기기만 하면, 그 점수의 절대적인 크기가 무엇을 뜻하는지는 이 지표들의 관심사가 아니다.
 
-그런데 실무에서는 "이 응답이 유해할 확률이 0.7이다"라는 숫자 자체를 쓴다. 리뷰 우선순위를 매기거나, 여러 분류기의 점수를 합치거나, 사람에게 "이 정도 확신도"라고 보여줄 때다. 이때 필요한 질문은 "0.7이라고 말한 것들이 실제로 70% 확률로 유해한가"이고, 이건 이 글에서 다룬 어떤 지표로도 답할 수 없다. 순위가 완벽해도(AUC=1) 확률값 자체는 완전히 틀릴 수 있다 — 예컨대 모든 유해 응답에 0.51, 모든 안전 응답에 0.49를 매겨도 AUC는 1이지만 "0.51"이라는 숫자는 확률로서 무의미하다. 이 **calibration** 문제, 그리고 그걸 재는 ECE(Expected Calibration Error) 같은 지표는 [#25 안전 평가의 통계](/blog/2026/safety-evaluation-statistics/)에서 다룬다.
+그런데 실무에서는 "이 응답이 유해할 확률이 0.7이다"라는 숫자 자체를 쓴다. 리뷰 우선순위를 매기거나, 여러 분류기의 점수를 합치거나, 사람에게 "이 정도 확신도"라고 보여줄 때다. 이때 필요한 질문은 "0.7이라고 말한 것들이 실제로 70% 확률로 유해한가"이고, 이건 이 글에서 다룬 어떤 지표로도 답할 수 없다. 순위가 완벽해도(AUC=1) 확률값 자체는 완전히 틀릴 수 있다 — 예컨대 모든 유해 응답에 0.51, 모든 안전 응답에 0.49를 매겨도 AUC는 1이지만 "0.51"이라는 숫자는 확률로서 무의미하다. 이 **calibration** 문제, 그리고 그걸 재는 ECE(Expected Calibration Error) 같은 지표는 [#24 안전 평가의 통계](/blog/2026/safety-evaluation-statistics/)에서 다룬다.
 
 ## 지표 선택 가이드
 
@@ -231,7 +231,7 @@ accuracy는 0.98로 거의 완벽해 보이지만, 이 중 상당 부분은 다�
 | 여러 분류기·여러 임계값을 비교할 때                 | 불균형이면 PR-AUC, 균형이면 ROC-AUC                                  | 균형 여부 확인 없이 AUC만 비교 |
 | 특정 운영 임계값에서 배포를 결정할 때               | recall@FPR, precision@k, partial AUC                                 | 전체 AUC만 보고 결정           |
 | 범주가 여러 개고 빈도가 크게 다를 때(안전 taxonomy) | Macro-F1 또는 클래스별 리포트                                        | Micro-F1(=accuracy) 단독       |
-| 확률값 자체를 다른 시스템·사람에게 넘길 때          | Calibration(ECE 등, [#25](/blog/2026/safety-evaluation-statistics/)) | 순위 지표만으로 확률을 신뢰    |
+| 확률값 자체를 다른 시스템·사람에게 넘길 때          | Calibration(ECE 등, [#24](/blog/2026/safety-evaluation-statistics/)) | 순위 지표만으로 확률을 신뢰    |
 
 # Experiments
 
@@ -349,9 +349,9 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 3. 다중 클래스라면 micro/weighted와 macro를 **함께** 보고, 왜 다른지 설명한다.
 4. ROC-AUC와 PR-AUC를 나란히 본다. 둘의 차이가 클수록 불균형이 심하다는 신호다.
 5. AUC가 아니라 배포 임계값에서의 precision·recall(또는 recall@FPR)을 직접 계산한다.
-6. 확률값 자체를 쓴다면 calibration을 별도로 확인한다 — [#25](/blog/2026/safety-evaluation-statistics/).
+6. 확률값 자체를 쓴다면 calibration을 별도로 확인한다 — [#24](/blog/2026/safety-evaluation-statistics/).
 
-한계도 분명하다. 이 글에서 다룬 모든 지표는 **정답 라벨이 옳다는 전제** 위에 서 있다. 라벨러 간 일치가 낮은 안전 데이터에서는 지표 자체보다 라벨의 신뢰도가 먼저 무너질 수 있고, 이 문제는 [#17 κ 계열](/blog/2026/kappa-agreement/), [#18 κ의 역설](/blog/2026/kappa-paradox/)에서 다룬다. 또한 여기서 계산한 모든 숫자는 유한한 평가셋에서 나온 **추정치**다 — "PR-AUC 0.31"이 표본이 달라져도 재현될지는 [#19 신뢰구간](/blog/2026/confidence-intervals/)의 질문이다. 분류 지표를 넘어, 다음 편 [#8 생성 지표](/blog/2026/generation-metrics/)에서는 정답이 하나로 정해지지 않는 생성 평가로 넘어간다.
+한계도 분명하다. 이 글에서 다룬 모든 지표는 **정답 라벨이 옳다는 전제** 위에 서 있다. 라벨러 간 일치가 낮은 안전 데이터에서는 지표 자체보다 라벨의 신뢰도가 먼저 무너질 수 있고, 이 문제는 [#16 κ 계열](/blog/2026/kappa-agreement/), [#17 κ의 역설](/blog/2026/kappa-paradox/)에서 다룬다. 또한 여기서 계산한 모든 숫자는 유한한 평가셋에서 나온 **추정치**다 — "PR-AUC 0.31"이 표본이 달라져도 재현될지는 [#18 신뢰구간](/blog/2026/confidence-intervals/)의 질문이다. 분류 지표를 넘어, 다음 편 [#7 생성 지표](/blog/2026/generation-metrics/)에서는 정답이 하나로 정해지지 않는 생성 평가로 넘어간다.
 
 # 참고 문헌
 
@@ -364,23 +364,24 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 일곱 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 여섯 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
   <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
-  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="6">
+<ol start="5">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><strong>(현재 글)</strong> 분류 지표 — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -389,7 +390,7 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="10">
+<ol start="9">
   <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
@@ -400,7 +401,7 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="16">
+<ol start="15">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -408,7 +409,7 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="19">
+<ol start="18">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -417,10 +418,10 @@ micro-F1과 weighted-F1은 94% 안팎으로 "잘한다"고 말한다. 둘 다 �
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="23">
+<ol start="22">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 25편으로 구성된다.
+본 시리즈는 24편으로 구성된다.

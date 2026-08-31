@@ -2,7 +2,7 @@
 layout: post
 title: "벤치마크는 무엇을 재고 있나 — 구성타당도의 실패"
 date: 2026-08-24 09:04:00 +0900
-description: "LLM 평가 체계 시리즈 #4 — 최상위 학회 벤치마크 445편 리뷰가 드러낸 구성타당도의 실패 패턴"
+description: "LLM 평가 체계 시리즈 #3 — 최상위 학회 벤치마크 445편 리뷰가 드러낸 구성타당도의 실패 패턴"
 categories: [paper]
 tags: [evaluation, benchmark, construct-validity, llm, nlp, paper]
 giscus_comments: true
@@ -40,7 +40,7 @@ related_posts: true
 
 이 글의 중심은 **Bean et al. (2025)** 한 편이다. 445개 LLM 벤치마크를 대상으로 한 대규모 체계적 리뷰이고, 그 결과가 이 시리즈의 출발점이 된다.
 
-이 진단을 둘러싼 관련 연구 네 편은 각각 독립 포스트로 분리했다 — 개념적 진단([#2 Raji et al.](/blog/2026/everything-benchmark/)), 점검 기준의 조작화([#3 Bowman & Dahl](/blog/2026/fixing-nlu-benchmarking/)), 무관 분산의 직접 측정([#5 Clever Hans](/blog/2026/clever-hans-benchmarks/)), 처방([#15 HELM](/blog/2026/helm-holistic-evaluation/)). 뒤쪽에서 각 편이 445편 리뷰와 어떻게 맞물리는지 정리한다.
+이 진단을 둘러싼 관련 연구 세 편은 각각 독립 포스트로 분리했다 — 개념적 진단([#2 Raji et al.](/blog/2026/everything-benchmark/)), 무관 분산의 직접 측정([#4 Clever Hans](/blog/2026/clever-hans-benchmarks/)), 처방([#14 HELM](/blog/2026/helm-holistic-evaluation/)). 뒤쪽에서 각 편이 445편 리뷰와 어떻게 맞물리는지 정리한다.
 
 마지막에는 알려진 벤치마크 문제들을 네 가지 유형으로 분류하고, 이 시리즈의 어느 편이 각 문제를 다루는지 연결한다.
 
@@ -132,7 +132,7 @@ Task(표집·과제 설계) 관련 수치는 다음과 같다.
 | 단답형(short free response) | 38.5%     | 13.2%         |
 | 구조화 응답(JSON 등)        | 21.1%     | 8.6%          |
 
-객관식이 전체의 40%에 관여한다는 점을 기억해 두자. 객관식은 채점이 쉽다는 장점이 있지만, [#9](/blog/2026/mcqa-fragility/)에서 볼 선택지 위치나 형식처럼 **구성개념과 무관한 단서가 개입할 여지도 커질 수 있다.** 잘 설계한 객관식이 매우 타당할 수도 있으므로, 포맷 자체가 문제라기보다 통제해야 할 요인이 늘어난다고 보는 편이 정확하다.
+객관식이 전체의 40%에 관여한다는 점을 기억해 두자. 객관식은 채점이 쉽다는 장점이 있지만, [#8](/blog/2026/mcqa-fragility/)에서 볼 선택지 위치나 형식처럼 **구성개념과 무관한 단서가 개입할 여지도 커질 수 있다.** 잘 설계한 객관식이 매우 타당할 수도 있으므로, 포맷 자체가 문제라기보다 통제해야 할 요인이 늘어난다고 보는 편이 정확하다.
 
 Metric·Claims 관련 수치는 이렇다.
 
@@ -179,7 +179,7 @@ BPK = 2 P_o - 1
 $$
 
 - $$P_o$$: 두 리뷰어가 실제로 일치한 비율(관측 일치율).
-- 우연 일치를 균등 범주 분포로 두기 때문에, 라벨 분포가 한쪽으로 치우쳤을 때 Cohen의 $$\kappa$$보다 prevalence에 덜 민감하다. (이 성질은 [#18](/blog/2026/kappa-paradox/)에서 정면으로 다룬다.)
+- 우연 일치를 균등 범주 분포로 두기 때문에, 라벨 분포가 한쪽으로 치우쳤을 때 Cohen의 $$\kappa$$보다 prevalence에 덜 민감하다. (이 성질은 [#17](/blog/2026/kappa-paradox/)에서 정면으로 다룬다.)
 
 결과는 **평균 percent agreement 68.1%, 평균 BPK 0.524**로, 중간 수준의 일치도다. task_face_validity·metric_access처럼 구조적이고 객관적인 필드는 95%를 넘는 높은 일치를 보인 반면, task_ecology·dataset_sampling_method처럼 해석이 필요한 필드는 일치도가 뚜렷이 낮았다.
 
@@ -196,9 +196,9 @@ $$
 | 논문                                                                                                                     | 이 글과의 관계                                                                                                                                                                   | 본문                                        |
 | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | **[Raji et al. (2021)](https://arxiv.org/abs/2111.15366)** — AI and the Everything in the Whole Wide World Benchmark     | 445편이 실증한 문제를 **개념적으로 먼저 진단**했다. 유한한 벤치마크 점수에서 넓은 범용 능력으로 일반화하려면, 그 표본이 무엇을 대표하는지에 대한 별도의 정당화가 필요하다는 논증 | [#2](/blog/2026/everything-benchmark/)      |
-| **[Bowman & Dahl (2021)](https://aclanthology.org/2021.naacl-main.385/)** — What Will it Take to Fix Benchmarking in NLU | 같은 문제를 **네 가지 점검 기준**으로 조작화했다                                                                                                                                 | [#3](/blog/2026/fixing-nlu-benchmarking/)   |
-| **[Pacchiardi et al. (2024)](https://arxiv.org/abs/2410.11672)** — Clever Hans                                           | 이 글이 "무관 분산이 있다"고 말한 것을, 벤치 19개 × LLM 44개로 **직접 측정**해 보인다                                                                                            | [#5](/blog/2026/clever-hans-benchmarks/)    |
-| **[Liang et al. (2022)](https://arxiv.org/abs/2211.09110)** — HELM                                                       | 진단이 아니라 **처방** 쪽이다. 단일 점수를 버리고 시나리오 × 지표 행렬로 가는 설계                                                                                               | [#15](/blog/2026/helm-holistic-evaluation/) |
+| **[Bowman & Dahl (2021)](https://aclanthology.org/2021.naacl-main.385/)** — What Will it Take to Fix Benchmarking in NLU | 같은 문제를 **네 가지 점검 기준**으로 조작화했다                                                                                                                                 | —                                           |
+| **[Pacchiardi et al. (2024)](https://arxiv.org/abs/2410.11672)** — Clever Hans                                           | 이 글이 "무관 분산이 있다"고 말한 것을, 벤치 19개 × LLM 44개로 **직접 측정**해 보인다                                                                                            | [#4](/blog/2026/clever-hans-benchmarks/)    |
+| **[Liang et al. (2022)](https://arxiv.org/abs/2211.09110)** — HELM                                                       | 진단이 아니라 **처방** 쪽이다. 단일 점수를 버리고 시나리오 × 지표 행렬로 가는 설계                                                                                               | [#14](/blog/2026/helm-holistic-evaluation/) |
 
 네 편을 이렇게 배치한 이유가 있다. **Raji와 Bowman & Dahl은 2021년의 진단이고, Bean et al.은 2025년의 성적표다.** 두 논문이 기준을 제시한 지 4년 뒤, 445편 중 불확실성 추정이나 통계 검정을 사용한 것이 16.0%였다.
 
@@ -228,20 +228,20 @@ $$
 
 이 틀로 분류하면 이렇게 된다.
 
-| 알려진 문제                                                   | 유형                   | 이 시리즈에서                                                                                                       | 근거                                                                                                                       |
-| ------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 정의되지 않은 구성개념(21.8%), 논쟁적 정의                    | 정의/해석 실패         | 본 글                                                                                                               | Bean et al. (2025)                                                                                                         |
-| "범용 능력"이라는 과잉 주장 (GLUE, ImageNet)                  | 정의/해석 실패         | [#1](/blog/2026/what-is-evaluation/), [#10](/blog/2026/knowledge-benchmarks/), [#12](/blog/2026/mt-bench-to-arena/) | Raji et al. (2021)                                                                                                         |
-| 편의표집(39.3%)                                               | 구성개념 부족 **위험** | 본 글                                                                                                               | Bean et al. (2025)                                                                                                         |
-| 단일 출처 문항(33.6%)                                         | 구성개념 부족 **위험** | 본 글                                                                                                               | Bean et al. (2025)                                                                                                         |
-| MMLU 정답 오류·모호 문항(전체 약 6.49%, 일부 과목은 최대 57%) | 구성개념 무관 분산     | [#10](/blog/2026/knowledge-benchmarks/)                                                                             | [Gema et al., MMLU-Redux (2024)](https://arxiv.org/abs/2406.04127)                                                         |
-| 선택지 위치·순서 편향                                         | 구성개념 무관 분산     | [#9](/blog/2026/mcqa-fragility/)                                                                                    | [Zheng et al. (2024)](https://arxiv.org/abs/2309.03882), [Pezeshkpour & Hruschka (2023)](https://arxiv.org/abs/2308.11483) |
-| 프롬프트 포맷 민감도(같은 과제, 포맷만 바꿔 최대 76점p 차이)  | 구성개념 무관 분산     | [#9](/blog/2026/mcqa-fragility/)                                                                                    | [Sclar et al., FormatSpread (2024)](https://arxiv.org/abs/2310.11324)                                                      |
-| 표층 n-gram 단서로 정답 예측(19개 중 9개, κ > 0.2)            | 구성개념 무관 분산     | 본 글                                                                                                               | Pacchiardi et al. (2024)                                                                                                   |
-| 훈련 데이터 오염                                              | 구성개념 무관 분산     | [#24](/blog/2026/contamination-reproducibility/)                                                                    | [Oren et al. (2023)](https://arxiv.org/abs/2310.17623) 등                                                                  |
-| judge의 verbosity·self-enhancement 편향                       | 구성개념 무관 분산     | [#23](/blog/2026/judge-statistics/)                                                                                 | Zheng et al., MT-Bench (2023)                                                                                              |
-| 소규모 문항 수로 인한 넓은 신뢰구간(MT-Bench 80문항)          | **통계적 불확실성**    | [#12](/blog/2026/mt-bench-to-arena/), [#21](/blog/2026/statistical-power/)                                          | [Zheng et al., MT-Bench (2023)](https://arxiv.org/abs/2306.05685)                                                          |
-| 불확실성 추정·통계 검정 미보고(84.0%)                         | **통계적 불확실성**    | [#19](/blog/2026/confidence-intervals/), [#21](/blog/2026/statistical-power/)                                       | Bean et al. (2025)                                                                                                         |
+| 알려진 문제                                                   | 유형                   | 이 시리즈에서                                                                                                      | 근거                                                                                                                       |
+| ------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 정의되지 않은 구성개념(21.8%), 논쟁적 정의                    | 정의/해석 실패         | 본 글                                                                                                              | Bean et al. (2025)                                                                                                         |
+| "범용 능력"이라는 과잉 주장 (GLUE, ImageNet)                  | 정의/해석 실패         | [#1](/blog/2026/what-is-evaluation/), [#9](/blog/2026/knowledge-benchmarks/), [#11](/blog/2026/mt-bench-to-arena/) | Raji et al. (2021)                                                                                                         |
+| 편의표집(39.3%)                                               | 구성개념 부족 **위험** | 본 글                                                                                                              | Bean et al. (2025)                                                                                                         |
+| 단일 출처 문항(33.6%)                                         | 구성개념 부족 **위험** | 본 글                                                                                                              | Bean et al. (2025)                                                                                                         |
+| MMLU 정답 오류·모호 문항(전체 약 6.49%, 일부 과목은 최대 57%) | 구성개념 무관 분산     | [#9](/blog/2026/knowledge-benchmarks/)                                                                             | [Gema et al., MMLU-Redux (2024)](https://arxiv.org/abs/2406.04127)                                                         |
+| 선택지 위치·순서 편향                                         | 구성개념 무관 분산     | [#8](/blog/2026/mcqa-fragility/)                                                                                   | [Zheng et al. (2024)](https://arxiv.org/abs/2309.03882), [Pezeshkpour & Hruschka (2023)](https://arxiv.org/abs/2308.11483) |
+| 프롬프트 포맷 민감도(같은 과제, 포맷만 바꿔 최대 76점p 차이)  | 구성개념 무관 분산     | [#8](/blog/2026/mcqa-fragility/)                                                                                   | [Sclar et al., FormatSpread (2024)](https://arxiv.org/abs/2310.11324)                                                      |
+| 표층 n-gram 단서로 정답 예측(19개 중 9개, κ > 0.2)            | 구성개념 무관 분산     | 본 글                                                                                                              | Pacchiardi et al. (2024)                                                                                                   |
+| 훈련 데이터 오염                                              | 구성개념 무관 분산     | [#23](/blog/2026/contamination-reproducibility/)                                                                   | [Oren et al. (2023)](https://arxiv.org/abs/2310.17623) 등                                                                  |
+| judge의 verbosity·self-enhancement 편향                       | 구성개념 무관 분산     | [#22](/blog/2026/judge-statistics/)                                                                                | Zheng et al., MT-Bench (2023)                                                                                              |
+| 소규모 문항 수로 인한 넓은 신뢰구간(MT-Bench 80문항)          | **통계적 불확실성**    | [#11](/blog/2026/mt-bench-to-arena/), [#20](/blog/2026/statistical-power/)                                         | [Zheng et al., MT-Bench (2023)](https://arxiv.org/abs/2306.05685)                                                          |
+| 불확실성 추정·통계 검정 미보고(84.0%)                         | **통계적 불확실성**    | [#18](/blog/2026/confidence-intervals/), [#20](/blog/2026/statistical-power/)                                      | Bean et al. (2025)                                                                                                         |
 
 표를 읽는 법을 짚어두자. 구성개념 부족과 무관 분산의 차이는 **설계 단계냐 채점 단계냐**가 아니다. 무관 분산은 설계 단계에서도 얼마든지 생긴다 — 표층 어휘 단서는 데이터를 만들 때 들어가고, 선택지 위치 편향도 문항을 짤 때 생긴다. 두 유형의 차이는 **논리적 성격**에 있다.
 
@@ -288,23 +288,24 @@ $$
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 네 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 세 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
   <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
-  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><strong>(현재 글)</strong> 벤치마크는 무엇을 재고 있나 — 벤치 445편 구성타당도 리뷰</li>
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="6">
+<ol start="5">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -313,7 +314,7 @@ $$
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="10">
+<ol start="9">
   <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
@@ -324,7 +325,7 @@ $$
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="16">
+<ol start="15">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -332,7 +333,7 @@ $$
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="19">
+<ol start="18">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -341,10 +342,10 @@ $$
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="23">
+<ol start="22">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 25편으로 구성된다.
+본 시리즈는 24편으로 구성된다.

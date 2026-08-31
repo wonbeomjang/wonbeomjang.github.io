@@ -2,7 +2,7 @@
 layout: post
 title: "몇 개를 재야 하나 — 검정력, 표본크기, 다중비교"
 date: 2026-08-24 09:21:00 +0900
-description: "LLM 평가 체계 시리즈 #21 — 검정력·표본크기 설계와 Card et al.(2020)의 검정력 위기, Bonferroni·BH-FDR·partial conjunction 다중비교 보정"
+description: "LLM 평가 체계 시리즈 #20 — 검정력·표본크기 설계와 Card et al.(2020)의 검정력 위기, Bonferroni·BH-FDR·partial conjunction 다중비교 보정"
 categories: [paper]
 tags: [evaluation, statistics, power-analysis, sample-size, multiple-comparisons, fdr, paper]
 giscus_comments: true
@@ -13,7 +13,7 @@ related_posts: true
 
 # Introduction
 
-[#20 차이는 유의한가](/blog/2026/significance-testing/)는 이미 얻은 두 점수 사이에 "이 차이가 우연인가"를 물었다. 이 글은 그 질문의 **앞과 뒤**를 다룬다.
+[#19 차이는 유의한가](/blog/2026/significance-testing/)는 이미 얻은 두 점수 사이에 "이 차이가 우연인가"를 물었다. 이 글은 그 질문의 **앞과 뒤**를 다룬다.
 
 - **앞**: 평가를 설계하기 **전에** — "이 정도 차이를 잡아내려면 문항이 몇 개 필요한가"를 미리 계산한다.
 - **뒤**: 벤치를 하나가 아니라 여러 개 돌렸다면 — 그 여러 결과를 어떻게 **다중비교 보정**해서 읽어야 하는가.
@@ -38,7 +38,7 @@ related_posts: true
 
 - $$\alpha$$: 실제로는 차이가 없는데 "차이가 있다"고 잘못 말할 확률. 보통 0.05로 고정한다.
 - $$\beta$$: 실제로는 차이가 있는데 "차이가 없다"(정확히는 "유의하지 않다")고 말할 확률.
-- **검정력 $$1-\beta$$**: 실제로 차이가 있을 때, 그 차이를 통계적으로 잡아낼 확률. [#20](/blog/2026/significance-testing/)에서 다룬 모든 검정(paired bootstrap, McNemar, permutation)은 각각 이 검정력을 갖는다.
+- **검정력 $$1-\beta$$**: 실제로 차이가 있을 때, 그 차이를 통계적으로 잡아낼 확률. [#19](/blog/2026/significance-testing/)에서 다룬 모든 검정(paired bootstrap, McNemar, permutation)은 각각 이 검정력을 갖는다.
 
 관례적으로 $$1-\beta \ge 0.8$$(검정력 80% 이상)을 "적정 검정력"의 최소선으로 본다(Cohen, 1962). 이보다 낮으면 **저검정력(underpowered)** 실험이라 부른다.
 
@@ -49,7 +49,7 @@ related_posts: true
 3. **$$\alpha$$** — 기준을 느슨하게 잡을수록(α를 크게) 검정력이 높다(단, 위양성도 늘어난다).
 4. **분산** — 데이터가 시끄러울수록(분산이 클수록) 검정력이 낮다.
 
-**일상 비유**: 검정력이 낮은 실험은 **그물코가 성긴 그물**로 물고기를 잡는 것과 같다. 그물을 걷어 올렸는데 물고기가 없다면, 두 가지 설명이 가능하다 — (a) 정말 그 자리에 물고기가 없었다, (b) 물고기는 있었는데 그물코가 너무 성겨서 다 빠져나갔다. 검정력을 계산하지 않고 "유의하지 않다"는 결과만 보면 이 둘을 구분할 수 없다. [#9 객관식 평가는 왜 흔들리나](/blog/2026/mcqa-fragility/)에서 본 것처럼, 프롬프트 포맷 하나를 고정해 채점하는 것은 사실상 표본크기 1을 뽑는 것과 같다 — 그물코가 극단적으로 성긴 경우다.
+**일상 비유**: 검정력이 낮은 실험은 **그물코가 성긴 그물**로 물고기를 잡는 것과 같다. 그물을 걷어 올렸는데 물고기가 없다면, 두 가지 설명이 가능하다 — (a) 정말 그 자리에 물고기가 없었다, (b) 물고기는 있었는데 그물코가 너무 성겨서 다 빠져나갔다. 검정력을 계산하지 않고 "유의하지 않다"는 결과만 보면 이 둘을 구분할 수 없다. [#8 객관식 평가는 왜 흔들리나](/blog/2026/mcqa-fragility/)에서 본 것처럼, 프롬프트 포맷 하나를 고정해 채점하는 것은 사실상 표본크기 1을 뽑는 것과 같다 — 그물코가 극단적으로 성긴 경우다.
 
 # Method
 
@@ -77,7 +77,7 @@ $$
 
 ### 짝지은 경우 — McNemar 기반 표본크기
 
-[#20](/blog/2026/significance-testing/)이 이미 강조했듯, LLM 평가에서 두 모델은 보통 **같은 문항 집합**을 푼다. 이걸 무시하고 위 공식을 쓰면 검정력을 버린다. 짝지은 경우의 정석 검정은 McNemar 검정(Dietterich, 1998; Card et al., 2020)이고, 그 표본크기 공식은 다음과 같다(Connett, Smith & McHugh, 1987; Duffy, 1984에 뿌리를 둔 근사).
+[#19](/blog/2026/significance-testing/)이 이미 강조했듯, LLM 평가에서 두 모델은 보통 **같은 문항 집합**을 푼다. 이걸 무시하고 위 공식을 쓰면 검정력을 버린다. 짝지은 경우의 정석 검정은 McNemar 검정(Dietterich, 1998; Card et al., 2020)이고, 그 표본크기 공식은 다음과 같다(Connett, Smith & McHugh, 1987; Duffy, 1984에 뿌리를 둔 근사).
 
 문항 하나마다 두 모델의 결과는 네 가지로 나뉜다 — 둘 다 정답($$p_{11}$$), 둘 다 오답($$p_{00}$$), A만 정답($$p_{10}$$), B만 정답($$p_{01}$$). 이때 두 모델의 정확도 차이는 정확히 $$\Delta_{acc} = p_{10}-p_{01}$$이고, **불일치 쌍의 비율**은 $$p_d = p_{10}+p_{01}$$이다(두 모델이 같은 결과를 내는 문항은 정보를 주지 않고, 다른 결과를 내는 문항만 차이를 드러낸다).
 
@@ -195,7 +195,7 @@ $$
 | **비율 차이** $$\delta = p_1-p_2$$ | 그대로의 %p 차이                             | 정확도·pass@1처럼 이항 지표. 해석이 직관적이나 baseline 수준에 의존한다(90%→92%와 50%→52%는 통계적으로 다른 의미).          |
 | **오즈비(odds ratio)**             | $$OR = \dfrac{p_1/(1-p_1)}{p_2/(1-p_2)}$$    | baseline 수준이 다른 여러 데이터셋을 가로질러 비교할 때. 희귀사건(낮은 유병률 안전 위반 등)에서 상대위험도의 근사로도 쓴다. |
 
-Cohen(1988)은 $$d=0.2/0.5/0.8$$을 각각 small/medium/large의 관습적 경계로 제안했다. 그런데 이 경계는 [#18 κ의 역설](/blog/2026/kappa-paradox/)에서 본 Landis & Koch(1977)의 $$\kappa$$ 해석 기준과 정확히 같은 처지다 — **경험적으로 도출된 게 아니라 관습**이며, 도메인마다 "의미 있는" 크기는 다르다. LLM 평가에서 이 경계를 그대로 가져다 쓰기보다, 그 도메인에서 실제로 "체감되는" 차이가 얼마인지(예: 실사용자 만족도, 배포 결정 기준)를 따로 정의하는 게 낫다.
+Cohen(1988)은 $$d=0.2/0.5/0.8$$을 각각 small/medium/large의 관습적 경계로 제안했다. 그런데 이 경계는 [#17 κ의 역설](/blog/2026/kappa-paradox/)에서 본 Landis & Koch(1977)의 $$\kappa$$ 해석 기준과 정확히 같은 처지다 — **경험적으로 도출된 게 아니라 관습**이며, 도메인마다 "의미 있는" 크기는 다르다. LLM 평가에서 이 경계를 그대로 가져다 쓰기보다, 그 도메인에서 실제로 "체감되는" 차이가 얼마인지(예: 실사용자 만족도, 배포 결정 기준)를 따로 정의하는 게 낫다.
 
 ### 통계적 유의성 ≠ 실용적 유의성
 
@@ -203,7 +203,7 @@ Cohen(1988)은 $$d=0.2/0.5/0.8$$을 각각 small/medium/large의 관습적 경�
 
 이것이 **통계적 유의성과 실용적 유의성의 간극**이다. p값은 "우연이 아닐 가능성"만 말하고, "그 차이가 신경 쓸 만한 크기인가"는 전혀 말해주지 않는다. $$n$$이 매우 크면 그 간극이 특히 벌어진다.
 
-**권고**: p값을 단독으로 보고하지 않는다. 항상 **효과크기 + 신뢰구간([#19](/blog/2026/confidence-intervals/) 참고) + $$n$$** 을 함께 보고한다. "유의했다(p<0.05)"만 쓰는 것과 "정확도가 0.36%p(95% CI [0.1, 0.6]%p, n=390,965) 개선되었고, 이는 통계적으로 유의하나 배포 결정 기준(1%p)에는 못 미친다"를 쓰는 것은 전혀 다른 정보량을 준다.
+**권고**: p값을 단독으로 보고하지 않는다. 항상 **효과크기 + 신뢰구간([#18](/blog/2026/confidence-intervals/) 참고) + $$n$$** 을 함께 보고한다. "유의했다(p<0.05)"만 쓰는 것과 "정확도가 0.36%p(95% CI [0.1, 0.6]%p, n=390,965) 개선되었고, 이는 통계적으로 유의하나 배포 결정 기준(1%p)에는 못 미친다"를 쓰는 것은 전혀 다른 정보량을 준다.
 
 ### 함정 — 오즈비를 상대위험도로 읽는다
 
@@ -297,7 +297,7 @@ $$m$$은 **실제로 수행한 검정의 수**여야 한다. 보고하기로 결
 
 - 돌렸지만 결과가 나빠서 논문에 안 실은 벤치
 - 하이퍼파라미터를 바꿔가며 재평가한 횟수
-- 프롬프트 템플릿을 여러 개 시도한 것([#9](/blog/2026/mcqa-fragility/))
+- 프롬프트 템플릿을 여러 개 시도한 것([#8](/blog/2026/mcqa-fragility/))
 - 체크포인트를 여러 개 평가한 뒤 가장 좋은 것을 고른 것
 
 마지막 항목이 특히 흔하다. **체크포인트 10개를 평가해 최고점을 고르는 것은 최댓값 통계를 보고하는 것**이며, 그 최댓값의 기댓값은 참값보다 높다. 그래서 검증셋에서 고른 최고점은 테스트셋에서 대개 내려간다.
@@ -440,7 +440,7 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 3. 벤치를 둘 이상 돌렸다면 **다중비교 보정 여부와 방법**을 명시한다 — 보정하지 않았다면 그 이유를, 보정했다면 Bonferroni/Holm/BH 중 무엇을 썼는지.
 4. "유의하지 않았다"는 결론에는 그 실험의 검정력이 얼마였는지를 함께 적는다.
 
-이 원칙들을 LLM 평가라는 구체적 맥락에 맞춰 실무 지침으로 다시 정리한 것이 [#22 LLM eval의 통계 실무](/blog/2026/error-bars-for-evals/)다. 클러스터 표준오차, 문항당 다중 샘플링을 통한 분산 분리, 짝지은 차이 분석까지 — 이 글에서 다진 검정력·표본크기·다중비교의 토대 위에서 다음 글이 이어진다.
+이 원칙들을 LLM 평가라는 구체적 맥락에 맞춰 실무 지침으로 다시 정리한 것이 [#21 LLM eval의 통계 실무](/blog/2026/error-bars-for-evals/)다. 클러스터 표준오차, 문항당 다중 샘플링을 통한 분산 분리, 짝지은 차이 분석까지 — 이 글에서 다진 검정력·표본크기·다중비교의 토대 위에서 다음 글이 이어진다.
 
 # 참고 문헌
 
@@ -458,23 +458,24 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 스물한 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 스무 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
   <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
-  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="6">
+<ol start="5">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -483,7 +484,7 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="10">
+<ol start="9">
   <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
@@ -494,7 +495,7 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="16">
+<ol start="15">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -502,7 +503,7 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="19">
+<ol start="18">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><strong>(현재 글)</strong> 몇 개를 재야 하나 — 검정력·표본크기·다중비교</li>
@@ -511,10 +512,10 @@ Card et al.(2020)이 실증했듯, NLP 실험의 상당수는 이미 저검정�
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="23">
+<ol start="22">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 25편으로 구성된다.
+본 시리즈는 24편으로 구성된다.

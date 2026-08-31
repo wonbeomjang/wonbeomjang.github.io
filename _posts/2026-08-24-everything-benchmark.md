@@ -153,7 +153,7 @@ ML 평가에서 **구성 타당도**의 초점은 데이터셋 자체가 아니�
 
 두 벤치마크 모두 **표의 첫 단계, 즉 구성개념에서 조작적 정의로 넘어가는 지점에서 정당화가 비어 있다.** "범용 언어 이해"가 왜 하필 이 9개 과제로, "범용 시각 사물 인식"이 왜 하필 ILSVRC의 이 1,000개 클래스(그리고 그 바탕인 WordNet 하위트리)로 조작화되는지 — 어느 쪽도 구성개념 수준의 표집 근거를 제시하지 않는다.
 
-다음 단계인 조작적 정의 → 측정 모형에서도 정보가 또 버려진다. 여러 과제의 성능을 단일 스칼라로 평균 내는 순간, 어디서 강하고 어디서 약한지가 사라진다. 이 두 번째 손실을 시나리오 × 지표 행렬로 되돌리려는 시도가 [#15](/blog/2026/helm-holistic-evaluation/)의 HELM이다.
+다음 단계인 조작적 정의 → 측정 모형에서도 정보가 또 버려진다. 여러 과제의 성능을 단일 스칼라로 평균 내는 순간, 어디서 강하고 어디서 약한지가 사라진다. 이 두 번째 손실을 시나리오 × 지표 행렬로 되돌리려는 시도가 [#14](/blog/2026/helm-holistic-evaluation/)의 HELM이다.
 
 # 분석 틀 — 일반성 주장은 어디서 무너지는가
 
@@ -415,7 +415,7 @@ Wagstaff는 집계 성능 평가 형식의 내재적 결함을 지적한다.
 
 **감사**의 예는 [Buolamwini & Gebru(2018)](https://proceedings.mlr.press/v81/buolamwini18a.html)다. 민감한 카테고리에 걸쳐 균형 잡힌 테스트 세트를 만들어 카테고리 간 차등 성능을 시험한다.
 
-**적대적 테스트**는 시스템이 한쪽에서는 성공하고 최소한으로만 다른 짝에서는 실패하는 **최소 대조쌍**을 찾아 역량의 경계를 탐색한다([Ettinger et al., 2017](https://aclanthology.org/W17-5401/)). 여기에는 시스템이 벤치마크를 "속이기" 위해 쓰는 표층 단서를 발견하고 그것을 무력화한 테스트셋을 만드는 작업도 포함된다([Niven & Kao(2019)](https://aclanthology.org/P19-1459/)). [#4](/blog/2026/benchmark-construct-validity/)에서 다룬 Pacchiardi et al.의 n-gram 실험이 이 계보의 후속이다.
+**적대적 테스트**는 시스템이 한쪽에서는 성공하고 최소한으로만 다른 짝에서는 실패하는 **최소 대조쌍**을 찾아 역량의 경계를 탐색한다([Ettinger et al., 2017](https://aclanthology.org/W17-5401/)). 여기에는 시스템이 벤치마크를 "속이기" 위해 쓰는 표층 단서를 발견하고 그것을 무력화한 테스트셋을 만드는 작업도 포함된다([Niven & Kao(2019)](https://aclanthology.org/P19-1459/)). [#3](/blog/2026/benchmark-construct-validity/)에서 다룬 Pacchiardi et al.의 n-gram 실험이 이 계보의 후속이다.
 
 **세 접근의 공통점은 목적이다** — 시스템이 벤치마크를 "풀었다"를 보이는 것이 아니라, 문제 공간의 어떤 부분이 여전히 도전적이고 배포 환경에서 한계로 남는지 진단하는 것이다.
 
@@ -473,7 +473,7 @@ MMLU([Hendrycks et al., 2021](https://arxiv.org/abs/2009.03300), ICLR 2021)는 "
 
 [#1](/blog/2026/what-is-evaluation/)의 용어로 옮기면 이렇다. "지식과 추론"이라는 구성개념이 있고 57개 과목이 조작적 정의인데, **그 사이를 정당화하는 표집 논리가 제시되지 않는다.** 따라서 점수를 "지식과 추론 전반"으로 일반화할 경우 **구성개념 부족의 위험을 배제할 근거가 부족하다.**
 
-MMLU가 "지식이 많다", "일반 지식과 추론에 뛰어나다"는 주장의 근거로 쓰이는 과정은, GLUE가 "9개 과제 성능"에서 "범용 언어 이해"로 확장되던 과정과 구조적으로 같다. 이 벤치마크가 실제로 어디서 흔들렸는지는 [#10](/blog/2026/knowledge-benchmarks/)에서 다룬다.
+MMLU가 "지식이 많다", "일반 지식과 추론에 뛰어나다"는 주장의 근거로 쓰이는 과정은, GLUE가 "9개 과제 성능"에서 "범용 언어 이해"로 확장되던 과정과 구조적으로 같다. 이 벤치마크가 실제로 어디서 흔들렸는지는 [#9](/blog/2026/knowledge-benchmarks/)에서 다룬다.
 
 ## BIG-bench — 크라우드소싱된 204개 과제는 무엇의 표본인가
 
@@ -505,7 +505,7 @@ BIG-bench([Srivastava et al., 2022\~2023](https://arxiv.org/abs/2206.04615))는 
 
 규모(204개 태스크, 450명, 132개 기관)라는 숫자는 인상적이다. 그러나 Raji et al.의 논지에 따르면 그 규모가 "일반 능력을 잰다"는 주장을 자동으로 정당화하지 않는다 — **ImageNet의 카테고리 수가 20배 많다고 "일반 시각 지능"을 잰다는 주장이 성립하지 않았던 것과 같은 이유다.**
 
-이 벤치마크가 이후 어떻게 재구성됐는지는 [#10](/blog/2026/knowledge-benchmarks/)에서 이어 다룬다.
+이 벤치마크가 이후 어떻게 재구성됐는지는 [#9](/blog/2026/knowledge-benchmarks/)에서 이어 다룬다.
 
 ## 세 벤치마크가 공유하는 패턴
 
@@ -571,10 +571,9 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 적절하게 배치된 벤치마킹은 경쟁에서 이기는 것이 아니라 **지형을 조사(survey)하는 것**에 관한 것이다.
 
-이 결론은 다음 두 편으로 곧장 이어진다.
+이 결론은 다음 편으로 곧장 이어진다.
 
-- [#3 Bowman & Dahl](/blog/2026/fixing-nlu-benchmarking/) — "범위를 선언하라"는 처방을 **네 가지 구체적 기준**으로 형식화한다
-- [#4 Bean et al.](/blog/2026/benchmark-construct-validity/) — **445편의 벤치마크 논문을 직접 리뷰**해, 이 진단이 이론적 우려가 아니라 업계 표준 관행임을 실증한다
+- [#3 Bean et al.](/blog/2026/benchmark-construct-validity/) — **445편의 벤치마크 논문을 직접 리뷰**해, 이 진단이 이론적 우려가 아니라 업계 표준 관행임을 실증한다
 
 # 참고 문헌
 
@@ -627,6 +626,8 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
 이 글은 LLM 평가 체계 시리즈의 두 번째 글이다.
@@ -636,14 +637,13 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
   <li><strong>(현재 글)</strong> 범용 벤치마크라는 주장 — Raji et al. — 모든 것을 잰다는 말</li>
-  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="6">
+<ol start="5">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -652,7 +652,7 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="10">
+<ol start="9">
   <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
@@ -663,7 +663,7 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="16">
+<ol start="15">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -671,7 +671,7 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="19">
+<ol start="18">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -680,10 +680,10 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="23">
+<ol start="22">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 25편으로 구성된다.
+본 시리즈는 24편으로 구성된다.

@@ -2,7 +2,7 @@
 layout: post
 title: "한국어 벤치마크 — 번역이 아니라 원산, 그리고 문화 타당도"
 date: 2026-08-24 09:14:00 +0900
-description: "LLM 평가 체계 시리즈 #14 — 번역 MMLU와 KMMLU 사이의 낙차로 보는 구성 타당도, 그리고 정렬조차 문화마다 다른 이유"
+description: "LLM 평가 체계 시리즈 #13 — 번역 MMLU와 KMMLU 사이의 낙차로 보는 구성 타당도, 그리고 정렬조차 문화마다 다른 이유"
 categories: [paper]
 tags: [evaluation, korean-nlp, benchmark, construct-validity, kmmlu, kornat, paper]
 giscus_comments: true
@@ -17,9 +17,9 @@ related_posts: true
 
 이 낙차를 어떻게 읽어야 할까. "모델이 한국어를 못해서"라고 뭉뚱그리면 [#1](/blog/2026/what-is-evaluation/)에서 세운 구성 타당도(construct validity) 질문을 건너뛰는 것이다. 85.5에서 77.0으로의 낙차와, 77.0에서 59.95로의 낙차는 **성격이 다르다.** 앞의 낙차는 같은 문항을 번역만 했을 뿐인데 생긴 손실이고, 뒤의 낙차는 애초에 존재하지 않던 문항 — 한국 행정·법·역사 지식을 묻는 문항 — 이 새로 들어오면서 생긴 차이다. 전자는 잡음(noise)에 가깝고 후자는 신호(signal)에 가깝다. 그런데 번역 벤치마크 하나의 점수만 보면 이 둘을 구분할 방법이 없다. 잡음과 신호가 한 숫자에 뭉쳐 있다.
 
-이것이 이 시리즈에서 구성 타당도가 가장 선명하게 드러나는 지점이다. **영어 벤치마크를 한국어로 번역하면, 점수만 달라지는 게 아니라 무엇을 재고 있는지 자체가 달라진다.** [#4](/blog/2026/benchmark-construct-validity/)가 벤치마크 445편을 리뷰하며 확인한 "구성 타당도 실패가 만연하다"는 진단이, 언어를 넘어가는 순간 훨씬 노골적으로 드러나는 것이다.
+이것이 이 시리즈에서 구성 타당도가 가장 선명하게 드러나는 지점이다. **영어 벤치마크를 한국어로 번역하면, 점수만 달라지는 게 아니라 무엇을 재고 있는지 자체가 달라진다.** [#3](/blog/2026/benchmark-construct-validity/)가 벤치마크 445편을 리뷰하며 확인한 "구성 타당도 실패가 만연하다"는 진단이, 언어를 넘어가는 순간 훨씬 노골적으로 드러나는 것이다.
 
-이 글은 번역이 정확히 무엇을 깨뜨리는지 네 갈래로 나눠 살펴본 뒤, 번역이 아니라 원산(原産)으로 만들어진 한국어 벤치마크 다섯 개 — KMMLU, KMMLU-Redux/Pro, HAE-RAE Bench, CLIcK, KorNAT — 를 그 대응으로 읽는다. 그리고 이 벤치마크들을 일관되게 평가하기 위한 인프라인 HRET도 함께 다룬다. 특히 KorNAT은 이 시리즈의 뒷부분([#25](/blog/2026/safety-evaluation-statistics/))에서 다룰 안전 평가의 문화 의존성을 먼저 보여주는 사례라 비중 있게 다룬다.
+이 글은 번역이 정확히 무엇을 깨뜨리는지 네 갈래로 나눠 살펴본 뒤, 번역이 아니라 원산(原産)으로 만들어진 한국어 벤치마크 다섯 개 — KMMLU, KMMLU-Redux/Pro, HAE-RAE Bench, CLIcK, KorNAT — 를 그 대응으로 읽는다. 그리고 이 벤치마크들을 일관되게 평가하기 위한 인프라인 HRET도 함께 다룬다. 특히 KorNAT은 이 시리즈의 뒷부분([#24](/blog/2026/safety-evaluation-statistics/))에서 다룰 안전 평가의 문화 의존성을 먼저 보여주는 사례라 비중 있게 다룬다.
 
 # Background
 
@@ -35,7 +35,7 @@ related_posts: true
 
 **4. 정답의 문화 의존성.** 사실 지식 문항은 그래도 "정답"이 하나로 고정된다. 그런데 가치 판단이 얽힌 문항 — "이 행동은 사회적으로 용인되는가" 같은 — 은 **정답 자체가 문화마다 다르다.** 번역은 질문의 표현만 옮길 뿐, 그 질문에 대한 사회적 합의까지 옮기지는 못한다. 이 넷째 갈래가 뒤에서 다룰 KorNAT의 핵심 문제의식이다.
 
-CLIcK 같은 벤치마크는 이 네 갈래 중 1번(문화)과 2번(언어 구조)을 아예 두 개의 축으로 명시적으로 쪼개 설계했다. [#4](/blog/2026/benchmark-construct-validity/)가 지적한 "벤치 여러 개가 사실 같은 축을 재고 있다"는 문제의 반대 방향 — 서로 다른 구성개념을 하나의 점수로 뭉치지 않고 처음부터 갈라놓는 설계다.
+CLIcK 같은 벤치마크는 이 네 갈래 중 1번(문화)과 2번(언어 구조)을 아예 두 개의 축으로 명시적으로 쪼개 설계했다. [#3](/blog/2026/benchmark-construct-validity/)가 지적한 "벤치 여러 개가 사실 같은 축을 재고 있다"는 문제의 반대 방향 — 서로 다른 구성개념을 하나의 점수로 뭉치지 않고 처음부터 갈라놓는 설계다.
 
 # Method
 
@@ -72,7 +72,7 @@ CLIcK 같은 벤치마크는 이 네 갈래 중 1번(문화)과 2번(언어 구�
 | Claude 3.7 Sonnet (thinking) | 79.36%      | 77.70%    |
 | Llama 3.3 70B                | 56.17%      | 53.24%    |
 
-KMMLU와 KMMLU-Redux 사이의 모델 순위 상관은 Spearman ρ = 0.995로 거의 완벽하게 유지된다 — 즉 오류를 걷어내도 "누가 더 잘하는가"의 순서 자체는 크게 바뀌지 않는다. 다만 절대 점수의 신뢰도는 오류가 섞인 원본보다 훨씬 높아진다. 이 지점이 뒤에서 다룰 [#24](/blog/2026/contamination-reproducibility/)의 예고편이다 — **원산 벤치마크도 오염과 오류에서 자유롭지 않다.** 번역이 만드는 문제와는 다른 종류의 문제지만, "벤치마크 점수를 그대로 믿지 말라"는 결론은 같다.
+KMMLU와 KMMLU-Redux 사이의 모델 순위 상관은 Spearman ρ = 0.995로 거의 완벽하게 유지된다 — 즉 오류를 걷어내도 "누가 더 잘하는가"의 순서 자체는 크게 바뀌지 않는다. 다만 절대 점수의 신뢰도는 오류가 섞인 원본보다 훨씬 높아진다. 이 지점이 뒤에서 다룰 [#23](/blog/2026/contamination-reproducibility/)의 예고편이다 — **원산 벤치마크도 오염과 오류에서 자유롭지 않다.** 번역이 만드는 문제와는 다른 종류의 문제지만, "벤치마크 점수를 그대로 믿지 말라"는 결론은 같다.
 
 ## HAE-RAE Bench — 번역으로는 못 만드는 문항
 
@@ -100,7 +100,7 @@ KMMLU와 KMMLU-Redux 사이의 모델 순위 상관은 Spearman ρ = 0.995로 �
 | Culture (8개)  | 사회, 전통, 역사, 법, 정치, 경제, 지리, 대중문화 |
 | Language (3개) | 텍스트 지식, 기능적 지식, 문법                   |
 
-여기서 눈여겨볼 설계는 **문항 하나하나에 "이 문항을 풀려면 어떤 지식이 필요한가"를 세부 범주로 라벨링**했다는 점이다. 이게 왜 중요한가 — [#4](/blog/2026/benchmark-construct-validity/)가 보인 문제, 즉 "벤치마크 여러 개가 사실 하나의 축만 재고 있다"는 함정을 CLIcK은 처음부터 피해간다. 하나의 총점 뒤에 문화 지식과 언어 능력이라는 서로 다른 구성개념이 섞여 있는 게 아니라, 애초에 갈라서 라벨링해 두었기 때문에 "이 모델이 부족한 게 문화 지식인지 언어 구조인지"를 사후에 분해해 볼 수 있다.
+여기서 눈여겨볼 설계는 **문항 하나하나에 "이 문항을 풀려면 어떤 지식이 필요한가"를 세부 범주로 라벨링**했다는 점이다. 이게 왜 중요한가 — [#3](/blog/2026/benchmark-construct-validity/)가 보인 문제, 즉 "벤치마크 여러 개가 사실 하나의 축만 재고 있다"는 함정을 CLIcK은 처음부터 피해간다. 하나의 총점 뒤에 문화 지식과 언어 능력이라는 서로 다른 구성개념이 섞여 있는 게 아니라, 애초에 갈라서 라벨링해 두었기 때문에 "이 모델이 부족한 게 문화 지식인지 언어 구조인지"를 사후에 분해해 볼 수 있다.
 
 13개 모델을 평가한 결과, GPT-3.5는 전체 약 49.30%, Claude-2는 약 51.72%였고 오픈소스 모델은 10\~50% 범위에 흩어졌다. 흥미로운 점은 **문화 범주보다 언어 범주, 그중에서도 기능적 지식(Functional Knowledge)이 모델들에게 더 어려웠다**는 것이다 — 흔히 "한국어를 못해서 문제"라고 하면 문화 지식 부족을 떠올리기 쉽지만, 실제로는 언어 구조 자체를 다루는 능력이 더 큰 병목일 수 있다는 뜻이다.
 
@@ -136,7 +136,7 @@ $$
 
 CKA 기준 점수 0.6을 넘긴 모델은 HyperCLOVA X(0.707), PaLM-2(0.664), Gemini Pro(0.639) 셋뿐이다. GPT-4는 0.386으로 GPT-3.5(0.320)보다는 낫지만 기준선에 한참 못 미친다. **글로벌 벤치마크에서 가장 강한 모델(GPT-4)이 한국 공통 지식에서는 기준 미달이고, 한국어 특화 모델(HyperCLOVA X)이 가장 앞선다** — KMMLU에서 본 패턴과 같은 구조다.
 
-여기서 브리프의 핵심 논점이 나온다. **"정렬"의 정답 자체가 문화 의존적이다.** SVA는 애초에 "한국 사회의 다수 의견"을 정답으로 정의한다. 이 설문을 미국인 6,174명으로 바꿔 다시 진행하면 같은 문항에 대해 다른 정답 분포가 나올 것이고, 같은 모델의 SVA 점수도 달라질 것이다. 즉 "이 모델이 잘 정렬되어 있는가"라는 질문은 "어느 나라에 정렬되어 있는가"라는 전제 없이는 답할 수 없는 질문이다. 이 통찰은 뒤에서 다룰 [#25 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)로 곧장 이어진다 — 안전(safety) taxonomy도 "무엇이 유해한가"에 대한 사회적 합의를 전제하는 이상, 문화 중립적일 수 없다.
+여기서 브리프의 핵심 논점이 나온다. **"정렬"의 정답 자체가 문화 의존적이다.** SVA는 애초에 "한국 사회의 다수 의견"을 정답으로 정의한다. 이 설문을 미국인 6,174명으로 바꿔 다시 진행하면 같은 문항에 대해 다른 정답 분포가 나올 것이고, 같은 모델의 SVA 점수도 달라질 것이다. 즉 "이 모델이 잘 정렬되어 있는가"라는 질문은 "어느 나라에 정렬되어 있는가"라는 전제 없이는 답할 수 없는 질문이다. 이 통찰은 뒤에서 다룰 [#24 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)로 곧장 이어진다 — 안전(safety) taxonomy도 "무엇이 유해한가"에 대한 사회적 합의를 전제하는 이상, 문화 중립적일 수 없다.
 
 ## HRET — 평가 인프라, 재현성을 위한 최소 장치
 
@@ -146,7 +146,7 @@ CKA 기준 점수 0.6을 넘긴 모델은 HyperCLOVA X(0.707), PaLM-2(0.664), Ge
 
 HRET은 레지스트리 기반 구조로 HAE-RAE Bench, KMMLU, CLIcK, KUDGE, K2-Eval, HRM8K 같은 주요 벤치마크와 HuggingFace Transformers, vLLM, OpenAI 호환 엔드포인트, LiteLLM 같은 여러 추론 백엔드를 통합한다. 평가 방식도 문자열 완전일치, 로그우도 기반 채점, LLM-as-judge, 수학 검증, 그리고 **언어 일관성 검사기**(응답이 실제로 한국어인지 감지)까지 포괄한다. 여기에 형태소를 고려한 TTR(Type-Token Ratio, 어휘 다양성 지표)과 핵심어 누락 탐지 같은 한국어 전용 진단까지 얹었다.
 
-[#24](/blog/2026/contamination-reproducibility/)에서 다룰 lm-eval-harness의 재현성 문제와 같은 뿌리지만, 한국어는 형태소·띄어쓰기·경어법이라는 변동 축이 추가로 얹힌다는 점에서 재현성 확보가 한 겹 더 까다롭다.
+[#23](/blog/2026/contamination-reproducibility/)에서 다룰 lm-eval-harness의 재현성 문제와 같은 뿌리지만, 한국어는 형태소·띄어쓰기·경어법이라는 변동 축이 추가로 얹힌다는 점에서 재현성 확보가 한 겹 더 까다롭다.
 
 ## 그 외 벤치마크 — 짧게
 
@@ -216,11 +216,11 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 다만 원산으로 옮겨간다고 문제가 다 풀리는 건 아니다. 이 시리즈 뒷부분에서 다룰 세 가지 남은 과제가 있다.
 
-1. **원산 벤치도 오염을 피할 수 없다.** KMMLU-Redux 논문이 밝힌 대로, 공개된 국가시험 문제는 이미 웹에 존재한다. 원산이라고 해서 사전학습 데이터에서 안전한 게 아니다 — [#24 오염·재현성·효율](/blog/2026/contamination-reproducibility/)로 이어지는 문제다.
-2. **문항 수가 적어 신뢰구간이 넓다.** HAE-RAE Bench(1,538문항), CLIcK(1,995문항) 같은 벤치마크는 KMMLU보다 훨씬 작다. 점수 몇 퍼센트포인트 차이로 모델 순위를 단정하기 전에 이 구간이 얼마나 넓은지 따져봐야 한다 — [#19 점수는 추정치다](/blog/2026/confidence-intervals/)에서 다룰 이항비율 신뢰구간 문제다.
-3. **가치 문항은 정답 자체가 논쟁적이다.** KorNAT의 SVA가 정확히 이 문제를 정면으로 마주한다. "한국 사회의 다수 의견"을 정답으로 삼는 순간, 그 정답은 시간이 지나면 바뀔 수 있고 소수 의견은 구조적으로 낮은 점수를 받는다 — [#25 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)가 이 문제를 안전 taxonomy 전반으로 확장해서 다룬다.
+1. **원산 벤치도 오염을 피할 수 없다.** KMMLU-Redux 논문이 밝힌 대로, 공개된 국가시험 문제는 이미 웹에 존재한다. 원산이라고 해서 사전학습 데이터에서 안전한 게 아니다 — [#23 오염·재현성·효율](/blog/2026/contamination-reproducibility/)로 이어지는 문제다.
+2. **문항 수가 적어 신뢰구간이 넓다.** HAE-RAE Bench(1,538문항), CLIcK(1,995문항) 같은 벤치마크는 KMMLU보다 훨씬 작다. 점수 몇 퍼센트포인트 차이로 모델 순위를 단정하기 전에 이 구간이 얼마나 넓은지 따져봐야 한다 — [#18 점수는 추정치다](/blog/2026/confidence-intervals/)에서 다룰 이항비율 신뢰구간 문제다.
+3. **가치 문항은 정답 자체가 논쟁적이다.** KorNAT의 SVA가 정확히 이 문제를 정면으로 마주한다. "한국 사회의 다수 의견"을 정답으로 삼는 순간, 그 정답은 시간이 지나면 바뀔 수 있고 소수 의견은 구조적으로 낮은 점수를 받는다 — [#24 안전 평가의 통계와 체계 설계](/blog/2026/safety-evaluation-statistics/)가 이 문제를 안전 taxonomy 전반으로 확장해서 다룬다.
 
-다음 글([#16 사람 평가 설계](/blog/2026/human-evaluation-design/))부터는 방향을 튼다. 지금까지는 "무엇을 재는 벤치마크를 만들 것인가"를 물었다면, 이제부터는 "사람이 그 벤치마크를 어떻게 채점할 것인가"를 묻는다.
+다음 글([#15 사람 평가 설계](/blog/2026/human-evaluation-design/))부터는 방향을 튼다. 지금까지는 "무엇을 재는 벤치마크를 만들 것인가"를 물었다면, 이제부터는 "사람이 그 벤치마크를 어떻게 채점할 것인가"를 묻는다.
 
 # 참고 문헌
 
@@ -242,23 +242,24 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
-이 글은 LLM 평가 체계 시리즈의 열네 번째 글이다.
+이 글은 LLM 평가 체계 시리즈의 열세 번째 글이다.
 
 **1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
   <li><a href="/blog/2026/everything-benchmark/">범용 벤치마크라는 주장</a> — Raji et al. — 모든 것을 잰다는 말</li>
-  <li><a href="/blog/2026/fixing-nlu-benchmarking/">벤치마킹을 고치려면</a> — Bowman & Dahl의 네 기준</li>
   <li><a href="/blog/2026/benchmark-construct-validity/">벤치마크는 무엇을 재고 있나</a> — 벤치 445편 구성타당도 리뷰</li>
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
 **2부. 무엇을 숫자로 만드나 — 평가 metric**
 
-<ol start="6">
+<ol start="5">
   <li><a href="/blog/2026/measurement-scales/">척도와 허용 연산</a> — Likert 평균을 내도 되는가</li>
   <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
   <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
@@ -267,7 +268,7 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 **3부. LLM 벤치마크 지형도**
 
-<ol start="10">
+<ol start="9">
   <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
   <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
   <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
@@ -278,7 +279,7 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 **4부. 사람이 읽는다 — 정성평가와 일치도**
 
-<ol start="16">
+<ol start="15">
   <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
   <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
   <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
@@ -286,7 +287,7 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 **5부. 차이는 진짜인가 — 정량평가의 통계**
 
-<ol start="19">
+<ol start="18">
   <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
   <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
   <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
@@ -295,10 +296,10 @@ Open Ko-LLM Leaderboard의 Ko-MMLU가 좋은 예다. GPT-4로 기계번역하고
 
 **6부. 신뢰할 수 있는 평가 체계**
 
-<ol start="23">
+<ol start="22">
   <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
   <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
   <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
 </ol>
 
-본 시리즈는 25편으로 구성된다.
+본 시리즈는 24편으로 구성된다.
