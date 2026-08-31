@@ -153,7 +153,7 @@ ML 평가에서 **구성 타당도**의 초점은 데이터셋 자체가 아니�
 
 두 벤치마크 모두 **표의 첫 단계, 즉 구성개념에서 조작적 정의로 넘어가는 지점에서 정당화가 비어 있다.** "범용 언어 이해"가 왜 하필 이 9개 과제로, "범용 시각 사물 인식"이 왜 하필 ILSVRC의 이 1,000개 클래스(그리고 그 바탕인 WordNet 하위트리)로 조작화되는지 — 어느 쪽도 구성개념 수준의 표집 근거를 제시하지 않는다.
 
-다음 단계인 조작적 정의 → 측정 모형에서도 정보가 또 버려진다. 여러 과제의 성능을 단일 스칼라로 평균 내는 순간, 어디서 강하고 어디서 약한지가 사라진다. 이 두 번째 손실을 시나리오 × 지표 행렬로 되돌리려는 시도가 [#14](/blog/2026/helm-holistic-evaluation/)의 HELM이다.
+다음 단계인 조작적 정의 → 측정 모형에서도 정보가 또 버려진다. 여러 과제의 성능을 단일 스칼라로 평균 내는 순간, 어디서 강하고 어디서 약한지가 사라진다. 이 두 번째 손실을 시나리오 × 지표 행렬로 되돌리려는 시도가 HELM(Liang et al., 2022)이다.
 
 # 분석 틀 — 일반성 주장은 어디서 무너지는가
 
@@ -473,7 +473,7 @@ MMLU([Hendrycks et al., 2021](https://arxiv.org/abs/2009.03300), ICLR 2021)는 "
 
 [#1](/blog/2026/what-is-evaluation/)의 용어로 옮기면 이렇다. "지식과 추론"이라는 구성개념이 있고 57개 과목이 조작적 정의인데, **그 사이를 정당화하는 표집 논리가 제시되지 않는다.** 따라서 점수를 "지식과 추론 전반"으로 일반화할 경우 **구성개념 부족의 위험을 배제할 근거가 부족하다.**
 
-MMLU가 "지식이 많다", "일반 지식과 추론에 뛰어나다"는 주장의 근거로 쓰이는 과정은, GLUE가 "9개 과제 성능"에서 "범용 언어 이해"로 확장되던 과정과 구조적으로 같다. 이 벤치마크가 실제로 어디서 흔들렸는지는 [#9](/blog/2026/knowledge-benchmarks/)에서 다룬다.
+MMLU가 "지식이 많다", "일반 지식과 추론에 뛰어나다"는 주장의 근거로 쓰이는 과정은, GLUE가 "9개 과제 성능"에서 "범용 언어 이해"로 확장되던 과정과 구조적으로 같다.
 
 ## BIG-bench — 크라우드소싱된 204개 과제는 무엇의 표본인가
 
@@ -504,8 +504,6 @@ BIG-bench([Srivastava et al., 2022\~2023](https://arxiv.org/abs/2206.04615))는 
 | 정체 | 당장 손에 있던 것들의 집합 | 공개 공모와 태스크 단위 심사를 거쳐 구성된 커뮤니티 기여 과제 집합 |
 
 규모(204개 태스크, 450명, 132개 기관)라는 숫자는 인상적이다. 그러나 Raji et al.의 논지에 따르면 그 규모가 "일반 능력을 잰다"는 주장을 자동으로 정당화하지 않는다 — **ImageNet의 카테고리 수가 20배 많다고 "일반 시각 지능"을 잰다는 주장이 성립하지 않았던 것과 같은 이유다.**
-
-이 벤치마크가 이후 어떻게 재구성됐는지는 [#9](/blog/2026/knowledge-benchmarks/)에서 이어 다룬다.
 
 ## 세 벤치마크가 공유하는 패턴
 
@@ -628,11 +626,11 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
 
 ---
 
+---
+
 # LLM 평가 체계 시리즈
 
 이 글은 LLM 평가 체계 시리즈의 두 번째 글이다.
-
-**1부. 평가란 무엇인가**
 
 <ol start="1">
   <li><a href="/blog/2026/what-is-evaluation/">측정으로서의 평가</a> — 구성개념·조작화·타당도·신뢰도</li>
@@ -641,49 +639,4 @@ Raji et al.의 처방은 "벤치마크를 원래 의도된 범위 안에서 이�
   <li><a href="/blog/2026/clever-hans-benchmarks/">표층 특징이 정답을 예측한다</a> — Clever Hans, 데이터셋 인공물</li>
 </ol>
 
-**2부. 무엇을 숫자로 만드나 — 평가 metric**
-
-<ol start="5">
-  <li><a href="/blog/2026/measurement-scales/">1~5점 평가는 평균내도 되는가</a> — 척도와 허용 연산</li>
-  <li><a href="/blog/2026/classification-metrics/">분류 지표</a> — accuracy의 함정부터 PR-AUC까지</li>
-  <li><a href="/blog/2026/generation-metrics/">생성 지표와 그 타당도</a> — BLEU에서 COMET까지</li>
-  <li><a href="/blog/2026/mcqa-fragility/">객관식 평가는 왜 흔들리나</a> — 위치 편향과 포맷 민감도</li>
-</ol>
-
-**3부. LLM 벤치마크 지형도**
-
-<ol start="9">
-  <li><a href="/blog/2026/knowledge-benchmarks/">지식과 추론 — MMLU 계열의 흥망</a> — MMLU·GPQA·BBH</li>
-  <li><a href="/blog/2026/math-code-benchmarks/">검증 가능한 도메인 — 수학과 코드</a> — GSM8K·MATH·HumanEval·SWE-bench</li>
-  <li><a href="/blog/2026/mt-bench-to-arena/">개방형 대화 — MT-Bench에서 Arena까지</a> — judge 기반 벤치의 등장</li>
-  <li><a href="/blog/2026/capability-axes-benchmarks/">능력의 다른 축</a> — 지시따르기·긴 문맥·사실성</li>
-  <li><a href="/blog/2026/korean-benchmarks/">한국어 벤치마크</a> — 번역이 아니라 원산, 그리고 문화 타당도</li>
-  <li><a href="/blog/2026/helm-holistic-evaluation/">점수 하나가 아니라 행렬로</a> — HELM — 시나리오 × 지표</li>
-</ol>
-
-**4부. 사람이 읽는다 — 정성평가와 일치도**
-
-<ol start="15">
-  <li><a href="/blog/2026/human-evaluation-design/">사람 평가 설계</a> — 루브릭·Likert·pairwise·BWS</li>
-  <li><a href="/blog/2026/kappa-agreement/">우연을 빼다 — κ 계열</a> — Cohen·Fleiss·weighted·Krippendorff</li>
-  <li><a href="/blog/2026/kappa-paradox/">κ의 역설</a> — 일치율 90%인데 κ가 0.21</li>
-</ol>
-
-**5부. 차이는 진짜인가 — 정량평가의 통계**
-
-<ol start="18">
-  <li><a href="/blog/2026/confidence-intervals/">점수는 추정치다</a> — 이항비율 신뢰구간과 Wald의 실패</li>
-  <li><a href="/blog/2026/significance-testing/">차이는 유의한가</a> — paired bootstrap·순열검정·McNemar</li>
-  <li><a href="/blog/2026/statistical-power/">몇 개를 재야 하나</a> — 검정력·표본크기·다중비교</li>
-  <li><a href="/blog/2026/error-bars-for-evals/">LLM eval의 통계 실무</a> — 클러스터 SE·IQM·분산 분해</li>
-</ol>
-
-**6부. 신뢰할 수 있는 평가 체계**
-
-<ol start="22">
-  <li><a href="/blog/2026/judge-statistics/">judge를 통계로 다루기</a> — 편향·Bradley-Terry·PPI</li>
-  <li><a href="/blog/2026/contamination-reproducibility/">오염·재현성·효율</a> — 오염 검정·harness·IRT</li>
-  <li><a href="/blog/2026/safety-evaluation-statistics/">안전 평가의 통계와 체계 설계</a> — 희귀사건·calibration·체크리스트</li>
-</ol>
-
-본 시리즈는 24편으로 구성된다.
+본 시리즈는 4편으로 구성된다.
